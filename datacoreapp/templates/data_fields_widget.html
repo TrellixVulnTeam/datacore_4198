@@ -1,0 +1,20 @@
+{% load datacore_tags %}
+
+<button class="btn btn-secondary" type="button" style="height: 27px; line-height: 0.2;" onclick="addRow('dataTable')">إضافة حقل</button>
+<button class="btn btn-danger" type="button" style="height: 27px; line-height: 0.2;" onclick="deleteRow('dataTable')">إلغاء المحدد</button>
+<input type="hidden" id="data_fields_input" name="{{ widget.name }}"/>
+
+<div style="max-height: 270px; overflow: auto;border: 1px solid #ced4da;border-radius: 0.29rem;margin-top: 15px;">
+    <table id="dataTable"  class="table">
+
+        <thead>
+            <tr>
+            <th scope="col">#</th>
+            <th scope="col">الإسم الأجنبي</th>
+            <th scope="col">الإسم العربي</th>
+            <th scope="col">نوع الحقل</th>
+            </tr>
+        </thead>
+
+    </table>
+</div>

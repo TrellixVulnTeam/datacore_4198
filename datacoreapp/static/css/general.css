@@ -1,0 +1,124 @@
+@font-face {
+    font-family: cairo;
+    src: url('../fonts/cairo/Cairo-Regular.ttf');
+}
+
+body {
+    font-family: cairo;
+}
+
+* {
+    box-shadow: none !important;
+}
+
+.tempus-dominus-widget {
+    box-shadow: 0 2px 4px -1px rgb(0 0 0 / 20%), 0 4px 5px 0 rgb(0 0 0 / 14%), 0 1px 10px 0 rgb(0 0 0 / 12%) !important;
+    width: 22rem !important;
+    padding-top: 15px !important;
+}
+
+.flex-column > .nav-item {
+    border-bottom: #dfdfdf solid 1px;
+}
+
+[class="nav-link dropdown-toggle"] {
+    font-weight: bold !important;
+}
+
+.selected {
+    color: #0088ff !important;
+}
+
+ul .flex-column{
+    list-style-type:none;
+}
+
+.pl10 {
+    padding-left: 10px;
+}
+
+.card-body>.stretched-link {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.selectable-card:hover{
+    background-color: #99cdff;
+}
+
+.ellipsis{
+    display: -webkit-box;
+    max-width: 100%;
+    margin: 0 auto;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-delete {
+    text-decoration: none !important;
+    z-index: 1000; 
+    color: red;
+}
+
+.card-delete:hover{
+    color: white;
+}
+
+.card-action {
+    text-decoration: none !important;
+    z-index: 1000; 
+    color: #0088ff;
+}
+
+.card-action:hover{
+    color: white;
+}
+
+.card-footer-flex {
+    display: flex; 
+    flex-direction: row; 
+    position: absolute;
+    bottom: 5px;
+    left: 15px;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 40px !important;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 40px !important;
+}
+
+.select2-container .select2-selection--single {
+    height: 40px !important;
+}
+
+.select2-container--default .select2-selection--single {
+    border: 1px solid #ced4da !important;
+}
+
+td > .form-control {
+    height: 28px;
+}
+
+td > .form-select {
+    height: 28px;
+    padding: 0rem 0.75rem 0.2rem 2.25rem;
+    font-size: 0.9rem;
+}
+
+[role="main"] {
+    margin-bottom: 50px;
+}
+
+.user-action-panel {
+    position: absolute !important;
+    left: -17px !important;
+    top: 30px !important;
+    background-color: #212529 !important;
+    right: unset !important;
+}

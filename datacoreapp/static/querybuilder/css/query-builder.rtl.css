@@ -1,0 +1,64 @@
+.pull-right {
+float: left !important;
+}
+
+.query-builder .rules-list {
+padding: 0 15px 0 0 !important;
+}
+
+.query-builder .rules-list>:last-child::before {
+border-radius: 0 0 4px 0 !important;
+}
+
+.query-builder .rules-list>:last-child::before {
+border-width: 0 2px 2px 0 !important;
+}
+
+.query-builder .rules-list>::after, .query-builder .rules-list>::before {
+left: 0 !important;
+right: -10px !important;
+}
+
+.query-builder .rules-list>::before {
+border-width: 0 2px 0 0 !important;
+}
+
+.query-builder .rules-list>::after {
+border-width: 0 2px 0 0 !important;
+}
+
+.btn {
+margin-right: 3px !important;
+}
+
+.query-builder .drag-handle, .query-builder .error-container, .query-builder .rule-container .rule-filter-container, .query-builder .rule-container .rule-operator-container, .query-builder .rule-container .rule-value-container {
+margin: 0 0 0 5px !important;
+}
+
+.query-builder .rule-value-container {
+border-left: none !important;
+border-right: 1px solid #DDD !important;
+padding-left: 0 !important;
+padding-right: 5px !important;
+}
+
+.checkbox input[type=checkbox]:checked + label:after {
+content: "" !important;
+}
+
+.form-inline .checkbox label, .form-inline .radio label {
+padding-right: 0 !important;
+padding-left: 20px !important;
+}
+
+.query-builder .drag-handle, .query-builder .error-container, .query-builder .rule-container .rule-filter-container, .query-builder .rule-container .rule-operator-container, .query-builder .rule-container .rule-value-container {
+margin: 0 5px 0 0 !important;
+}
+
+.query-builder .drag-handle {
+cursor: grab !important;
+}
+
+.glyphicon {
+padding-left: 2px !important;
+}

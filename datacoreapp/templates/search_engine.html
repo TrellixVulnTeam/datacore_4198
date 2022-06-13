@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% load static %}
+
+<div class="input-group mb-3">
+    <label class="input-group-text" for="inputGroupSelect01">اختر الملف</label>
+    <select class="form-select" id="inputGroupSelect01" style="max-width: 205px;">
+        {% for v in searchviews %}
+            <option value="{{v.english_name}}">{{v.arabic_name}}</option>
+        {% endfor %}
+    </select>
+    <input type="text" class="form-control" aria-label="بحث في الملفات" placeholder="بحث في الملفات">
+    <button class="btn btn-outline-primary" type="button" id="button-addon2"><span class="bi-search pl10"></span>بحث</button>
+</div>  
+ 
+<div style="margin-top: 120px; display: flex;justify-content: center;align-items: center;flex-direction: column;">
+    <img src="{% static 'images/no_result_found.png' %}" style="margin-right: -100px;"/>
+    <div style="font-size: small;margin-right: -100px; color: lightgray;">لا يوجد نتائج</div>
+</div>
+
+{% endblock %}

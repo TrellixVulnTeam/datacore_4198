@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block header_left %}
+    <a type="button" class="btn btn-outline-primary" href="{% url 'relations' %}?action=add"><span class="bi-plus-lg pl10"></span>إضافة</a>
+{% endblock %}
+
+{% block content %}
+
+<div style="display: flex; flex-wrap: wrap;">
+{% for r in relations %}
+    <div class="card selectable-card" style="margin: 10px;">
+        <div class="card-body">
+            <h5 class="card-title">{{r.arabic_name}}</h5>
+            <h6 class="card-subtitle mb-2 text-muted">{{r.english_name}}</h6>
+            <hr class="mt-2 mb-3"/>
+            <div class=".position-relative" style="margin-bottom: 15px;">
+                <span style="display: flex; flex-direction: row;">
+                    <span style="display: flex; flex-direction: row;">
+                        {% if r.from_bank.icon_class and r.from_bank.icon_class.strip %}
+                            <span style="font-size: 30px; margin-left: 15px;" class="{{r.from_bank.icon_class}}"></span>
+                        {% else %}
+                            <span style="font-size: 30px; margin-left: 15px;" class="bi-hdd-stack-fill"></span>
+                        {% endif %}
+                        <span>
+                            <h5 class="card-title">{{r.from_bank.arabic_name}}</h5>
+                            <h6 class="card-subtitle mb-2 text-muted">{{r.from_bank.english_name}}</h6>
+                        </span>
+                    </span>
+                    <span class="bi-three-dots" style="padding-right: 15px; padding-top: 17px; color: dodgerblue;"></span>
+                    <span class="bi-three-dots" style="padding-top: 17px; color: dodgerblue;"></span>
+                    <span class="bi-three-dots" style="padding-left: 15px;padding-top: 17px; color: dodgerblue;"></span>
+                    <span style="display: flex; flex-direction: row;">
+                        {% if r.to_bank.icon_class and r.to_bank.icon_class.strip %}
+                            <span style="font-size: 30px; margin-left: 15px;" class="{{r.to_bank.icon_class}}"></span>
+                        {% else %}
+                            <span style="font-size: 30px; margin-left: 15px;" class="bi-hdd-stack-fill"></span>
+                        {% endif %}
+                        <span>
+                            <h5 class="card-title">{{r.to_bank.arabic_name}}</h5>
+                            <h6 class="card-subtitle mb-2 text-muted">{{r.to_bank.english_name}}</h6>
+                        </span>
+                    </span>
+                </span>
+                <a href="{% url 'relations' %}?en={{r.english_name}}" class="stretched-link"></a>
+            </div>
+            <span class="card-footer-flex">
+                <a href="#" class="card-link card-delete"><span class="bi-trash pl10"></span>حذف</a>
+            </span>
+        </div>
+    </div>
+{% endfor %}
+</div>
+ 
+{% endblock %}

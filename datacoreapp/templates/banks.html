@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block header_left %}
+    <a type="button" class="btn btn-outline-primary" href="{% url 'banks' %}?action=add"><span class="bi-plus-lg pl10"></span>إضافة</a>
+{% endblock %}
+
+{% block content %}
+
+<div style="display: flex; flex-wrap: wrap;">
+{% for b in banks %}
+    <div class="card selectable-card" style="width: 18rem; margin: 10px;">
+        <div class="card-body">
+            <div class=".position-relative" style="margin-bottom: 20px;">
+                <span style="display: flex; flex-direction: row;">
+                    {% if b.icon_class and b.icon_class.strip %}
+                        <span style="font-size: 30px; margin-left: 15px;" class="{{b.icon_class}}"></span>
+                    {% else %}
+                        <span style="font-size: 30px; margin-left: 15px;" class="bi-hdd-stack-fill"></span>
+                    {% endif %}
+                    <span>
+                        <h5 class="card-title">{{b.arabic_name}}</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">{{b.english_name}}</h6>
+                    </span>
+                </span>
+                <hr class="mt-2 mb-3"/>
+                <p class="card-text ellipsis">{{b.description}}</p>
+                <a href="{% url 'banks' %}?en={{b.english_name}}" class="stretched-link"></a>
+            </div>
+            <span class="card-footer-flex">
+                <a href="#" class="card-link card-delete"><span class="bi-trash pl10"></span>حذف</a>
+            </span>
+        </div>
+    </div>
+{% endfor %}
+</div>
+ 
+{% endblock %}

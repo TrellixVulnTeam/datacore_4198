@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container-fluid">
+    <form id="myform">
+        <div class="row" style="max-width: 500px;">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="form-group col-12" style="margin-top: 10px;">
+                <label class="col-12" style="margin-bottom: 3px;">{{ field.label }}</label>
+                {{ field }}
+            </div>
+            {% endfor %}
+            <div class="form-group col-12" style="margin-top: 10px;">
+                <input type="submit" class="btn btn-primary" style="float: left;" value="{{arabic_action}}" />
+            </div>
+        </div>
+    <form>
+</div>
+ 
+ 
+{% endblock %}

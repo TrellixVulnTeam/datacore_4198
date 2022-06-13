@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block header_left %}
+    <a type="button" class="btn btn-outline-primary" href="{% url 'views' %}?action=add"><span class="bi-plus-lg pl10"></span>إضافة</a>
+{% endblock %}
+
+{% block content %}
+{% load datacore_tags %}
+
+<div style="display: flex; flex-wrap: wrap;">
+{% for v in views %}
+    <div class="card selectable-card" style="width: 18rem; margin: 10px;">
+        <div class="card-body">
+            <div class=".position-relative" style="margin-bottom: 20px;">
+                <span style="display: flex; flex-direction: row;">
+                    <span style="font-size: 30px; margin-left: 15px;" class="bi-book-half"></span>
+                    <span>
+                        <h5 class="card-title">{{v.arabic_name}}</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">{{v.english_name}}</h6>
+                    </span>
+                </span>
+                <hr class="mt-2 mb-3"/>
+                <span style="display: flex; flex-direction: row;width: 16rem; flex-wrap: wrap;">
+                    {% with v.data_fields|fetch_many as fields %}
+                        {% for f in fields %}
+                            {% if f.bank %}
+                                <span class="badge bg-secondary" style="margin: 3px;"><span class="bi-hdd-stack" style="padding-left: 6px;"></span>{{f.bank.arabic_name}}:{{f.arabic_name}}</span>
+                            {% elif f.relation %}
+                                <span class="badge bg-secondary" style="margin: 3px;"><span class="bi-diagram-3-fill" style="padding-left: 6px;"></span>{{f.ralation.arabic_name}}:{{f.arabic_name}}</span>
+                            {% endif %}
+                        {% endfor %}
+                    {% endwith %}
+                </span>
+                <a href="{% url 'views' %}?en={{v.english_name}}" class="stretched-link"></a>
+            </div>
+            <span class="card-footer-flex">
+                <a href="#" class="card-link card-delete"><span class="bi-trash pl10"></span>حذف</a>
+            </span>
+        </div>
+    </div>
+{% endfor %}
+</div>
+ 
+{% endblock %}
