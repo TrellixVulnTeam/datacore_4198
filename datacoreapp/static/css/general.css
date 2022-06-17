@@ -11,6 +11,15 @@ body {
     box-shadow: none !important;
 }
 
+.toast{
+    background-color: white !important;
+    border: solid 1px #d7d7d7;
+}
+
+.toast-container {
+    z-index: 10000;
+}
+
 .tempus-dominus-widget {
     box-shadow: 0 2px 4px -1px rgb(0 0 0 / 20%), 0 4px 5px 0 rgb(0 0 0 / 14%), 0 1px 10px 0 rgb(0 0 0 / 12%) !important;
     width: 22rem !important;
@@ -59,7 +68,7 @@ ul .flex-column{
 
 .card-delete {
     text-decoration: none !important;
-    z-index: 1000; 
+    z-index: 1; 
     color: red;
 }
 
@@ -111,6 +120,17 @@ td > .form-select {
     font-size: 0.9rem;
 }
 
+td > .form-control-no-validate {
+    height: 28px;
+}
+
+td > .form-select-no-validate {
+    height: 28px;
+    padding: 0rem 0.75rem 0.2rem 2.25rem;
+    font-size: 0.9rem;
+}
+
+
 [role="main"] {
     margin-bottom: 50px;
 }
@@ -121,4 +141,10 @@ td > .form-select {
     top: 30px !important;
     background-color: #212529 !important;
     right: unset !important;
+}
+
+.narrow-padded-check{
+    padding: 0rem 0.65rem 0.2rem 0.15rem !important;
+    width: 70px;
+    background-position: left 0.15rem center;
 }

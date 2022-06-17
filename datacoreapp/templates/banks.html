@@ -8,7 +8,7 @@
 
 <div style="display: flex; flex-wrap: wrap;">
 {% for b in banks %}
-    <div class="card selectable-card" style="width: 18rem; margin: 10px;">
+    <div id="card-{{b.english_name}}" class="card selectable-card" style="width: 18rem; margin: 10px;">
         <div class="card-body">
             <div class=".position-relative" style="margin-bottom: 20px;">
                 <span style="display: flex; flex-direction: row;">
@@ -27,11 +27,30 @@
                 <a href="{% url 'banks' %}?en={{b.english_name}}" class="stretched-link"></a>
             </div>
             <span class="card-footer-flex">
-                <a href="#" class="card-link card-delete"><span class="bi-trash pl10"></span>حذف</a>
+                <a role="button" class="card-link card-delete" data-bs-toggle="modal" data-entityid="{{b.english_name}}" data-bs-target="#confirmModal" onclick="update_button_delete_data(event)"><span class="bi-trash pl10"></span>حذف</a>
             </span>
         </div>
     </div>
 {% endfor %}
 </div>
+
+<!-- Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1" role="dialog" aria-labelledby="confirmModalCenterTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="confirmModalCenterTitle"><span class="bi-exclamation-triangle-fill pl10" style="color: orange;"></span>تحذير</h5>
+        </div>
+        <div class="modal-body">
+            <h6>إن حذف هذا البنك سيؤدّي الى خسارة البيانات الخاصة به للأبد. </h6>
+            <h6>هل تريد المتابعة حقاً؟</h6>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">كلا</button>
+          <button id="button-confirm-delete" type="button" data-bs-dismiss="modal" data-entityid="" class="btn btn-primary" onclick="delete_confirmed('/banks/','{{ csrf_token }}',event)">نعم</button>
+        </div>
+      </div>
+    </div>
+  </div>
  
 {% endblock %}

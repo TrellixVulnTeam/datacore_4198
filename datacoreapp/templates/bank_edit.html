@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% load static %}
+{% load datacore_tags %}
 
 {% block additional_styles %}
     <link href="{% static 'select2/select2.min.css' %}" rel="stylesheet">
@@ -10,13 +11,75 @@
 {% block content %}
 <div class="container-fluid">
     <div class="row" style="max-width: 500px;">
-        {% for field in form %}
-            <div class="form-group col-12" style="margin-top: 10px;">
-            <label class="col-12" style="margin-bottom: 3px;">{{ field.label }}</label>
-            {{ field }}
+        <div class="form-group col-12" style="margin-top: 10px;">
+            <label class="col-12" style="margin-bottom: 3px;">الاسم الأجنبي</label>
+            <input type="text" name="english_name" maxlength="70" onkeypress="validate_en(event)" autocomplete="off" class="form-control" required id="id_english_name" value="{{entity.english_name}}" {{action|if_equals_else:'edit,readonly,'}}>
         </div>
-        {% endfor %}
         
+        <div class="form-group col-12" style="margin-top: 10px;">
+            <label class="col-12" style="margin-bottom: 3px;">الإسم العربي</label>
+            <input type="text" name="arabic_name" maxlength="70" onkeypress="validate_ar(event)" autocomplete="off" class="form-control" required id="id_arabic_name" value="{{entity.arabic_name}}" {{action|if_equals_else:'edit,readonly,'}}>
+        </div>
+
+        <div class="form-group col-12" style="margin-top: 10px;">
+            <label class="col-12" style="margin-bottom: 3px;">الشعار</label>
+            <select class="form-control icon-picker" id="icon-picker-icon_class" name="icon_class">
+                {% for icon in icons_list %}
+                    <option data-select2-id="{{icon}}" value="{{icon}}">{{icon}}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group col-12" style="margin-top: 10px;">
+            <label class="col-12" style="margin-bottom: 3px;">الوصف</label>
+            <textarea name="description" cols="40" rows="2" maxlength="250" autocomplete="off" class="form-control" id="id_description">{{entity.description}}</textarea>
+        </div>
+        <div class="form-group col-12" style="margin-top: 35px;">
+            <button class="btn btn-secondary" type="button" style="height: 27px; line-height: 0.2;" onclick="addRow('dataTable')">إضافة حقل</button>
+            <button class="btn btn-danger" type="button" style="height: 27px; line-height: 0.2;" onclick="deleteRow('dataTable')">إلغاء المحدد</button>
+            <input type="hidden" id="data_fields_input" name="data_fields"/>
+
+            <div style="max-height: 270px; overflow: auto;border: 1px solid #ced4da;border-radius: 0.29rem;margin-top: 15px;">
+                <table id="dataTable"  class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">الإسم الأجنبي</th>
+                            <th scope="col">الإسم العربي</th>
+                            <th scope="col">نوع الحقل</th>
+                            <th scope="col">مفهرس؟</th>
+                        </tr>
+                        {% if action and action == "edit" and entity and entity.data_fields|fetch_many_not_empty %}
+                            {% for field in entity.data_fields|fetch_many %}
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" name="chk" class="form-check"/>
+                                    </td>
+                                    <td>
+                                        <input type="text" name="txtename" class="form-control" onkeypress="validate_en(event)" autocomplete="off" value="{{field.english_name}}" disabled="true"/>
+                                    </td>
+                                    <td>
+                                        <input type="text" name="txtaname" class="form-control" onkeypress="validate_ar(event)" autocomplete="off" value="{{field.arabic_name}}" required/>
+                                    </td>
+                                    <td>
+                                        <select name="type" class="form-select narrow-padded-check" >
+                                            <option value="String" {{ field.data_type|if_equals_else:'String,selected,' }}>نص</option>
+                                            <option value="Number" {{ field.data_type|if_equals_else:'Number,selected,' }}">رقم</option>
+                                            <option value="Date" {{ field.data_type|if_equals_else:'Date,selected,' }}>تاريخ</option>
+                                            <option value="Bool" {{ field.data_type|if_equals_else:'Bool,selected,' }}>حقيقة</option>
+                                            <option value="Array" {{ field.data_type|if_equals_else:'Array,selected,' }}>لائحة</option>
+                                            <option value="Object" {{ field.data_type|if_equals_else:'Object,selected,' }}>شيء</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input type="checkbox" name="chkindexed" class="form-check" {{ field.indexed|if_else:'checked,' }} style="margin-right: 15px;"/>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% endif %}
+                    </thead>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
  
@@ -46,8 +109,9 @@
                 escapeMarkup: function(m) { return m; }
             });
 
-            $('.icon-picker').val("{{ bank.icon_class }}");
+            $('.icon-picker').val("{{ entity.icon_class|str_or_default:'bi-hdd-stack-fill' }}");
             $('.icon-picker').trigger('change');
+
         });
 
 		function addRow(tableID) {
@@ -59,12 +123,13 @@
 			var cell1 = row.insertCell(0);
             cell1.innerHTML = '<input type="checkbox" name="chk" class="form-check"/>';
             var cell2 = row.insertCell(1);
-            cell2.innerHTML = '<input type="text" name="txtename" class="form-control" onkeypress="validate_en(event)" autocomplete="off"/>';
+            cell2.innerHTML = '<input type="text" name="txtename" class="form-control" onkeypress="validate_en(event)" autocomplete="off" required/>';
             var cell3 = row.insertCell(2);
-            cell3.innerHTML = '<input type="text" name="txtaname" class="form-control" onkeypress="validate_ar(event)" autocomplete="off"/>';
+            cell3.innerHTML = '<input type="text" name="txtaname" class="form-control" onkeypress="validate_ar(event)" autocomplete="off" required/>';
             var cell4 = row.insertCell(3);
-            cell4.innerHTML = '<select name="type" class="form-select"><option value="String">نص</option><option value="Number">رقم</option><option value="Date">تاريخ</option><option value="Bool">حقيقة</option><option value="Array">لائحة</option><option value="Object">شيء</option></select>';
-              
+            cell4.innerHTML = '<select name="type" class="form-select narrow-padded-check"><option value="String">نص</option><option value="Number">رقم</option><option value="Date">تاريخ</option><option value="Bool">حقيقة</option><option value="Array">لائحة</option><option value="Object">شيء</option></select>';
+            var cell5 = row.insertCell(4);
+            cell5.innerHTML = '<input type="checkbox" name="chkindexed" class="form-check" style="margin-right: 15px;"/>';
 		}
 
 		function deleteRow(tableID) {
@@ -72,10 +137,8 @@
 			var table = document.getElementById(tableID);
 			var rowCount = table.rows.length;
 
-			for(var i=0; i<rowCount; i++) {
-				var row = table.rows[i];
-				var chkbox = row.cells[0].childNodes[0];
-				if(null != chkbox && true == chkbox.checked) {
+			for(var i=1; i<rowCount; i++) {
+				if($(table.rows[i].cells[0]).find('input[name="chk"]').is(":checked")) {
 					if(rowCount <= 1) {
 						alert("Cannot delete all the rows.");
 						break;
@@ -84,8 +147,6 @@
 					rowCount--;
 					i--;
 				}
-
-
 			}
 			}catch(e) {
 				alert(e);
@@ -105,12 +166,16 @@
                 item = {
                     "english_name": $(this).find('input[name="txtename"]').val(),
                     "arabic_name" : $(this).find('input[name="txtaname"]').val(),
-                    "date_type" : $(this).find('.form-select').val()
+                    "data_type" : $(this).find('.form-select').val(),
+                    "indexed" : $(this).find('input[name="chkindexed"]').is(":checked")
                 }
                 jsonFields.push(item);
             })
 
             $('#btn-submit').prop('disabled', true);
+            
+            showOverlay();
+
             $.ajax({
                 url : "/banks/", // the endpoint
                 type : "POST", // http method
@@ -124,32 +189,9 @@
                     data_fields: JSON.stringify(jsonFields, null, 2)
                 }, // data sent with the post request
 
-                // handle a successful response
-                success : function(json) {
-                    if(json['code'] == '0'){
-                        document.getElementsByClassName('toast-header')[0].style = 'background-color: deepskyblue'
-                        document.getElementsByClassName('me-auto')[0].innerHTML = 'نجاح';
-                        setTimeout(function() {
-                            document.location.href = "/banks";
-                        }, 2000);
-                    }else{
-                        document.getElementsByClassName('toast-header')[0].style = 'background-color: lightcoral'
-                        document.getElementsByClassName('me-auto')[0].innerHTML = 'خطأ';
-                        $('#btn-submit').prop('disabled', false);
-                    }
-                    document.getElementsByClassName('toast-body')[0].innerHTML = json['message'];
-                    const toast = new bootstrap.Toast(document.getElementById('liveToast'));
-                    toast.show()
-                },
+                success : get_ajax_success_function('{{action}}', "/banks"),
 
-                // handle a non-successful response
-                error : function(xhr,errmsg,err) {
-                    $('#btn-submit').prop('disabled', false);
-                    document.getElementsByClassName('toast-body')[0].innerHTML = err;
-                    const toast = new bootstrap.Toast(document.getElementById('liveToast'));
-                    toast.show()
-                    console.log(xhr.status + ": " + xhr.responseText); // provide a bit more info about the error to the console
-                }
+                error : get_ajax_error_function()
             });
         };
 	

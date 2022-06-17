@@ -1,3 +1,4 @@
+from pickle import FALSE
 from django import template
 
 register = template.Library()
@@ -37,12 +38,55 @@ def fetch_many(value):
         return value.all().iterator()
     return []
 
-@register.filter(name='selected_if_equal')
-def selected_if_equal(value, arg):
+@register.filter(name='fetch_many_count')
+def fetch_many_count(value):
+    if value:
+        return len(value.all().iterator())
+    return 0
+
+@register.filter(name='fetch_many_not_empty')
+def fetch_many_not_empty(value):
+    if value:
+        if value.count() > 0:
+            return True;
+    return FALSE
+
+@register.filter(name='equals')
+def equals(value, arg):
     if value and arg and value == arg:
         return "true"
     return "false"
 
+@register.filter(name='if_equals_else')
+def if_equals_else(value, args):
+    if value and args:
+        arg_list = [arg.strip() for arg in args.split(',')]
+        if value == arg_list[0]:
+            return arg_list[1]
+        else:
+            return arg_list[2]
+    return ""
+
+@register.filter(name='if_else')
+def if_equals(value, args):
+    if value and args:
+        arg_list = [arg.strip() for arg in args.split(',')]
+        if value:
+            return arg_list[0]
+        else:
+            return arg_list[1]
+    return ""
+
 @register.filter(name='get_item')
 def get_item(dictionary, key):
     return dictionary[key]
+
+@register.filter(name='str_or_default')
+def str_or_default(str, default):
+    if not str or len(str) == 0:
+        return default;
+    return str
+
+@register.filter(name='str2bool')
+def str2bool(v):
+  return v.lower() in ("yes", "true", "t", "1")

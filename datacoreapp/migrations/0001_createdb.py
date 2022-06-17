@@ -30,7 +30,7 @@ class Migration(migrations.Migration):
                 ('english_name', models.CharField(max_length=70)),
                 ('arabic_name', models.CharField(max_length=70)),
                 ('indexed', models.BooleanField(default=True)),
-                ('date_type', models.CharField(choices=[('String', 'نص'), ('Number', 'رقم'), ('Date', 'تاريخ'), ('Bool', 'حقيقة'), ('Array', 'لائحة'), ('Object', 'شيء')], max_length=6)),
+                ('data_type', models.CharField(choices=[('String', 'نص'), ('Number', 'رقم'), ('Date', 'تاريخ'), ('Bool', 'حقيقة'), ('Array', 'لائحة'), ('Object', 'شيء')], max_length=6)),
                 ('object_id', models.PositiveIntegerField(blank=True, null=True)),
                 ('content_type', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='contenttypes.contenttype')),
             ],

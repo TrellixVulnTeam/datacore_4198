@@ -17,7 +17,7 @@ class DataField(models.Model):
         ('Array', 'لائحة'),
         ('Object', 'شيء')
     )
-    date_type = models.CharField(max_length=6, choices=Types)
+    data_type = models.CharField(max_length=6, choices=Types, default=False)
 
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, blank=True, null=True)
     object_id = models.PositiveIntegerField(blank=True, null=True)
