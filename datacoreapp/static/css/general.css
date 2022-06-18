@@ -110,6 +110,28 @@ ul .flex-column{
     border: 1px solid #ced4da !important;
 }
 
+.select2-container--default.select2-container--focus .select2-selection--multiple {
+    border: solid #ced4da 1px !important;
+}
+
+.select2-container--default .select2-selection--multiple {
+    border: solid #ced4da 1px !important;
+}
+
+.select2-container--default .select2-results__option--selected {
+    background-color: #caecff !important;
+}
+
+.select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+    background-color: #ebebeb !important;
+    color: black !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #ededed !important;
+    border: 1px solid #d1d1d1 !important;
+}
+
 td > .form-control {
     height: 28px;
 }

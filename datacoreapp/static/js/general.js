@@ -5,6 +5,7 @@ $(document).ready(function() {
       e.preventDefault();
       e.stopPropagation();
       form.classList.add('was-validated')
+      showError('الرجاء التأكد من تعبئة كل الخانات المطلوبة');
       return false
     }
     return true
@@ -57,12 +58,10 @@ function hideOverlay() {
 
 function get_ajax_success_function(action, url, success_function) {
   // handle a successful response
-  return   function(json) {
+  return function(json) {
     hideOverlay();
 
     if(json['code'] == '0'){
-        document.getElementsByClassName('toast-header')[0].style = 'background-color: deepskyblue'
-        document.getElementsByClassName('me-auto')[0].innerHTML = 'نجاح';
         if (typeof action !== 'undefined' && typeof url !== 'undefined'){
           if(action=='add'){
               setTimeout(function() {
@@ -75,16 +74,28 @@ function get_ajax_success_function(action, url, success_function) {
         if (typeof success_function !== 'undefined'){
           success_function()
         }
+        showSuccess(json['message']);
     }else{
-        document.getElementsByClassName('toast-header')[0].style = 'background-color: lightcoral'
-        document.getElementsByClassName('me-auto')[0].innerHTML = 'خطأ';
         $('#btn-submit').prop('disabled', false);
+        showError(json['message']);
     }
-
-    document.getElementsByClassName('toast-body')[0].innerHTML = json['message'];
-    const toast = new bootstrap.Toast(document.getElementById('liveToast'));
-    toast.show()
   }
+}
+
+function showSuccess(message){
+  document.getElementsByClassName('toast-header')[0].style = 'background-color: deepskyblue'
+  document.getElementsByClassName('me-auto')[0].innerHTML = 'نجاح';
+  document.getElementsByClassName('toast-body')[0].innerHTML = message
+  const toast = new bootstrap.Toast(document.getElementById('liveToast'));
+  toast.show()
+}
+
+function showError(message){
+  document.getElementsByClassName('toast-header')[0].style = 'background-color: lightcoral'
+  document.getElementsByClassName('me-auto')[0].innerHTML = 'خطأ';
+  document.getElementsByClassName('toast-body')[0].innerHTML = message
+  const toast = new bootstrap.Toast(document.getElementById('liveToast'));
+  toast.show()
 }
 
 function get_ajax_error_function() {
@@ -125,6 +136,7 @@ function delete_entity(url, csrf_token, entityid) {
 
       success : get_ajax_success_function(undefined,undefined,function(){
         document.getElementById('card-' + entityid).remove();
+        document.getElementById('navitem-' + entityid).remove();
       }),
 
       error : get_ajax_error_function()

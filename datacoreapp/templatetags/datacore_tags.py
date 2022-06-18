@@ -32,20 +32,43 @@ def translate_permission(value):
         return pages_dictionary[value.strip()]
     return value
 
-@register.filter(name='fetch_many')
-def fetch_many(value):
+@register.filter(name='fetch_all')
+def fetch_all(value):
     if value:
         return value.all().iterator()
     return []
 
-@register.filter(name='fetch_many_count')
-def fetch_many_count(value):
+@register.filter(name='iterator')
+def iterator(value):
+    if value:
+        return value.iterator()
+    return []
+
+@register.filter(name='select')
+def select(array, value):
+    selection = []
+    if array and value:
+        for a in array:
+            selection.append(getattr(a, value))
+    return selection
+
+@register.filter(name='fetch_all_count')
+def fetch_all_count(value):
     if value:
         return len(value.all().iterator())
     return 0
 
-@register.filter(name='fetch_many_not_empty')
-def fetch_many_not_empty(value):
+@register.filter(name='fetch_by_name')
+def fetch_by_name(value, field_name):
+    if value:
+        try:
+            return getattr(value, field_name).all().iterator()
+        except Exception as e:
+            return []
+    return []
+
+@register.filter(name='fetch_all_not_empty')
+def fetch_all_not_empty(value):
     if value:
         if value.count() > 0:
             return True;
@@ -90,3 +113,12 @@ def str_or_default(str, default):
 @register.filter(name='str2bool')
 def str2bool(v):
   return v.lower() in ("yes", "true", "t", "1")
+
+@register.filter(name='array_to_string_no_brackets')
+def array_to_string_no_brackets(v):
+    result = ''
+    if v and len(v)>0:
+        for i in v:
+            result += str(i) + ','
+        result = result[:-1]
+    return result
