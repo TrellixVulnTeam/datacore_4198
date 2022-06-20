@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block header_left %}
+    <a type="button" class="btn btn-outline-primary" href="{% url 'databases' %}?action=add"><span class="bi-plus-lg pl10"></span>إضافة</a>
+{% endblock %}
+
+{% block content %}
+{% load datacore_tags %}
+
+<div style="display: flex; flex-wrap: wrap;">
+{% for db in databases %}
+    <div id="card-{{db.english_name}}" class="card selectable-card" style="width: 18rem; margin: 10px;">
+        <div class="card-body">
+            <div class=".position-relative" style="margin-bottom: 20px;">
+                <span style="display: flex; flex-direction: row;">
+                    <span style="font-size: 30px; margin-left: 15px;" class="fa-solid fa-database"></span>
+                    <span>
+                        <h5 class="card-title">{{db.arabic_name}}</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">{{db.english_name}}</h6>
+                    </span>
+                </span>
+                <hr class="mt-2 mb-3"/>
+                <span style="display: flex; flex-direction: row;width: 16rem; flex-wrap: wrap;">
+
+                </span>
+                <a href="{% url 'databases' %}?en={{db.english_name}}" class="stretched-link"></a>
+            </div>
+            <span class="card-footer-flex">
+                <a role="button" class="card-link card-delete" data-bs-toggle="modal" data-entityid="{{db.english_name}}" data-bs-target="#confirmModal" onclick="update_button_delete_data(event)"><span class="bi-trash pl10"></span>حذف</a>
+            </span>
+        </div>
+    </div>
+{% endfor %}
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1" role="dialog" aria-labelledby="confirmModalCenterTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="confirmModalCenterTitle"><span class="bi-exclamation-triangle-fill pl10" style="color: orange;"></span>تحذير</h5>
+        </div>
+        <div class="modal-body">
+            <h6>إن حذف قاعدة البيانات سيؤدّي الى خسارة البيانات الخاصة بها للأبد. </h6>
+            <h6>هل تريد المتابعة حقاً؟</h6>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">كلا</button>
+          <button id="button-confirm-delete" type="button" data-bs-dismiss="modal" data-entityid="" class="btn btn-primary" onclick="delete_confirmed('/databases/','{{ csrf_token }}',event)">نعم</button>
+        </div>
+      </div>
+    </div>
+  </div>
+ 
+{% endblock %}

@@ -76,7 +76,7 @@ def fetch_all_not_empty(value):
 
 @register.filter(name='equals')
 def equals(value, arg):
-    if value and arg and value == arg:
+    if value and arg and str(value).lower() == arg.lower():
         return "true"
     return "false"
 
@@ -84,7 +84,7 @@ def equals(value, arg):
 def if_equals_else(value, args):
     if value and args:
         arg_list = [arg.strip() for arg in args.split(',')]
-        if value == arg_list[0]:
+        if str(value).lower() == arg_list[0].lower():
             return arg_list[1]
         else:
             return arg_list[2]
@@ -92,9 +92,19 @@ def if_equals_else(value, args):
 
 @register.filter(name='if_else')
 def if_equals(value, args):
-    if value and args:
+    if args:
         arg_list = [arg.strip() for arg in args.split(',')]
         if value:
+            return arg_list[0]
+        else:
+            return arg_list[1]
+    return ""
+
+@register.filter(name='if_not_else')
+def if_not_equals(value, args):
+    if args:
+        arg_list = [arg.strip() for arg in args.split(',')]
+        if not value:
             return arg_list[0]
         else:
             return arg_list[1]

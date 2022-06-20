@@ -54,27 +54,27 @@
                         {% for p in pages %}
                             {% if p.childs == None %}
                                 <li class="nav-item">
-                                    <a class="nav-link {{ p.selected|yesno:'selected,' }}" href="{% url p.template %}">
+                                    <a class="nav-link {{ p.selected|if_else:'selected,' }} {{ p.disabled|if_else:'disabled,' }}" href="{% url p.template %}">
                                         <span class="{{p.icon}} pl10"></span> {{p.arabic_name}}
                                     </a>
                                 </li>
                             {% else %}
                                 <li class="nav-item">
                                     <div style="display:flex; flex-direction: row;">
-                                        <a class="nav-link dropdown-toggle {{ p.selected|yesno:',collapsed' }} {{ p.selected|yesno:'selected,' }}" style="flex-grow: 1" data-bs-toggle="collapse" data-bs-target="#nav{{p.english_name}}" role="button" aria-expanded="{{ p.selected|yesno:'true,' }}" aria-controls="nav{{p.english_name}}">
+                                        <a class="nav-link dropdown-toggle {{ p.selected|if_else:',collapsed' }} {{ p.selected|if_else:'selected,' }} {{ p.disabled|if_else:'disabled,' }}" style="flex-grow: 1" data-bs-toggle="collapse" data-bs-target="#nav{{p.english_name}}" role="button" aria-expanded="{{ p.selected|if_else:'true,' }}" aria-controls="nav{{p.english_name}}">
                                             <span class="{{p.icon}} pl10"></span>
                                             <span style="display: inline-block;width: 85%;">{{p.arabic_name}}</span>
                                         </a>
-                                        <a href="{% url p.template %}?action=add" class="bi bi-plus-circle" style="align-self: center;"></a>
+                                        <a href="{% url p.template %}?action=add" class="bi bi-plus-circle {{ p.disabled|if_else:'disabled,' }}" style="align-self: center;"></a>
                                     </div>
-                                    <ul class="flex-column collapse {{ p.selected|yesno:'show,' }}" id="nav{{p.english_name}}">
+                                    <ul class="flex-column collapse {{ p.selected|if_else:'show,' }}" id="nav{{p.english_name}}">
                                         {% if p.selected and not p.selected_child %}
-                                            <li><a class="dropdown-item selected" href="{% url p.template %}"><span class="bi-caret-left pl10"></span>الجميع</a></li>
+                                            <li><a class="dropdown-item selected {{ p.disabled|if_else:'disabled,' }}" href="{% url p.template %}"><span class="bi-caret-left pl10"></span>الجميع</a></li>
                                         {% else %}
-                                            <li><a class="dropdown-item" href="{% url p.template %}"><span class="bi-caret-left pl10"></span>الجميع</a></li>
+                                            <li><a class="dropdown-item" href="{% url p.template %}"><span class="bi-caret-left pl10 {{ p.disabled|if_else:'disabled,' }}"></span>الجميع</a></li>
                                         {% endif %}
                                         {% for c in p.childs %}
-                                            <li><a id="navitem-{{c.english_name}}" class="dropdown-item {{ c.selected|yesno:'selected,' }}" href="{% url p.template %}?en={{c.english_name}}">
+                                            <li><a id="navitem-{{c.english_name}}" class="dropdown-item {{ c.selected|if_else:'selected,' }} {{ p.disabled|if_else:'disabled,' }}" href="{% url p.template %}?en={{c.english_name}}">
                                                 {% if c.icon and c.icon.strip %}
                                                     <span class="{{c.icon}} pl10"></span>
                                                 {% else %}
@@ -98,15 +98,7 @@
                     <div style="position: absolute; inset: 0px; overflow: hidden; pointer-events: none; visibility: hidden; z-index: -1;" class="chartjs-size-monitor"><div class="chartjs-size-monitor-expand" style="position:absolute;left:0;top:0;right:0;bottom:0;overflow:hidden;pointer-events:none;visibility:hidden;z-index:-1;"><div style="position:absolute;width:1000000px;height:1000000px;left:0;top:0"></div></div><div class="chartjs-size-monitor-shrink" style="position:absolute;left:0;top:0;right:0;bottom:0;overflow:hidden;pointer-events:none;visibility:hidden;z-index:-1;"><div style="position:absolute;width:200%;height:200%;left:0; top:0"></div></div></div>
                     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                         <h1 class="h2">
-                            {% for p in pages %}
-                                {% if p.selected %}
-                                    {% if p.selected_child %}
-                                        {{p.arabic_name}} - {{p.selected_child.arabic_name}}
-                                    {% else %}
-                                        {{p.arabic_name}}
-                                    {% endif %}
-                                {% endif %}
-                            {% endfor %}
+                            {{title}}  {% if subtitle %}- {{subtitle}}{% endif %}
                         </h1>
                         {% block header_left %}
                         {% endblock %}
@@ -133,7 +125,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="اغلاق"></button>
           </div>
           <div class="toast-body">
-            Hello, world! This is a toast message.
+            
           </div>
         </div>
     </div>

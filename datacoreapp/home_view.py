@@ -3,10 +3,10 @@ from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.views import View 
-from . import models
-from . import views
-from . import master_view
+from datacoreapp import models
+from datacoreapp import views
+from datacoreapp import master_page_view
 
-class HomeView(master_view.MasterView):
+class HomeView(master_page_view.MasterPageView):
     english_name = 'Home'
     template_name = 'home'

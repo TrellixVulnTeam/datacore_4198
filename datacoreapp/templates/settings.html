@@ -1,8 +1,90 @@
 {% extends "base.html" %}
 
-{% block content %}
+{% load static %}
+{% load datacore_tags %}
 
- settings
+{% block additional_styles %}
+    <link href="{% static 'select2/select2.min.css' %}" rel="stylesheet">
+    <link href="{% static 'select2/select2-bootstrap4.min.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="alert alert-warning" role="alert" {% if has_database %}style="display:none"{% endif %}>
+        <strong>ملاحظة:</strong> يجب إختيار قاعدة بيانات للإستفادة من خدمات البرنامج.
+    </div>
+
+    <div class="row" style="max-width: 500px;">
+        <div class="form-group col-12" style="margin-top: 10px;">
+            <label class="col-12" style="margin-bottom: 3px;">قاعدة البيانات</label>
+            <select class="form-control icon-picker" id="icon-picker-database" name="database" required>
+                {% for db in databases %}
+                    <option value="{{db.english_name}}" data-icon="fa-solid fa-database">{{db.arabic_name}}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+</div>
  
- 
+{% endblock %}
+
+
+{% block footer %}
+    <div class="form-group col-12" style="margin-top: 10px;">
+        <input id="btn-submit" type="submit" class="btn btn-primary" style="float: left;" value="حفظ" />
+    </div>
+{% endblock %}
+
+{% block additional_scripts %}
+    <script src="{% static 'select2/select2.min.js' %}" type="text/javascript"></script>
+    <script>
+        function format(value) {
+            if (!value.id) { return value.text; }
+            var icon_class = '';
+            $('#icon-picker-database option').each(function(){
+                if($(this).text() == value.text){
+                    icon_class = $(this).attr('data-icon')
+                    return false;
+                }
+            });
+            
+            return '<i class="' + icon_class + '" style="font-size: 14px; padding-left: 10px; padding-right:5px;"></i>' + value.text;
+        } 
+        $(document).ready(function() {
+            $('#icon-picker-database').select2({
+                formatResult: format,
+                formatSelection: format,
+                templateResult: format,
+                templateSelection: format,
+                escapeMarkup: function(m) { return m; }
+            });
+
+            $('#icon-picker-database').val("{{user.current_database_name}}");
+            $('#icon-picker-database').trigger('change');
+
+        });
+
+        // AJAX for posting
+        function create_post() {
+            console.log("create post is working!") // sanity check
+
+            $('#btn-submit').prop('disabled', true);
+            
+            showOverlay();
+
+            $.ajax({
+                url : "/settings/", // the endpoint
+                type : "POST", // http method
+                data : { 
+                    csrfmiddlewaretoken: '{{ csrf_token }}',
+                    database : $('#icon-picker-database').val()
+                }, // data sent with the post request
+
+                success : get_ajax_success_function('edit', "/settings"),
+
+                error : get_ajax_error_function()
+            });
+        };
+	
+    </script>
 {% endblock %}

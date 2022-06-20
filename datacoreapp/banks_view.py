@@ -12,26 +12,32 @@ from django.core import serializers
 from datacoreapp import views
 from django.db.models import Q
 from datacoreapp.templatetags.datacore_tags import str2bool
-from . import models
-from . import master_edit_view
+from datacoreapp import models
+from datacoreapp import master_entity_view
 
-class BanksView(master_edit_view.MasterEditView):
+class BanksView(master_entity_view.MasterEntityView):
     model = models.Bank
     english_name = 'Banks'
-    param_name = 'bank'
+    template_name = 'bank'
 
-    def before_render(self, context):
+    def before_render(self, context, request):
         context['icons_list'] = views.get_icons_list()
 
     def add(self, data, request):
-        oldEntity = self.model.objects.filter(Q(english_name = data['english_name']) | Q(arabic_name = data['arabic_name'])).first()
+        db = models.Database.objects.filter(english_name=request.user.current_database_name).first()
+        if not db:
+            return('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة')
+
+        if not data["english_name"] or not data["arabic_name"]:
+            return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
+
+        oldEntity = self.model.objects.filter(Q(english_name = data['english_name']) | Q(arabic_name = data['arabic_name']), database__id=db.id).first()
 
         if oldEntity:
             return('1', 'يوجد بنك بنفس الاسم، الرجاء اختيار اسم آخر')
 
         if data['data_fields']:
             jsonarray = json.loads(data['data_fields'])
-
             for f in jsonarray:
                 if not f["english_name"] or not f["arabic_name"] or not len(f["english_name"])>0 or not len(f["arabic_name"])>0:
                     return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
@@ -45,8 +51,10 @@ class BanksView(master_edit_view.MasterEditView):
         bank = models.Bank()
         bank.english_name = data['english_name']
         bank.arabic_name = data['arabic_name']
+        bank.replication_factor = int(data['replication_factor'])
         bank.description = data['description']
-        bank.icon_class = data["icon_class"]        
+        bank.icon_class = data["icon_class"]    
+        bank.databse = db    
         #add arango bank here#
 
         #--------------------#
@@ -69,11 +77,18 @@ class BanksView(master_edit_view.MasterEditView):
         return ('0','تمّت العمليّة بنجاح')
 
     def edit(self, data, request):
-        oldEntity = self.model.objects.filter(english_name = data['english_name']).first()
+        db = models.Database.objects.filter(english_name=request.user.current_database_name).first()
+        if not db:
+            return('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة')
+        
+        if not data["english_name"] or not data["arabic_name"]:
+            return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
+
+        oldEntity = self.model.objects.filter(english_name = data['english_name'], database__id=db.id).first()
         if not oldEntity:
             return('1', 'لا يوجد بنك بنفس الاسم')
 
-        tempentity = self.model.objects.filter(~Q(english_name = data['english_name']), Q(arabic_name = data['arabic_name'])).first()
+        tempentity = self.model.objects.filter(~Q(english_name = data['english_name']), Q(arabic_name = data['arabic_name']), database__id=db.id).first()
         if tempentity:
             return('1', 'يوجد بنك بنفس الاسم العربي')
 
@@ -125,12 +140,17 @@ class BanksView(master_edit_view.MasterEditView):
         oldEntity.arabic_name = data['arabic_name']
         oldEntity.description = data['description']
         oldEntity.icon_class = data["icon_class"]
+        oldEntity.replication_factor = int(data['replication_factor'])
         oldEntity.save(force_update=True)
 
         return ('0','تمّت العمليّة بنجاح')
 
     def delete(self, data, request):
-        oldEntity = self.model.objects.filter(english_name = data['entityid']).first()
+        db = models.Database.objects.filter(english_name=request.user.current_database_name).first()
+        if not db:
+            return('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة')
+            
+        oldEntity = self.model.objects.filter(english_name = data['entityid'], database__id=db.id).first()
         if not oldEntity:
             return('1', 'لا يوجد بنك بنفس الاسم')
         oldEntity.delete()

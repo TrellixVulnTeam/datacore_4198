@@ -1,17 +1,19 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
 from django.urls import reverse_lazy
-from . import views
-from . import home_view
-from . import advanced_search_view
-from . import banks_view
-from . import graph_search_view
-from . import import_view
-from . import relations_view
-from . import search_engine_view
-from . import settings_view
-from . import views_view
-from . import master_edit_view
+from datacoreapp import views
+from datacoreapp import home_view
+from datacoreapp import advanced_search_view
+from datacoreapp import banks_view
+from datacoreapp import graph_search_view
+from datacoreapp import import_view
+from datacoreapp import relations_view
+from datacoreapp import search_engine_view
+from datacoreapp import settings_view
+from datacoreapp import views_view
+from datacoreapp import databases_view
+from datacoreapp import master_entity_view
+from datacoreapp import models
 from django.contrib import admin
 from django.views.generic.base import RedirectView
 
@@ -23,7 +25,7 @@ urlpatterns = [
 
 	path('home/', home_view.HomeView.as_view(), name='home'),
 	path('advanced_search/', advanced_search_view.AdvancedSearchView.as_view(), name='advanced_search'),
-	path('graph_search/', graph_search_view.GraphSearchView.as_view(), name='graph_search'),
+	path('databases/', databases_view.DatabasesView.as_view(), name='databases'),
 	path('banks/', banks_view.BanksView.as_view(), name='banks'),
 	path('import/', import_view.ImportView.as_view(), name='import'),
 	path('relations/', relations_view.RelationsView.as_view(), name='relations'),
@@ -31,3 +33,15 @@ urlpatterns = [
 	path('settings/', settings_view.SettingsView.as_view(), name='settings'),
 	path('views/', views_view.ViewsView.as_view(), name='views'),
 ]
+
+def onStartup():
+	if models.User.objects.count() == 0:
+		user=models.User.objects.create_user('admin', password='admin')
+		user.is_superuser=True
+		user.is_staff=True
+		user.email = 'admin@users.com'
+		user.first_name = 'المدير'
+		user.save()
+
+onStartup()
+

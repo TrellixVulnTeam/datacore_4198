@@ -30,6 +30,16 @@
             </select>
         </div>
         <div class="form-group col-12" style="margin-top: 10px;">
+            <label class="col-12" style="margin-bottom: 3px;">عدد النسخ</label>
+            <select class="form-select" id="select-replication" name="replication">
+                <option value="1" {{entity.replication_factor|if_equals_else:'1,selected,'}}>1</option>
+                <option value="2" {{entity.replication_factor|if_equals_else:'2,selected,'}}>2</option>
+                <option value="3" {{entity.replication_factor|if_equals_else:'3,selected,'}}>3</option>
+                <option value="4" {{entity.replication_factor|if_equals_else:'4,selected,'}}>4</option>
+                <option value="5" {{entity.replication_factor|if_equals_else:'5,selected,'}}>5</option>
+            </select>
+        </div>
+        <div class="form-group col-12" style="margin-top: 10px;">
             <label class="col-12" style="margin-bottom: 3px;">الوصف</label>
             <textarea name="description" cols="40" rows="2" maxlength="250" autocomplete="off" class="form-control" id="id_description">{{entity.description}}</textarea>
         </div>
@@ -185,6 +195,7 @@
                     english_name : $('#id_english_name').val(),
                     arabic_name : $('#id_arabic_name').val(),
                     icon_class: $('#icon-picker-icon_class').val(),
+                    replication_factor: $('#select-replication').val(),
                     description: $('#id_description').val(),
                     data_fields: JSON.stringify(jsonFields, null, 2)
                 }, // data sent with the post request

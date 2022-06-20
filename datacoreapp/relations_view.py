@@ -2,22 +2,33 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.contrib.contenttypes.models import ContentType
 from django.views import View 
-from . import models
-from . import views
+from datacoreapp import models
+from datacoreapp import views
 from django.db.models import Q
-from . import master_edit_view
+from datacoreapp import master_entity_view
 import json
 
-class RelationsView(master_edit_view.MasterEditView):
+class RelationsView(master_entity_view.MasterEntityView):
     model = models.Relation
     english_name = 'Relations'
-    param_name = 'relation'
+    template_name = 'relation'
 
-    def before_render(self, context):
-            context['banks'] = models.Bank.objects.all()
+    def before_render(self, context, request):
+        db = models.Database.objects.filter(english_name=request.user.current_database_name).first()
+        if not db:
+            return('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة')
+            
+        context['banks'] = models.Bank.objects.filter(database__id=db.id)
 
     def add(self, data, request):
-        oldEntity = self.model.objects.filter(Q(english_name = data['english_name']) | Q(arabic_name = data['arabic_name'])).first()
+        db = models.Database.objects.filter(english_name=request.user.current_database_name).first()
+        if not db:
+            return('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة')
+
+        if not data["english_name"] or not data["arabic_name"]:
+            return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
+        
+        oldEntity = self.model.objects.filter(Q(english_name = data['english_name']) | Q(arabic_name = data['arabic_name']), database__id=db.id).first()
 
         if oldEntity:
             return('1', 'يوجد علاقة بنفس الاسم، الرجاء اختيار اسم آخر')
@@ -73,11 +84,18 @@ class RelationsView(master_edit_view.MasterEditView):
         return ('0','تمّت العمليّة بنجاح')
 
     def edit(self, data, request):
-        oldEntity = self.model.objects.filter(english_name = data['english_name']).first()
+        db = models.Database.objects.filter(english_name=request.user.current_database_name).first()
+        if not db:
+            return('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة')
+            
+        if not data["english_name"] or not data["arabic_name"]:
+            return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
+            
+        oldEntity = self.model.objects.filter(english_name = data['english_name'], database__id=db.id).first()
         if not oldEntity:
             return('1', 'لا يوجد علاقة بنفس الاسم')
 
-        tempentity = self.model.objects.filter(~Q(english_name = data['english_name']), Q(arabic_name = data['arabic_name'])).first()
+        tempentity = self.model.objects.filter(~Q(english_name = data['english_name']), Q(arabic_name = data['arabic_name']), database__id=db.id).first()
         if tempentity:
             return('1', 'يوجد علاقة بنفس الاسم العربي')
         
@@ -132,7 +150,11 @@ class RelationsView(master_edit_view.MasterEditView):
         return ('0','تمّت العمليّة بنجاح')
 
     def delete(self, data, request):
-        oldEntity = self.model.objects.filter(english_name = data['entityid']).first()
+        db = models.Database.objects.filter(english_name=request.user.current_database_name).first()
+        if not db:
+            return('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة')
+            
+        oldEntity = self.model.objects.filter(english_name = data['entityid'], database__id=db.id).first()
         if not oldEntity:
             return('1', 'لا يوجد علاقة بنفس الاسم')
         oldEntity.delete()

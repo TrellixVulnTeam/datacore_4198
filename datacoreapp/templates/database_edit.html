@@ -10,6 +10,10 @@
 
 {% block content %}
 <div class="container-fluid">
+    <div class="alert alert-warning" role="alert" {% if has_databases %}style="display:none"{% endif %}>
+        <strong>ملاحظة:</strong> يجب إضافة قاعدة بيانات واحدة على الأقل للإستفادة من خدمات البرنامج.
+    </div>
+
     <div class="row" style="max-width: 500px;">
         <div class="form-group col-12" style="margin-top: 10px;">
             <label class="col-12" style="margin-bottom: 3px;">الاسم الأجنبي</label>
@@ -22,24 +26,25 @@
         </div>
 
         <div class="form-group col-12" style="margin-top: 10px;">
-            <label class="col-12" style="margin-bottom: 3px;">استخدام الضغط</label>
-            <select class="form-select" id="select-compressed" name="compressed">
-                <option value="True" {{entity.compressed|if_else:'selected,'}}>نعم</option>
-                <option value="False" {{entity.compressed|if_not_else:'selected,'}}>كلا</option>
-            </select>
+            <label class="col-12" style="margin-bottom: 3px;">العنوان</label>
+            <input type="text" name="host" maxlength="250" autocomplete="off" class="form-control" required id="id_host" value="{{entity.host}}">
         </div>
+
         <div class="form-group col-12" style="margin-top: 10px;">
-            <label class="col-12" style="margin-bottom: 3px;">الحقول</label>
-            <select class="form-select " id="select_fields" name="fields[]" multiple="multiple" required>
-                {% for b in banks|iterator %}
-                    {% for f in b.data_fields|iterator %}
-                        <option value="{{f.id}}" data-icon="{{b.icon_class}}">{{b.arabic_name}}.{{f.arabic_name}}</option>
-                    {% endfor %}
-                {% endfor %}
-                {% for r in relations|iterator %}
-                    {% for f in r.data_fields|iterator %}
-                        <option value="{{f.id}}" data-icon="bi-diagram-3-fill">{{r.arabic_name}}.{{f.arabic_name}}</option>
-                    {% endfor %}
+            <label class="col-12" style="margin-bottom: 3px;">اسم المستخدم</label>
+            <input type="text" name="username" maxlength="70" autocomplete="off" class="form-control" required id="id_username" value="{{entity.username}}">
+        </div>
+
+        <div class="form-group col-12" style="margin-top: 10px;">
+            <label class="col-12" style="margin-bottom: 3px;">كلمة المرور</label>
+            <input type="password" name="password" maxlength="250" autocomplete="new-password" class="form-control" required id="id_password" value="{{entity.password}}">
+        </div>
+
+        <div class="form-group col-12" style="margin-top: 10px;">
+            <label class="col-12" style="margin-bottom: 3px;">المستخدمين المسموح بهم</label>
+            <select class="form-select " id="select_allowed_users" name="allowed_users[]" multiple="multiple">
+                {% for u in users|iterator %}
+                    <option value="{{u.id}}" data-icon="bi-person-fill">{{u.first_name}}.{{u.username}}</option>
                 {% endfor %}
             </select>
         </div>
@@ -61,14 +66,14 @@
         function format(value) {
             if (!value.id) { return value.text; }
             var icon_class = '';
-            $('#select_fields option').each(function(){
+            $('#select_allowed_users option').each(function(){
                 if($(this).text() == value.text){
                     icon_class = $(this).attr('data-icon')
                     return false;
                 }
             });
-            var text = value.text.split('.')
-            return '<i class="' + icon_class + '" style="font-size: 14px; padding-left: 10px; padding-right:5px;"></i><strong style="color:#0088ff">' + text[0] + '</strong>.'+ text[1];
+            
+            return '<i class="' + icon_class + '" style="font-size: 14px; padding-left: 10px; padding-right:5px;"></i>' + value.text;
         } 
 
         function hideSelected(value) {
@@ -78,7 +83,7 @@
         }
 
         $(document).ready(function() {
-            $('#select_fields').select2({
+            $('#select_allowed_users').select2({
                 formatResult: format,
                 formatSelection: format,
                 templateResult: hideSelected,
@@ -86,8 +91,8 @@
                 escapeMarkup: function(m) { return m; }
             });
 
-            $('#select_fields').val("{% if action|equals:'edit' %}{{entity|fetch_by_name:'data_fields'|select:'id'|array_to_string_no_brackets}}{% else %}null{% endif %}".split(','));
-            $('#select_fields').trigger('change');
+            $('#select_allowed_users').val("{% if action|equals:'edit' %}{{entity|fetch_by_name:'allowed_users'|select:'id'|array_to_string_no_brackets}}{% else %}null{% endif %}".split(','));
+            $('#select_allowed_users').trigger('change');
 
         });
 
@@ -100,18 +105,20 @@
             showOverlay();
 
             $.ajax({
-                url : "/views/", // the endpoint
+                url : "/databases/", // the endpoint
                 type : "POST", // http method
                 data : { 
                     csrfmiddlewaretoken: '{{ csrf_token }}',
                     action: '{{action}}',
                     english_name : $('#id_english_name').val(),
                     arabic_name : $('#id_arabic_name').val(),
-                    compressed : $('#select-compressed').val(),
-                    data_fields :  $('#select_fields').val().toString()
+                    host : $('#id_host').val(),
+                    username : $('#id_username').val(),
+                    password : $('#id_password').val(),
+                    allowed_users :  $('#select_allowed_users').val().toString()
                 }, // data sent with the post request
 
-                success : get_ajax_success_function('{{action}}', "/views"),
+                success : get_ajax_success_function('{{action}}', "/databases"),
 
                 error : get_ajax_error_function()
             });

@@ -10,20 +10,25 @@ from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.views import View 
-from . import models
-from . import views
 
-@method_decorator(login_required, name='dispatch')
-class MasterEditView(View):
+from datacoreapp import master_view 
+from datacoreapp import models
+from datacoreapp import views
+
+class MasterEntityView(master_view.MasterView):
     model = None
     form = None
-    english_name = ''
-    param_name = ''
     
     def get(self, request):
-        context = views.get_context()
+        context = views.get_context(request)
+
+        master_check_result = super().master_check(self.model(), context, request)
+        if master_check_result:
+            return render(request, master_check_result, context)
+
         page = next((p for p in context['pages'] if p.english_name == self.english_name), None)
         page.selected = True
+        context['title'] = page.arabic_name
         en = request.GET.get('en')
         action = request.GET.get('action')
         result = render(request, '404.html', context)
@@ -31,9 +36,12 @@ class MasterEditView(View):
             entity = self.model()
             context['entity'] = entity
             context['action'] = 'add'
+            context['subtitle'] = 'جديد'
             context['arabic_action'] = 'إضافة'
-            self.before_render(context)
-            result = render(request, self.param_name + '_edit.html', context)
+            brr = self.before_render(context, request)
+            if brr:
+                return brr
+            result = render(request, self.template_name + '_edit.html', context)
         elif en and len(en) > 0:
             child = next((c for c in page.childs if c.english_name == en), None)
             entity = self.model.objects.filter(english_name = en).first()
@@ -41,18 +49,25 @@ class MasterEditView(View):
                 child.selected = True
                 context['entity'] = entity
                 context['action'] = 'edit'
+                context['subtitle'] = entity.arabic_name
                 context['arabic_action'] = 'تعديل'
-                self.before_render(context)
-                result = render(request, self.param_name + '_edit.html', context)
+                brr = self.before_render(context, request)
+                if brr:
+                    return brr
+                result = render(request, self.template_name + '_edit.html', context)
         else:
-            context[self.param_name + "s"] = self.model.objects.all().iterator()
-            result = render(request, self.param_name + 's.html', context)
+            if self.model == models.Database:
+                context[self.template_name + "s"] = self.model.objects.all().iterator()
+            else:
+                context[self.template_name + "s"] = self.model.objects.filter(database__english_name=request.user.current_database_name).iterator()
+            context['subtitle'] = None
+            result = render(request, self.template_name + 's.html', context)
         
         page.validate()
         return result
     
-    def before_render(self, context):
-        return
+    def before_render(self, context, request):
+        pass
 
     def put(self, request):
         return HttpResponse(

@@ -63,10 +63,10 @@ function get_ajax_success_function(action, url, success_function) {
 
     if(json['code'] == '0'){
         if (typeof action !== 'undefined' && typeof url !== 'undefined'){
-          if(action=='add'){
+          if(action=='add' || 'edit'){
               setTimeout(function() {
                   document.location.href = url;
-              }, 2000);
+              }, 1500);
           }else{
               $('#btn-submit').prop('disabled', false);
           }

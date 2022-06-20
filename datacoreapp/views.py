@@ -1,7 +1,7 @@
 import imp
 from django import template
 from django.http import HttpResponse
-from . import models
+from datacoreapp import models
 from django.http import *
 from django.template import RequestContext
 
@@ -17,6 +17,7 @@ class Page():
 	template = ''
 	childs = []
 	selected_child = None
+	disabled = False
 
 	def __init__(self, en, ar, ico, sel, temp, ch):
 		self.english_name = en
@@ -29,34 +30,61 @@ class Page():
 	def validate(self):
 		self.selected_child = next((x for x in self.childs if x.selected == True), None)
 
-def build_dom():
+def build_dom(request):
 	home_page = Page('Home', 'الرئيسيّة', 'bi-house-heart-fill', False, 'home', None)
+	databases_page = Page('Databases', 'قواعد البيانات', 'fa-solid fa-database', False, 'databases', [])
 	banks_page = Page('Banks', 'بنوك المعلومات', 'bi-hdd-stack-fill', False, 'banks', [])
 	relations_page = Page('Relations', 'العلاقات', 'bi-diagram-3-fill', False, 'relations', [])
 	import_page = Page('Import', 'استيراد البيانات', 'bi-file-earmark-arrow-down-fill', False, 'import', None)
 	views_page = Page('Views', 'ملفّات محرّك البحث', 'bi-book-half', False, 'views', [])
 	search_engine_page = Page('SearchEngine', 'محرّك البحث', 'bi-search', False, 'search_engine', None)
 	advanced_search_page = Page('AdvancedSearch', 'بحث متقدّم', 'bi-binoculars-fill', False, 'advanced_search', None)
-	graph_search_page = Page('GraphSearch', 'بحث في العلاقات', 'bi-bezier2', False, 'graph_search', None)
 	users_page = Page('Users', 'المستخدمين', 'bi-people-fill', False, 'admin', None)
 	settings_page = Page('Settings', 'الإعدادات', 'bi-gear-fill', False, 'settings', None)
 
-	banks = models.Bank.objects.all()
+	databases = []
+	for db in models.Database.objects.all().iterator():
+		if request.user.is_superuser:
+			databases.append(db)
+			databases_page.childs.append(Page(db.english_name, db.arabic_name, None, False, 'databases', None))
+		else:
+			for u in db.allowed_users.iterator():
+				if u.id == request.user.id:
+					databases.append(db)
+					databases_page.childs.append(Page(db.english_name, db.arabic_name, None, False, 'databases', None))
+					break
+
+	db = models.Database.objects.filter(english_name=request.user.current_database_name).first()
+
+	disable_edit = False
+	if len(databases) == 0 or not db:
+		disable_edit = True
+
+	banks = models.Bank.objects.filter(database__id=db.id)
 	for b in banks.iterator():
 		banks_page.childs.append(Page(b.english_name, b.arabic_name, b.icon_class, False, 'banks', None))
-	
-	relations = models.Relation.objects.all()
+	banks_page.disabled = disable_edit
+
+	relations = models.Relation.objects.filter(database__id=db.id)
 	for r in relations.iterator():
 		relations_page.childs.append(Page(r.english_name, r.arabic_name, None, False, 'relations', None))
-	
-	views = models.View.objects.all()
+	relations_page.disabled = disable_edit
+
+	views = models.View.objects.filter(database__id=db.id)
 	for v in views.iterator():
 		views_page.childs.append(Page(v.english_name, v.arabic_name, None, False, 'views', None))
-	
-	context['pages'] = [home_page, banks_page, relations_page, import_page, views_page, search_engine_page, advanced_search_page, graph_search_page, users_page, settings_page]
+	views_page.disabled = disable_edit
 
-def get_context():
-	build_dom()
+	home_page.disabled = disable_edit
+	import_page.disabled = disable_edit
+	search_engine_page.disabled = disable_edit
+	advanced_search_page.disabled = disable_edit
+	settings_page.disabled = (len(databases) == 0)
+
+	context['pages'] = [home_page, databases_page, banks_page, relations_page, import_page, views_page, search_engine_page, advanced_search_page, users_page, settings_page]
+
+def get_context(request):
+	build_dom(request)
 	return context
 
 def get_icons_list():
