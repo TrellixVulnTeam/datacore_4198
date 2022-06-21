@@ -1,7 +1,7 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
 from django.urls import reverse_lazy
-from datacoreapp import views
+from datacoreapp import error_view, users_view, views
 from datacoreapp import home_view
 from datacoreapp import advanced_search_view
 from datacoreapp import banks_view
@@ -32,6 +32,8 @@ urlpatterns = [
 	path('search_engine/', search_engine_view.SearchEngineView.as_view(), name='search_engine'),
 	path('settings/', settings_view.SettingsView.as_view(), name='settings'),
 	path('views/', views_view.ViewsView.as_view(), name='views'),
+	path('users/', users_view.UsersView.as_view(), name='users'),
+	path('error/', error_view.ErrorView.as_view(), name='error'),
 ]
 
 def onStartup():
@@ -39,8 +41,10 @@ def onStartup():
 		user=models.User.objects.create_user('admin', password='admin')
 		user.is_superuser=True
 		user.is_staff=True
+		user.english_name='admin'
 		user.email = 'admin@users.com'
 		user.first_name = 'المدير'
+		user.arabic_name = 'المدير'
 		user.save()
 
 onStartup()

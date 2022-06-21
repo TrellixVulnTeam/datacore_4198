@@ -1,4 +1,5 @@
 $(document).ready(function() {
+  //handle form submition validation
   $('#btn-submit').click(function(e) { 
     var form = document.getElementById('myform')
     if (!form.checkValidity()) {
@@ -10,6 +11,15 @@ $(document).ready(function() {
     }
     return true
   })
+
+  //watch card adding or removal
+  $(".cards-container").arrive(".card", function() {
+    $(".no-cards-label").addClass('hidden');
+  });
+  $(".cards-container").leave(".card", function() {
+    if($(".cards-container card").length==0)
+      $(".no-cards-label").removeClass('hidden');
+  });
 })
 
 function validate_en(evt) {

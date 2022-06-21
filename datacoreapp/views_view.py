@@ -16,9 +16,6 @@ class ViewsView(master_entity_view.MasterEntityView):
 
     def before_render(self, context, request):
         db = models.Database.objects.filter(english_name=request.user.current_database_name).first()
-        if not db:
-            return('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة')
-            
         context['banks'] = models.Bank.objects.filter(database__id=db.id)
         context['relations'] = models.Relation.objects.filter(database__id=db.id)
 
@@ -42,6 +39,7 @@ class ViewsView(master_entity_view.MasterEntityView):
         view.english_name = data['english_name']
         view.arabic_name = data['arabic_name']
         view.compressed = str2bool(data['compressed'])
+        view.database = db  
         #add arango view here#
 
         #--------------------#

@@ -73,16 +73,18 @@
                                         {% else %}
                                             <li><a class="dropdown-item" href="{% url p.template %}"><span class="bi-caret-left pl10 {{ p.disabled|if_else:'disabled,' }}"></span>الجميع</a></li>
                                         {% endif %}
-                                        {% for c in p.childs %}
-                                            <li><a id="navitem-{{c.english_name}}" class="dropdown-item {{ c.selected|if_else:'selected,' }} {{ p.disabled|if_else:'disabled,' }}" href="{% url p.template %}?en={{c.english_name}}">
-                                                {% if c.icon and c.icon.strip %}
-                                                    <span class="{{c.icon}} pl10"></span>
-                                                {% else %}
-                                                    <span class="bi-caret-left pl10"></span>
-                                                {% endif %}
-                                                {{c.arabic_name}}
-                                            </a></li>
-                                        {% endfor %}
+                                        {% if not p.disabled %}
+                                            {% for c in p.childs %}
+                                                <li><a id="navitem-{{c.english_name}}" class="dropdown-item {{ c.selected|if_else:'selected,' }} {{ p.disabled|if_else:'disabled,' }} ellipsis" style="max-width: 225px;" href="{% url p.template %}?en={{c.english_name}}">
+                                                    {% if c.icon and c.icon.strip %}
+                                                        <span class="{{c.icon}} pl10"></span>
+                                                    {% else %}
+                                                        <span class="bi-caret-left pl10"></span>
+                                                    {% endif %}
+                                                    {{c.arabic_name}}
+                                                </a></li>
+                                            {% endfor %}
+                                        {% endif %}
                                     </ul>
                                 </li>
                             {% endif %}
@@ -97,7 +99,7 @@
                     {% csrf_token %}
                     <div style="position: absolute; inset: 0px; overflow: hidden; pointer-events: none; visibility: hidden; z-index: -1;" class="chartjs-size-monitor"><div class="chartjs-size-monitor-expand" style="position:absolute;left:0;top:0;right:0;bottom:0;overflow:hidden;pointer-events:none;visibility:hidden;z-index:-1;"><div style="position:absolute;width:1000000px;height:1000000px;left:0;top:0"></div></div><div class="chartjs-size-monitor-shrink" style="position:absolute;left:0;top:0;right:0;bottom:0;overflow:hidden;pointer-events:none;visibility:hidden;z-index:-1;"><div style="position:absolute;width:200%;height:200%;left:0; top:0"></div></div></div>
                     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                        <h1 class="h2">
+                        <h1 class="h2 ellipsis" style="max-width: 800px;">
                             {{title}}  {% if subtitle %}- {{subtitle}}{% endif %}
                         </h1>
                         {% block header_left %}
@@ -138,6 +140,7 @@
     
     <script src="{% static 'js/jquery.min.js' %}" type="text/javascript"></script>
     <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}" type="text/javascript"></script>
+    <script src="{% static 'js/arrive.min.js' %}" type="text/javascript"></script>
     <script src="{% static 'js/general.js' %}" type="text/javascript"></script>
     <script>
         $('#myform').on('submit', function(event){

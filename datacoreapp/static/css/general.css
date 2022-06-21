@@ -11,6 +11,20 @@ body {
     box-shadow: none !important;
 }
 
+.hidden{
+    display: none !important;
+}
+
+.ellipsis{
+    text-overflow: ellipsis !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+}
+
+.ltr{
+    direction: ltr  !important;
+}
+
 a.disabled {
     pointer-events: none;
     cursor: default;
@@ -59,14 +73,18 @@ ul .flex-column{
 }
 
 .selectable-card:hover{
-    background-color: #99cdff;
+    background-color: #d9f5ff;
 }
 
-.ellipsis{
+.selectable-card{
+    background-color: #f8f9fa;
+}
+
+.ellipsis-multiline{
     display: -webkit-box;
     max-width: 100%;
     margin: 0 auto;
-    -webkit-line-clamp: 4;
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -76,10 +94,14 @@ ul .flex-column{
     text-decoration: none !important;
     z-index: 1; 
     color: red;
+    padding: 3px;
 }
 
 .card-delete:hover{
-    color: white;
+    background-color: #f8f9fa;
+    border: 1px solid #dfdfdf;
+    border-radius: 5px;
+    color: red;
 }
 
 .card-action {

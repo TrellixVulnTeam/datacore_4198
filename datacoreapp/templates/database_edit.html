@@ -44,7 +44,7 @@
             <label class="col-12" style="margin-bottom: 3px;">المستخدمين المسموح بهم</label>
             <select class="form-select " id="select_allowed_users" name="allowed_users[]" multiple="multiple">
                 {% for u in users|iterator %}
-                    <option value="{{u.id}}" data-icon="bi-person-fill">{{u.first_name}}.{{u.username}}</option>
+                    <option value="{{u.id}}" data-icon="bi-person-fill">{{u.arabic_name}}.{{u.english_name}}</option>
                 {% endfor %}
             </select>
         </div>
@@ -91,7 +91,7 @@
                 escapeMarkup: function(m) { return m; }
             });
 
-            $('#select_allowed_users').val("{% if action|equals:'edit' %}{{entity|fetch_by_name:'allowed_users'|select:'id'|array_to_string_no_brackets}}{% else %}null{% endif %}".split(','));
+            $('#select_allowed_users').val("{% if action|equals:'edit' %}{{entity|fetch_by_name:'allowed_users'|iterator|select:'id'|array_to_string_no_brackets}}{% else %}null{% endif %}".split(','));
             $('#select_allowed_users').trigger('change');
 
         });

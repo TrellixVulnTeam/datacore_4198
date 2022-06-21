@@ -6,7 +6,10 @@ from django.contrib.auth.models import AbstractUser
 
 
 class User(AbstractUser):
+    english_name = models.CharField(max_length=70)
+    arabic_name = models.CharField(max_length=70)
     current_database_name = models.CharField(max_length=70, blank=True, null=True)
+    user_permissions =  models.CharField(max_length=500, blank=True, null=True)
 
 class Database(models.Model):
     english_name = models.CharField(max_length=70)
@@ -45,10 +48,10 @@ class Bank(models.Model):
     english_name = models.CharField(max_length=70)
     arabic_name = models.CharField(max_length=70)
     icon_class = models.CharField(max_length=70, blank=True, null=True)
-    description = models.CharField(max_length=250, blank=True, null=True)
+    description = models.CharField(max_length=250, blank=True, null=True, default='')
     data_fields = GenericRelation(DataField)
     replication_factor = models.IntegerField(default=1)
-    database = models.ForeignKey(Database, on_delete=models.CASCADE, blank=True, null=True)
+    database = models.ForeignKey(Database, on_delete=models.CASCADE, related_name='bank_database')
 
     def toJSON(self):
         return json.dumps(self, default=lambda o: o.__dict__, 
@@ -60,7 +63,7 @@ class Relation(models.Model):
     from_bank = models.ForeignKey(Bank, on_delete=models.CASCADE, related_name='fromBank')
     to_bank = models.ForeignKey(Bank, on_delete=models.CASCADE, related_name='toBank')
     data_fields = GenericRelation(DataField)
-    database = models.ForeignKey(Database, on_delete=models.CASCADE, blank=True, null=True)
+    database = models.ForeignKey(Database, on_delete=models.CASCADE, related_name='relation_database')
 
     def toJSON(self):
         return json.dumps(self, default=lambda o: o.__dict__, 
@@ -71,7 +74,7 @@ class View(models.Model):
     arabic_name = models.CharField(max_length=70)
     compressed = models.BooleanField(default=False)
     data_fields = models.ManyToManyField(DataField)
-    database = models.ForeignKey(Database, on_delete=models.CASCADE, blank=True, null=True)
+    database = models.ForeignKey(Database, on_delete=models.CASCADE, related_name='view_database')
 
     def toJSON(self):
         return json.dumps(self, default=lambda o: o.__dict__, 

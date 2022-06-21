@@ -1,7 +1,7 @@
 import json
 import logging
 import traceback
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.http import HttpResponse
 
 from django.template import RequestContext
@@ -21,13 +21,19 @@ class MasterPageView(master_view.MasterView):
         self.before_render(context, request)
 
         master_check_result = super().master_check(None, context, request)
-        if master_check_result:
-            return render(request, master_check_result, context)
+        if master_check_result and not master_check_result.startswith(request.path):
+            return redirect(master_check_result)
 
-        page = next((p for p in context['pages'] if p.english_name == self.english_name), None)
-        page.selected = True
-        context['title'] = page.arabic_name
-        context['subtitle'] = None
+        if not self.template_name == 'error':
+            page = next((p for p in context['pages'] if p.english_name == self.english_name), None)
+            page.selected = True
+            context['title'] = page.arabic_name
+            context['subtitle'] = None
+        else:
+            context['title'] = 'خطأ'
+            context['code'] = request.GET.get('code')
+            context['cause'] = request.GET.get('cause')
+
         return render(request, self.template_name + '.html', context)
     
     def before_render(self, context, request):

@@ -15,9 +15,6 @@ class RelationsView(master_entity_view.MasterEntityView):
 
     def before_render(self, context, request):
         db = models.Database.objects.filter(english_name=request.user.current_database_name).first()
-        if not db:
-            return('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة')
-            
         context['banks'] = models.Bank.objects.filter(database__id=db.id)
 
     def add(self, data, request):
@@ -62,6 +59,7 @@ class RelationsView(master_entity_view.MasterEntityView):
         relation.arabic_name = data['arabic_name']
         relation.from_bank = from_bank
         relation.to_bank = to_bank
+        relation.database = db  
         #add arango edge here#
 
         #--------------------#

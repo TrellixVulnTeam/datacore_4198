@@ -8,10 +8,6 @@ from datacoreapp import views
 class SearchEngineView(master_page_view.MasterPageView):
     english_name = 'SearchEngine'
     template_name = 'search_engine'
-    def get(self, request):
-        context = views.get_context(request)
-        page = next((p for p in context['pages'] if p.english_name == 'SearchEngine'), None)
-        page.selected = True
-        searchviews = models.View.objects.all()
-        context['searchviews'] = searchviews.iterator()
-        return render(request, 'search_engine.html', context)
+
+    def before_render(self, context, request):
+        context['searchviews'] = models.View.objects.all().iterator()

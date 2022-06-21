@@ -1,13 +1,7 @@
-from django.shortcuts import render
-from django.http import HttpResponse
-
-from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.views import View 
 from datacoreapp import models
-from datacoreapp import views
-from datacoreapp import master_page_view
 
 @method_decorator(login_required, name='dispatch')
 class MasterView(View):
@@ -15,7 +9,11 @@ class MasterView(View):
     template_name = ''
 
     def master_check(self, entity, context, request):
-        if models.Database.objects.count() == 0:
+        if not request.user.is_superuser:
+            if not request.user.user_permissions or request.path.split('/')[1] not in request.user.user_permissions.split(','):
+                return '/error/?code=403&cause=%D9%84%D9%8A%D8%B3%20%D9%84%D8%AF%D9%8A%D9%83%20%D8%B5%D9%84%D8%A7%D8%AD%D9%8A%D9%91%D8%A9%20%D9%84%D9%84%D9%85%D8%AA%D8%A7%D8%A8%D8%B9%D8%A9'
+
+        if models.Database.objects.count() == 0 and not request.path.startswith('/users'):
             context['entity'] = entity
             context['action'] = 'add'
             context['subtitle'] = 'جديد'
@@ -23,8 +21,8 @@ class MasterView(View):
             page = next((p for p in context['pages'] if p.english_name == 'Databases'), None)
             page.selected = True
             context['title'] = page.arabic_name
-            return 'database_edit.html'
-        if self.template_name != 'database':
+            return '/databases/?action=add'
+        if self.template_name != 'database' and not request.path.startswith('/users'):
             if models.Database.objects.filter(english_name=request.user.current_database_name).count() == 0:
                 request.user.current_database_name = None
                 currentuser = models.User.objects.filter(id=request.user.id).first()
@@ -34,5 +32,5 @@ class MasterView(View):
                 page.selected = True
                 context['title'] = page.arabic_name
                 context['subtitle'] = None
-                return 'settings.html'
+                return '/settings/'
         return None

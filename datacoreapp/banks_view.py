@@ -54,7 +54,7 @@ class BanksView(master_entity_view.MasterEntityView):
         bank.replication_factor = int(data['replication_factor'])
         bank.description = data['description']
         bank.icon_class = data["icon_class"]    
-        bank.databse = db    
+        bank.database = db    
         #add arango bank here#
 
         #--------------------#

@@ -54,8 +54,8 @@
                             <th scope="col">نوع الحقل</th>
                             <th scope="col">مفهرس؟</th>
                         </tr>
-                        {% if action and action == "edit" and entity and entity.data_fields|fetch_all_not_empty %}
-                            {% for field in entity.data_fields|fetch_all %}
+                        {% if action and action == "edit" and entity and entity.data_fields|count %}
+                            {% for field in entity.data_fields|fetch_all|iterator %}
                                 <tr>
                                     <td>
                                         <input type="checkbox" name="chk" class="form-check"/>

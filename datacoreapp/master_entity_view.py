@@ -3,7 +3,7 @@ import logging
 from tokenize import String
 import traceback
 from django.forms import Form
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.http import HttpResponseNotFound
 from django.template import RequestContext
@@ -23,24 +23,22 @@ class MasterEntityView(master_view.MasterView):
         context = views.get_context(request)
 
         master_check_result = super().master_check(self.model(), context, request)
-        if master_check_result:
-            return render(request, master_check_result, context)
+        if master_check_result and not master_check_result.startswith(request.path):
+            return redirect(master_check_result)
 
         page = next((p for p in context['pages'] if p.english_name == self.english_name), None)
         page.selected = True
         context['title'] = page.arabic_name
         en = request.GET.get('en')
         action = request.GET.get('action')
-        result = render(request, '404.html', context)
+        result = redirect('/error/?code=404&cause=%D8%A7%D9%84%D8%B5%D9%81%D8%AD%D8%A9%20%D8%A7%D9%84%D9%85%D8%B7%D9%84%D9%88%D8%A8%D8%A9%20%D8%BA%D9%8A%D8%B1%20%D9%85%D9%88%D8%AC%D9%88%D8%AF%D8%A9')
         if action and action == 'add' and not en:
             entity = self.model()
             context['entity'] = entity
             context['action'] = 'add'
             context['subtitle'] = 'جديد'
             context['arabic_action'] = 'إضافة'
-            brr = self.before_render(context, request)
-            if brr:
-                return brr
+            self.before_render(context, request)
             result = render(request, self.template_name + '_edit.html', context)
         elif en and len(en) > 0:
             child = next((c for c in page.childs if c.english_name == en), None)
@@ -51,15 +49,13 @@ class MasterEntityView(master_view.MasterView):
                 context['action'] = 'edit'
                 context['subtitle'] = entity.arabic_name
                 context['arabic_action'] = 'تعديل'
-                brr = self.before_render(context, request)
-                if brr:
-                    return brr
+                self.before_render(context, request)
                 result = render(request, self.template_name + '_edit.html', context)
         else:
-            if self.model == models.Database:
-                context[self.template_name + "s"] = self.model.objects.all().iterator()
+            if self.model == models.Database or self.model == models.User:
+                context[self.template_name + "s"] = self.model.objects.all()
             else:
-                context[self.template_name + "s"] = self.model.objects.filter(database__english_name=request.user.current_database_name).iterator()
+                context[self.template_name + "s"] = self.model.objects.filter(database__english_name=request.user.current_database_name)
             context['subtitle'] = None
             result = render(request, self.template_name + 's.html', context)
         
@@ -110,7 +106,7 @@ class MasterEntityView(master_view.MasterView):
             logging.error(traceback.format_exc())
             code = '1'
             return HttpResponse(
-                json.dumps({"code":  code , "message": traceback.format_exc() }),
+                json.dumps({"code":  code , "message": str(e.__cause__) }),
                 content_type="application/json"
             )
 
