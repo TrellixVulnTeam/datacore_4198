@@ -27,16 +27,16 @@
 <body>
     <nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow" style="z-index: unset;">
         <a class="navbar-brand col-sm-3 col-md-2 mr-0" style="font-family: cairo;padding-right: 16px;" href="{% url 'home'%}">
-            <img src="{% static 'icons/favicon.ico' %}" style="margin-left: 16px; width: 24px; height: 24px;"></span>الهادي
+            <img src="{% static 'icons/favicon.ico' %}" style="margin-left: 16px; width: 24px; height: 24px;"></span>الهادي<span style="font-size: 10px;padding-right: 10px;"> {{version}}</span>
         </a>
         <ul class="navbar-nav px-3">
             <li class="nav-item text-nowrap">
                 <div class="dropdown">
                     <a class="nav-link dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
-                        <span class="bi-person-fill pl10"></span>المستخدم: {{user}}
+                        <span class="bi-person-fill pl10"></span>المستخدم: {{user.arabic_name}} ({{user}})
                     </a>
                     <ul class="dropdown-menu user-action-panel" aria-labelledby="dropdownMenuLink">
-                        <li><a class="dropdown-item" href="{% url 'password_change' %}" style="color: #dbd6d6;"><span class="bi-key pl10"></span>تغيير كلمة المرور</a></li>
+                        <li><a class="dropdown-item" role="button" style="color: #dbd6d6;" onclick="show_change_password_dialog()"><span class="bi-key pl10"></span>تغيير كلمة المرور</a></li>
                         <li><a class="dropdown-item" href="{% url 'logout' %}" style="color: #ff8888"><span class="bi-power pl10"></span>تسجيل خروج</a></li>
                     </ul>
                   </div>
@@ -75,7 +75,7 @@
                                         {% endif %}
                                         {% if not p.disabled %}
                                             {% for c in p.childs %}
-                                                <li><a id="navitem-{{c.english_name}}" class="dropdown-item {{ c.selected|if_else:'selected,' }} {{ p.disabled|if_else:'disabled,' }} ellipsis" style="max-width: 225px;" href="{% url p.template %}?en={{c.english_name}}">
+                                                <li><a id="navitem-{{p.template}}-{{c.english_name}}" class="dropdown-item {{ c.selected|if_else:'selected,' }} {{ p.disabled|if_else:'disabled,' }} ellipsis" style="max-width: 225px;" href="{% url p.template %}?en={{c.english_name}}">
                                                     {% if c.icon and c.icon.strip %}
                                                         <span class="{{c.icon}} pl10"></span>
                                                     {% else %}
@@ -99,7 +99,7 @@
                     {% csrf_token %}
                     <div style="position: absolute; inset: 0px; overflow: hidden; pointer-events: none; visibility: hidden; z-index: -1;" class="chartjs-size-monitor"><div class="chartjs-size-monitor-expand" style="position:absolute;left:0;top:0;right:0;bottom:0;overflow:hidden;pointer-events:none;visibility:hidden;z-index:-1;"><div style="position:absolute;width:1000000px;height:1000000px;left:0;top:0"></div></div><div class="chartjs-size-monitor-shrink" style="position:absolute;left:0;top:0;right:0;bottom:0;overflow:hidden;pointer-events:none;visibility:hidden;z-index:-1;"><div style="position:absolute;width:200%;height:200%;left:0; top:0"></div></div></div>
                     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                        <h1 class="h2 ellipsis" style="max-width: 800px;">
+                        <h1 class="h3 ellipsis" style="max-width: 800px;line-height: 1.5">
                             {{title}}  {% if subtitle %}- {{subtitle}}{% endif %}
                         </h1>
                         {% block header_left %}
@@ -135,6 +135,32 @@
     <div id="overlay">
         <div class="w-100 d-flex justify-content-center align-items-center">
           <div class="spinner"></div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="changePassModal" tabindex="-1" role="dialog" aria-labelledby="changePassModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title" id="changePassModalCenterTitle"><span class="bi-key-fill pl10"></span>تغيير كلمة المرور</h5>
+            </div>
+            <div class="modal-body">
+                <p id="change_pass_error_label" style="color: red;"></p>
+                <div class="form-group col-12" style="margin-top: 10px;">
+                    <label class="col-12" style="margin-bottom: 3px;">كلمة المرور</label>
+                    <input type="password" name="new_password" maxlength="250" autocomplete="new-password" class="form-control" required id="id_new_password">
+                </div>
+                <div class="form-group col-12" style="margin-top: 10px;">
+                    <label class="col-12" style="margin-bottom: 3px;">تأكيد كلمة المرور</label>
+                    <input type="password" name="confirm_password" maxlength="250" autocomplete="new-password" class="form-control" required id="id_confirm_password">
+                </div>
+            </div>
+            <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">كلا</button>
+            <button id="button-confirm-delete" type="button" class="btn btn-primary" onclick="change_password('{{ csrf_token }}',null)">نعم</button>
+            </div>
+        </div>
         </div>
     </div>
     

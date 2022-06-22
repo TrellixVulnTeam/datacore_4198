@@ -11,6 +11,7 @@ from django.views import View
 from django.core import serializers
 from datacoreapp import views
 from django.db.models import Q
+from datacoreapp.arango_agent import ArangoAgent
 from datacoreapp.templatetags.datacore_tags import str2bool
 from datacoreapp import models
 from datacoreapp import master_entity_view
@@ -56,7 +57,7 @@ class BanksView(master_entity_view.MasterEntityView):
         bank.icon_class = data["icon_class"]    
         bank.database = db    
         #add arango bank here#
-
+        ArangoAgent(db.english_name).create_collection(bank.english_name)
         #--------------------#
         bank.save()
 
@@ -153,6 +154,8 @@ class BanksView(master_entity_view.MasterEntityView):
         oldEntity = self.model.objects.filter(english_name = data['entityid'], database__id=db.id).first()
         if not oldEntity:
             return('1', 'لا يوجد بنك بنفس الاسم')
+
+        ArangoAgent(db.english_name).delete_collection(oldEntity.english_name)
         oldEntity.delete()
 
         return ('0','تمّت العمليّة بنجاح')

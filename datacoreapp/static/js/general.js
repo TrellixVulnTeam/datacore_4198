@@ -17,8 +17,9 @@ $(document).ready(function() {
     $(".no-cards-label").addClass('hidden');
   });
   $(".cards-container").leave(".card", function() {
-    if($(".cards-container card").length==0)
+    if($(".cards-container").children().length==0){
       $(".no-cards-label").removeClass('hidden');
+    }
   });
 })
 
@@ -112,9 +113,7 @@ function get_ajax_error_function() {
   // handle a non-successful response
   return function(xhr,errmsg,err) {
       hideOverlay();
-      document.getElementsByClassName('toast-body')[0].innerHTML = err;
-      const toast = new bootstrap.Toast(document.getElementById('liveToast'));
-      toast.show()
+      showError(err);
       console.log(xhr.status + ": " + xhr.responseText); 
       $('#btn-submit').prop('disabled', false);
   }
@@ -132,6 +131,18 @@ function delete_confirmed(url, csrf_token, e){
   delete_entity(url,csrf_token,entityid)
 }
 
+function update_button_reset_password(e){
+  var button = $(e.delegateTarget)
+  var entityid = button.attr('data-entityid')
+  $('#button-confirm-reset').attr('data-entityid',entityid)
+}
+
+function reset_confirmed(csrf_token, e){
+  var button = $(e.target)
+  var entityid = button.attr('data-entityid')
+  change_password(csrf_token,entityid)
+}
+
 // AJAX for posting
 function delete_entity(url, csrf_token, entityid) {
   showOverlay();
@@ -146,9 +157,52 @@ function delete_entity(url, csrf_token, entityid) {
 
       success : get_ajax_success_function(undefined,undefined,function(){
         document.getElementById('card-' + entityid).remove();
-        document.getElementById('navitem-' + entityid).remove();
+        document.getElementById('navitem-' + url.split('/')[1] + '-' + entityid).remove();
+        if(url == '/databases/' && $(".cards-container").children().length==0){
+            setTimeout(function() {
+              document.location.href = url;
+            }, 1000);
+        }
       }),
 
       error : get_ajax_error_function()
+  });
+};
+
+function show_change_password_dialog() {
+  $('#change_pass_error_label')[0].innerText = null;
+  $('#id_new_password').val(null)
+  $('#id_confirm_password').val(null)
+  $('#changePassModal').modal('show')
+}
+
+function change_password(csrf_token, userid) {
+  showOverlay();
+  $.ajax({
+      url : '/', // the endpoint
+      type : "POST", // http method
+      data : { 
+          csrfmiddlewaretoken: csrf_token,
+          action: 'change_password',
+          userid: userid,
+          new_password : ((userid == null) ? $('#id_new_password').val() : '123456789'),
+          confirm_password: ((userid == null) ? $('#id_confirm_password').val() : '123456789')
+      }, // data sent with the post request
+
+      success : function(json) {
+        hideOverlay();
+        if(json['code'] == '0'){
+            $('#changePassModal').modal('hide')
+            showSuccess(json['message']);
+        }else{
+            $('#change_pass_error_label')[0].innerText = json['message'];
+            showError(json['message']);
+        }
+      },
+      error :  function(xhr,errmsg,err) {
+        hideOverlay();
+        showError(err);
+        console.log(xhr.status + ": " + xhr.responseText); 
+      }
   });
 };

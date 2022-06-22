@@ -4,7 +4,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
-
 class User(AbstractUser):
     english_name = models.CharField(max_length=70)
     arabic_name = models.CharField(max_length=70)
@@ -14,9 +13,6 @@ class User(AbstractUser):
 class Database(models.Model):
     english_name = models.CharField(max_length=70)
     arabic_name = models.CharField(max_length=70)
-    host = models.CharField(max_length=250)
-    username = models.CharField(max_length=70)
-    password = models.CharField(max_length=250)
     allowed_users = models.ManyToManyField(User)
 
 class DataField(models.Model):

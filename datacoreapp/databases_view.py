@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.views import View
+from datacoreapp.arango_agent import ArangoAgent
 
 from datacoreapp.templatetags.datacore_tags import str2bool 
 from . import models
@@ -19,7 +20,7 @@ class DatabasesView(master_entity_view.MasterEntityView):
         context['has_databases'] = (models.Database.objects.count() > 0)
 
     def add(self, data, request):
-        if not data['english_name'] or not data['arabic_name'] or not data['host'] or not data['username'] or not data['password']:
+        if not data['english_name'] or not data['arabic_name']:
             return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
 
         oldEntity = self.model.objects.filter(Q(english_name = data['english_name']) | Q(arabic_name = data['arabic_name'])).first()
@@ -30,12 +31,9 @@ class DatabasesView(master_entity_view.MasterEntityView):
         db = models.Database()
         db.english_name = data['english_name']
         db.arabic_name = data['arabic_name']
-        db.host = data['host']
-        db.username = data['username']
-        db.password = data['password']
-        #add arango db here#
+        
+        ArangoAgent().create_database(db.english_name)
 
-        #--------------------#
         db.save()
         if data['allowed_users'] and len(data['allowed_users'])>0:
             for df in data["allowed_users"].split(','):
@@ -46,7 +44,7 @@ class DatabasesView(master_entity_view.MasterEntityView):
         return ('0','تمّت العمليّة بنجاح')
 
     def edit(self, data, request):
-        if not data['english_name'] or not data['arabic_name'] or not data['host'] or not data['username'] or not data['password']:
+        if not data['english_name'] or not data['arabic_name']:
             return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
         
         oldEntity = self.model.objects.filter(english_name = data['english_name']).first()
@@ -65,27 +63,22 @@ class DatabasesView(master_entity_view.MasterEntityView):
                         found = True
                         break
                 if not found:
-                    #add arango view-field here#
-
-                    #--------------------#
                     oldEntity.allowed_users.add(models.User.objects.filter(id=int(df)).first())
 
-            for vdf in oldEntity.allowed_users.iterator():
-                found = False
+        for vdf in oldEntity.allowed_users.iterator():
+            found = False
+            if data['allowed_users'] and len(data['allowed_users'])>0:
                 for df in data["allowed_users"].split(','):
                     if vdf.id == int(df):
                         found = True
                         break
-                if not found:
-                    #remove arango view-field here#
-
-                    #--------------------#
-                    oldEntity.allowed_users.remove(vdf)
+            if not found:
+                if oldEntity.english_name == vdf.current_database_name:
+                    vdf.current_database_name = ''
+                    vdf.save()
+                oldEntity.allowed_users.remove(vdf)
 
         oldEntity.arabic_name = data['arabic_name']
-        oldEntity.host = data['host']
-        oldEntity.username = data['username']
-        oldEntity.password = data['password']
         oldEntity.save()
 
         return ('0','تمّت العمليّة بنجاح')
@@ -94,6 +87,14 @@ class DatabasesView(master_entity_view.MasterEntityView):
         oldEntity = self.model.objects.filter(english_name = data['entityid']).first()
         if not oldEntity:
             return('1', 'لا يوجد قاعدة بيانات بنفس الاسم')
+
+        ArangoAgent().delete_database(oldEntity.english_name)
+
+        for user in models.User.objects.all():
+            if user.current_database_name == oldEntity.english_name:
+                user.current_database_name = ''
+                user.save()
+
         oldEntity.delete()
 
         return ('0','تمّت العمليّة بنجاح')

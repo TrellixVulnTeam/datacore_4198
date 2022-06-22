@@ -30,7 +30,8 @@
                 </span>
                 <a href="{% url 'users' %}?en={{u.english_name}}" class="stretched-link"></a>
             </div>
-            <span class="card-footer-flex">
+            <span class="card-footer-flex">                
+                <a role="button" class="card-link card-action" data-bs-toggle="modal" data-entityid="{{u.id}}" data-bs-target="#confirmResetModal" onclick="update_button_reset_password(event)"><span class="fa-solid fa-key pl10"></span>تصفير كلمة المرور</a>
                 <a role="button" class="card-link card-delete" data-bs-toggle="modal" data-entityid="{{u.english_name}}" data-bs-target="#confirmModal" onclick="update_button_delete_data(event)"><span class="bi-trash pl10"></span>حذف</a>
             </span>
         </div>
@@ -56,5 +57,23 @@
       </div>
     </div>
   </div>
- 
+
+  <!-- Modal -->
+    <div class="modal fade" id="confirmResetModal" tabindex="-1" role="dialog" aria-labelledby="confirmResetModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title" id="confirmResetModalCenterTitle"><span class="bi-exclamation-triangle-fill pl10" style="color: orange;"></span>تحذير</h5>
+            </div>
+            <div class="modal-body">
+                <h6>هل تريد تصفير كلمة المرور حقاً؟</h6>
+            </div>
+            <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">كلا</button>
+            <button id="button-confirm-reset" type="button" data-bs-dismiss="modal" data-entityid="" class="btn btn-primary" onclick="reset_confirmed('{{ csrf_token }}',event)">نعم</button>
+            </div>
+        </div>
+        </div>
+    </div>
+
 {% endblock %}

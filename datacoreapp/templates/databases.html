@@ -20,6 +20,9 @@
             <div class=".position-relative" style="margin-bottom: 20px;">
                 <span style="display: flex; flex-direction: row;">
                     <span style="font-size: 30px; margin-left: 15px;" class="fa-solid fa-database"></span>
+                    {% if user.current_database_name|equals:db.english_name %}
+                      <span style="font-size: 15px; margin-left: 15px;position: absolute;color: #ffeb00;right: 21px;top: 50px;text-shadow: 0 0 4px black;" class="bi-star-fill"></span>
+                    {% endif %}
                     <span>
                         <h5 class="card-title ellipsis" style="max-width: 230px;">{{db.arabic_name}}</h5>
                         <h6 class="card-subtitle mb-2 text-muted ellipsis" style="max-width: 230px;">{{db.english_name}}</h6>
@@ -27,7 +30,7 @@
                 </span>
                 <hr class="mt-2 mb-3"/>
                 <span style="display: flex; flex-direction: row;width: 16rem; flex-wrap: wrap;">
-                    <p class="ellipsis ltr">{{db.host}}</p>
+                    <!-- <p class="ellipsis ltr">{{db.host}}</p> -->
                 </span>
                 <a href="{% url 'databases' %}?en={{db.english_name}}" class="stretched-link"></a>
             </div>

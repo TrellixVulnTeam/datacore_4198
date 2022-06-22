@@ -99,25 +99,26 @@ def build_dom(request):
 
 def get_context(request):
 	context = build_dom(request)
+	context['version'] = 'الإصدار 1.0.1'
 	context['permissions'] = get_permissions_list()
 	if not request.user.is_superuser:
 		for page in context['pages']:
-			if not request.user.user_permissions or page.english_name not in request.user.user_permissions.split(','):
+			if not request.user.user_permissions or page.english_name.lower() not in request.user.user_permissions.split(','):
 				page.disabled = True
 	return context
 
 def get_permissions_list():
 	permissions = []
-	permissions.append(Permission('Home', 'الرئيسيّة'))
-	permissions.append(Permission('Databases', 'قواعد البيانات'))
-	permissions.append(Permission('Banks', 'بنوك المعلومات'))
-	permissions.append(Permission('Relations', 'العلاقات'))
-	permissions.append(Permission('Import', 'استيراد البيانات'))
-	permissions.append(Permission('Views', 'ملفّات محرّك البحث'))
-	permissions.append(Permission('SearchEngine', 'محرّك البحث'))
-	permissions.append(Permission('AdvancedSearch', 'بحث متقدّم'))
-	permissions.append(Permission('Users', 'المستخدمين'))
-	permissions.append(Permission('Settings', 'الإعدادات'))
+	permissions.append(Permission('home', 'الرئيسيّة'))
+	permissions.append(Permission('databases', 'قواعد البيانات'))
+	permissions.append(Permission('banks', 'بنوك المعلومات'))
+	permissions.append(Permission('relations', 'العلاقات'))
+	permissions.append(Permission('import', 'استيراد البيانات'))
+	permissions.append(Permission('views', 'ملفّات محرّك البحث'))
+	permissions.append(Permission('searchEngine', 'محرّك البحث'))
+	permissions.append(Permission('advancedSearch', 'بحث متقدّم'))
+	permissions.append(Permission('users', 'المستخدمين'))
+	permissions.append(Permission('settings', 'الإعدادات'))
 
 	return permissions
 

@@ -76,6 +76,7 @@
                 url : "/settings/", // the endpoint
                 type : "POST", // http method
                 data : { 
+                    action: 'save',
                     csrfmiddlewaretoken: '{{ csrf_token }}',
                     database : $('#icon-picker-database').val()
                 }, // data sent with the post request

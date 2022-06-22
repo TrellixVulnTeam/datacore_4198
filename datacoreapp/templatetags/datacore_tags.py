@@ -1,4 +1,4 @@
-from pickle import FALSE
+from pickle import FALSE, TRUE
 from django import template
 
 register = template.Library()
@@ -71,8 +71,8 @@ def count(value):
 @register.filter(name='equals')
 def equals(value, arg):
     if value and arg and str(value).lower() == arg.lower():
-        return "true"
-    return "false"
+        return True
+    return False
 
 @register.filter(name='if_equals_else')
 def if_equals_else(value, args):

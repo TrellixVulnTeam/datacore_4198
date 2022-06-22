@@ -2,6 +2,8 @@ import json
 import logging
 from tokenize import String
 import traceback
+import urllib.parse
+
 from django.forms import Form
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
@@ -23,15 +25,18 @@ class MasterEntityView(master_view.MasterView):
         context = views.get_context(request)
 
         master_check_result = super().master_check(self.model(), context, request)
-        if master_check_result and not master_check_result.startswith(request.path):
+        if master_check_result and not request.path.startswith('/'+master_check_result.split('/')[1]) and not request.path.startswith('/error'):
             return redirect(master_check_result)
+        
+        if not super().user_has_permission(self.model,context, request) and not request.path.startswith('/error'):
+            return redirect('/error/?code=403&cause=' + urllib.parse.quote('ليس لديك صلاحيّة للمتابعة'.encode('utf8')))
 
         page = next((p for p in context['pages'] if p.english_name == self.english_name), None)
         page.selected = True
         context['title'] = page.arabic_name
         en = request.GET.get('en')
         action = request.GET.get('action')
-        result = redirect('/error/?code=404&cause=%D8%A7%D9%84%D8%B5%D9%81%D8%AD%D8%A9%20%D8%A7%D9%84%D9%85%D8%B7%D9%84%D9%88%D8%A8%D8%A9%20%D8%BA%D9%8A%D8%B1%20%D9%85%D9%88%D8%AC%D9%88%D8%AF%D8%A9')
+        result = redirect('/error/?code=404&cause=' + urllib.parse.quote('الصفحة المطلوبة غير موجودة'.encode('utf8')))
         if action and action == 'add' and not en:
             entity = self.model()
             context['entity'] = entity
@@ -74,6 +79,10 @@ class MasterEntityView(master_view.MasterView):
     
     def post(self, request):
         try:
+            super_result = super().post(request)
+            if super_result:
+                return super_result;
+
             form_data = Form(request.POST)
             action = form_data.data['action']
             code = "0"
@@ -106,7 +115,7 @@ class MasterEntityView(master_view.MasterView):
             logging.error(traceback.format_exc())
             code = '1'
             return HttpResponse(
-                json.dumps({"code":  code , "message": str(e.__cause__) }),
+                json.dumps({"code":  code , "message": str(e) }),
                 content_type="application/json"
             )
 

@@ -14,6 +14,9 @@ class UsersView(master_entity_view.MasterEntityView):
     english_name = 'Users'
     template_name = 'user'
 
+    def before_render(self, context, request):
+        context['databases'] = models.Database.objects.all()
+
     def add(self, data, request):
         if not data["english_name"] or not data["arabic_name"]:
             return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
@@ -31,6 +34,7 @@ class UsersView(master_entity_view.MasterEntityView):
         user.is_staff = str2bool(data['is_superuser'])
         user.email = data['english_name'] + '@users.com'
         user.user_permissions = data["permissions"]
+        user.current_database_name = data["current_database_name"]
         user.save()
 
         return ('0','تمّت العمليّة بنجاح')
@@ -58,6 +62,7 @@ class UsersView(master_entity_view.MasterEntityView):
         oldEntity.is_superuser = str2bool(data['is_superuser'])
         oldEntity.is_staff = str2bool(data['is_superuser'])
         oldEntity.user_permissions = data["permissions"]
+        oldEntity.current_database_name = data["current_database_name"]
         oldEntity.save()
 
         return ('0','تمّت العمليّة بنجاح')

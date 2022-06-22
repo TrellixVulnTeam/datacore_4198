@@ -1,0 +1,6 @@
+{
+    "python.analysis.extraPaths": [
+        "./Python310/Lib/site-packages",
+        "./Python310/Lib/site-packages"
+    ]
+}

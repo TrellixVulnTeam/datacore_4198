@@ -3,6 +3,7 @@ import logging
 import traceback
 from django.shortcuts import redirect, render
 from django.http import HttpResponse
+import urllib.parse
 
 from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
@@ -21,8 +22,11 @@ class MasterPageView(master_view.MasterView):
         self.before_render(context, request)
 
         master_check_result = super().master_check(None, context, request)
-        if master_check_result and not master_check_result.startswith(request.path):
+        if master_check_result and not request.path.startswith('/'+master_check_result.split('/')[1]) and not request.path.startswith('/error'):
             return redirect(master_check_result)
+        
+        if not super().user_has_permission(None,context, request) and not request.path.startswith('/error'):
+            return redirect('/error/?code=403&cause=' + urllib.parse.quote('ليس لديك صلاحيّة للمتابعة'.encode('utf8')))
 
         if not self.template_name == 'error':
             page = next((p for p in context['pages'] if p.english_name == self.english_name), None)
@@ -41,6 +45,10 @@ class MasterPageView(master_view.MasterView):
 
     def post(self, request):
         try:
+            super_result = super().post(request)
+            if super_result:
+                return super_result;
+            
             form_data = Form(request.POST)
             code = "0"
             message = 'تمّت العمليّة بنجاح'
@@ -60,7 +68,7 @@ class MasterPageView(master_view.MasterView):
             logging.error(traceback.format_exc())
             code = '1'
             return HttpResponse(
-                json.dumps({"code":  code , "message": traceback.format_exc() }),
+                json.dumps({"code":  code , "message": str(e) }),
                 content_type="application/json"
             )
 
