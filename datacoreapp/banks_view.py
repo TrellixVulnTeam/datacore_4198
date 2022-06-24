@@ -57,7 +57,7 @@ class BanksView(master_entity_view.MasterEntityView):
         bank.icon_class = data["icon_class"]    
         bank.database = db    
         #add arango bank here#
-        ArangoAgent(db.english_name).create_collection(bank.english_name)
+        ArangoAgent(db.english_name).create_collection(bank.english_name,bank.replication_factor)
         #--------------------#
         bank.save()
 
@@ -71,7 +71,8 @@ class BanksView(master_entity_view.MasterEntityView):
                 tempdf.data_type = f["data_type"]
                 tempdf.indexed = f["indexed"]
                 #add arango bank field here#
-
+                if tempdf.indexed:
+                    ArangoAgent(db.english_name).create_persistent_index_for_collection_field(bank.english_name, tempdf.english_name)
                 #--------------------#
                 tempdf.save()
         
@@ -106,10 +107,12 @@ class BanksView(master_entity_view.MasterEntityView):
                         df.arabic_name = f["arabic_name"]
                         df.data_type = f["data_type"]
                         df.indexed = f["indexed"]
-                        if df.indexed != f["indexed"]:
-                            #change arango field index#
-                            print()
-                            #--------------------#
+                        #change arango field index#
+                        if df.indexed:
+                            ArangoAgent(db.english_name).create_persistent_index_for_collection_field(oldEntity.english_name, df.english_name)
+                        else:
+                            ArangoAgent(db.english_name).delete_persistent_index_for_collection_field(oldEntity.english_name, df.english_name)
+                        #--------------------#
                         df.save(force_update=True)
                         fieldFound = True
                         break
@@ -122,7 +125,8 @@ class BanksView(master_entity_view.MasterEntityView):
                     tempdf.indexed = f["indexed"]
                     oldEntity.data_fields.add(tempdf, bulk=False)
                     #add new arango field#
-                    
+                    if tempdf.indexed:
+                        ArangoAgent(db.english_name).create_persistent_index_for_collection_field(oldEntity.english_name, tempdf.english_name)
                     #--------------------#
 
             for df in oldEntity.data_fields.all():
@@ -135,7 +139,7 @@ class BanksView(master_entity_view.MasterEntityView):
                 if not fieldFound:
                     oldEntity.data_fields.remove(df)
                     #delete arango field#
-                                    
+                    ArangoAgent(db.english_name).delete_persistent_index_for_collection_field(oldEntity.english_name, df.english_name)                
                     #--------------------#
         
         oldEntity.arabic_name = data['arabic_name']

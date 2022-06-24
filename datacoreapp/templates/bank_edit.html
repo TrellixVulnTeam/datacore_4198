@@ -81,7 +81,7 @@
                                         </select>
                                     </td>
                                     <td>
-                                        <input type="checkbox" name="chkindexed" class="form-check" {{ field.indexed|if_else:'checked,' }} style="margin-right: 15px;"/>
+                                        <input type="checkbox" name="chkindexed" class="form-check" {{ field.indexed|if_else:'checked,' }} {{ field.data_type|if_equals_else:'String,disabled,' }} style="margin-right: 15px;"/>
                                     </td>
                                 </tr>
                             {% endfor %}
@@ -122,7 +122,19 @@
             $('.icon-picker').val("{{ entity.icon_class|str_or_default:'bi-hdd-stack-fill' }}");
             $('.icon-picker').trigger('change');
 
+            registerTypeListener();
         });
+
+        function registerTypeListener(){
+            $('select[name="type"]').on('change', function() {
+                if(this.value == 'String'){
+                    $(this).parent().next().find('input').prop('checked',false);
+                    $(this).parent().next().find('input').attr('disabled',true);
+                }else{
+                    $(this).parent().next().find('input').attr('disabled',false);
+                }
+            });
+        }
 
 		function addRow(tableID) {
 
@@ -139,7 +151,9 @@
             var cell4 = row.insertCell(3);
             cell4.innerHTML = '<select name="type" class="form-select narrow-padded-check"><option value="String">نص</option><option value="Number">رقم</option><option value="Date">تاريخ</option><option value="Bool">حقيقة</option><option value="Array">لائحة</option><option value="Object">شيء</option></select>';
             var cell5 = row.insertCell(4);
-            cell5.innerHTML = '<input type="checkbox" name="chkindexed" class="form-check" style="margin-right: 15px;"/>';
+            cell5.innerHTML = '<input type="checkbox" name="chkindexed" class="form-check" style="margin-right: 15px;" disabled/>';
+
+            registerTypeListener();
 		}
 
 		function deleteRow(tableID) {

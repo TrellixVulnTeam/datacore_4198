@@ -23,7 +23,7 @@
 
         <div class="form-group col-12" style="margin-top: 10px;">
             <label class="col-12" style="margin-bottom: 3px;">استخدام الضغط؟</label>
-            <select class="form-select" id="select-compressed" name="compressed">
+            <select class="form-select" id="select-compressed" name="compressed" {{action|if_equals_else:'edit,disabled,'}}>
                 <option value="True" {{entity.compressed|if_else:'selected,'}}>نعم</option>
                 <option value="False" {{entity.compressed|if_not_else:'selected,'}}>كلا</option>
             </select>
@@ -33,12 +33,16 @@
             <select class="form-select " id="select_fields" name="fields[]" multiple="multiple" required>
                 {% for b in banks|iterator %}
                     {% for f in b.data_fields|iterator %}
-                        <option value="{{f.id}}" data-icon="{{b.icon_class}}">{{b.arabic_name}}.{{f.arabic_name}}</option>
+                        {% if not f.data_type|equals:'String' %}
+                            <option value="{{f.id}}" data-icon="{{b.icon_class}}">{{b.arabic_name}}.{{f.arabic_name}}</option>
+                        {% endif %}
                     {% endfor %}
                 {% endfor %}
                 {% for r in relations|iterator %}
                     {% for f in r.data_fields|iterator %}
-                        <option value="{{f.id}}" data-icon="bi-diagram-3-fill">{{r.arabic_name}}.{{f.arabic_name}}</option>
+                        {% if not f.data_type|equals:'String' %}
+                            <option value="{{f.id}}" data-icon="bi-diagram-3-fill">{{r.arabic_name}}.{{f.arabic_name}}</option>
+                        {% endif %}
                     {% endfor %}
                 {% endfor %}
             </select>

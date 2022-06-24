@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.views import View
+from datacoreapp.arango_agent import ArangoAgent
 
 from datacoreapp.templatetags.datacore_tags import str2bool 
 from datacoreapp import models
@@ -41,12 +42,16 @@ class ViewsView(master_entity_view.MasterEntityView):
         view.compressed = str2bool(data['compressed'])
         view.database = db  
         #add arango view here#
-
+        ArangoAgent(db.english_name).create_arangosearch_view(view.english_name, view.compressed)
         #--------------------#
         view.save()
+        view_fields = []
         for df in data["data_fields"].split(','):
-            view.data_fields.add(models.DataField.objects.filter(id=int(df)).first())
+            data_field = models.DataField.objects.filter(id=int(df)).first()
+            view.data_fields.add(data_field)
+            view_fields.append[data_field.owner.english_name + '.' + data_field.english_name]
 
+        ArangoAgent(db.english_name).generate_view_links(view_fields)
         view.save()
 
         return ('0','تمّت العمليّة بنجاح')
@@ -108,6 +113,8 @@ class ViewsView(master_entity_view.MasterEntityView):
         oldEntity = self.model.objects.filter(english_name = data['entityid'], database__id=db.id).first()
         if not oldEntity:
             return('1', 'لا يوجد ملف بنفس الاسم')
+
+        ArangoAgent(db.english_name).delete_arangosearch_view(oldEntity.english_name)
         oldEntity.delete()
 
         return ('0','تمّت العمليّة بنجاح')

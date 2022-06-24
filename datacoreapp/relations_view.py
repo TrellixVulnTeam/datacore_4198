@@ -8,6 +8,8 @@ from django.db.models import Q
 from datacoreapp import master_entity_view
 import json
 
+from datacoreapp.arango_agent import ArangoAgent
+
 class RelationsView(master_entity_view.MasterEntityView):
     model = models.Relation
     english_name = 'Relations'
@@ -61,7 +63,7 @@ class RelationsView(master_entity_view.MasterEntityView):
         relation.to_bank = to_bank
         relation.database = db  
         #add arango edge here#
-
+        ArangoAgent(db.english_name).create_grph(relation.english_name,from_col_name=from_bank.english_name, to_col_name=to_bank.english_name)
         #--------------------#
         relation.save()
 
@@ -75,7 +77,8 @@ class RelationsView(master_entity_view.MasterEntityView):
                 tempdf.data_type = f["data_type"]
                 tempdf.indexed = f["indexed"]
                 #add arango edge field here#
-
+                if tempdf.indexed:
+                    ArangoAgent(db.english_name).create_persistent_index_for_edge_field(relation.english_name, tempdf.english_name)
                 #--------------------#
                 tempdf.save()
         
@@ -110,10 +113,12 @@ class RelationsView(master_entity_view.MasterEntityView):
                         df.arabic_name = f["arabic_name"]
                         df.data_type = f["data_type"]
                         df.indexed = f["indexed"]
-                        if df.indexed != f["indexed"]:
-                            #change arango field index#
-                            print()
-                            #--------------------#
+                        #change arango field index#
+                        if df.indexed:
+                            ArangoAgent(db.english_name).create_persistent_index_for_edge_field(oldEntity.english_name, df.english_name)
+                        else:
+                            ArangoAgent(db.english_name).delete_persistent_index_for_edge_field(oldEntity.english_name, df.english_name)
+                        #--------------------#
                         df.save(force_update=True)
                         fieldFound = True
                         break
@@ -126,7 +131,8 @@ class RelationsView(master_entity_view.MasterEntityView):
                     tempdf.indexed = f["indexed"]
                     oldEntity.data_fields.add(tempdf, bulk=False)
                     #add new arango field#
-                    
+                    if tempdf.indexed:
+                        ArangoAgent(db.english_name).create_persistent_index_for_edge_field(oldEntity.english_name, tempdf.english_name)
                     #--------------------#
 
             for df in oldEntity.data_fields.all():
@@ -139,7 +145,7 @@ class RelationsView(master_entity_view.MasterEntityView):
                 if not fieldFound:
                     oldEntity.data_fields.remove(df)
                     #delete arango field#
-                                    
+                    ArangoAgent(db.english_name).delete_persistent_index_for_edge_field(oldEntity.english_name, df.english_name)     
                     #--------------------#
         
         oldEntity.arabic_name = data['arabic_name']
@@ -155,6 +161,8 @@ class RelationsView(master_entity_view.MasterEntityView):
         oldEntity = self.model.objects.filter(english_name = data['entityid'], database__id=db.id).first()
         if not oldEntity:
             return('1', 'لا يوجد علاقة بنفس الاسم')
+
+        ArangoAgent(db.english_name).delete_grph(oldEntity.english_name)
         oldEntity.delete()
 
         return ('0','تمّت العمليّة بنجاح')
