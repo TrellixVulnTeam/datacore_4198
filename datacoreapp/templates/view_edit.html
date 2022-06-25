@@ -13,12 +13,12 @@
     <div class="row" style="max-width: 500px;">
         <div class="form-group col-12" style="margin-top: 10px;">
             <label class="col-12" style="margin-bottom: 3px;">الاسم الأجنبي</label>
-            <input type="text" name="english_name" maxlength="70" onkeypress="validate_en(event)" autocomplete="off" class="form-control" required id="id_english_name" value="{{entity.english_name}}" {{action|if_equals_else:'edit,readonly,'}}>
+            <input type="text" name="english_name" maxlength="70" autocomplete="off" class="form-control en-only" required id="id_english_name" value="{{entity.english_name}}" {{action|if_equals_else:'edit,readonly,'}}>
         </div>
         
         <div class="form-group col-12" style="margin-top: 10px;">
             <label class="col-12" style="margin-bottom: 3px;">الإسم العربي</label>
-            <input type="text" name="arabic_name" maxlength="70" onkeypress="validate_ar(event)" autocomplete="off" class="form-control" required id="id_arabic_name" value="{{entity.arabic_name}}">
+            <input type="text" name="arabic_name" maxlength="70" autocomplete="off" class="form-control ar-only" required id="id_arabic_name" value="{{entity.arabic_name}}">
         </div>
 
         <div class="form-group col-12" style="margin-top: 10px;">
@@ -33,14 +33,14 @@
             <select class="form-select " id="select_fields" name="fields[]" multiple="multiple" required>
                 {% for b in banks|iterator %}
                     {% for f in b.data_fields|iterator %}
-                        {% if not f.data_type|equals:'String' %}
+                        {% if f.data_type|equals:'String' %}
                             <option value="{{f.id}}" data-icon="{{b.icon_class}}">{{b.arabic_name}}.{{f.arabic_name}}</option>
                         {% endif %}
                     {% endfor %}
                 {% endfor %}
                 {% for r in relations|iterator %}
                     {% for f in r.data_fields|iterator %}
-                        {% if not f.data_type|equals:'String' %}
+                        {% if f.data_type|equals:'String' %}
                             <option value="{{f.id}}" data-icon="bi-diagram-3-fill">{{r.arabic_name}}.{{f.arabic_name}}</option>
                         {% endif %}
                     {% endfor %}

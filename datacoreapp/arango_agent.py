@@ -1,5 +1,7 @@
 from arango import ArangoClient
 
+from datacoreapp import models
+
 class ArangoAgent():
     connection_info = {
 		'host': 'http://127.0.0.1:8529/',
@@ -102,9 +104,10 @@ class ArangoAgent():
             if index['name'] == index_name:
                 edge.delete_index(index['id'])
 
-    def create_arangosearch_view(self, name, use_compression):
+    def create_arangosearch_view(self, name, use_compression, fields):
         self.create_arabic_text_analyzer()
         self.create_arabic_collation_analyzer()
+        links = self.generate_view_links(fields)
         name = 'asview_' + name.strip()
         found = False
         for v in self.db.views():
@@ -117,31 +120,95 @@ class ArangoAgent():
             if not use_compression:
                 compression = 'none'
 
-            self.db.create_arangosearch_view(name, properties={'primarySortCompression': compression})
-
-    def generate_view_links(fields):
-        links = '"links" : \{'
-        if fields:
-            collections_and_fields = {}
-            for f in fields:
-                collection_name = 'col_' + f.split('.')[0].strip()
-                field_name = 'f_' + f.split('.')[1].strip()
-                if not collections_and_fields[collection_name]:
-                    collections_and_fields[collection_name] = []
-
-                collections_and_fields[collection_name].append(field_name)
-            
-            for key, value in collections_and_fields.items():
-                links += '\t"'+ key + '" : \{\n\t"analyzers" : [],\n\t"fields" : \{'
-                for f in value:
-                    links+= '\n\t\t"' + f + '" : {\n\t\t"analyzers" : [\n\t\t\t"' + self.db.db_name + '::arabic_text_analyzer' + '","' + self.db.db_name + '::arabic_collation_analyzer' + '"\n\t\t]\n\t\t\},'
-                
-                links = links[:-1] + '\n\t\},\n\t"includeAllFields" : false,\n\t"storeValues" : "none",\n\t"trackListPositions" : false\n\t}\n}'
+            self.db.create_arangosearch_view(name, properties={'primarySortCompression': compression, 'links': links})
+        else:
+            self.db.update_arangosearch_view(name, properties={'links': links})
 
     def delete_arangosearch_view(self, name):
         name = 'asview_' + name.strip()
         self.db.delete_view(name, ignore_missing=True)
+    
+    def generate_view_links(self, fields):
+        links = {}
+        if fields:
+            collections_and_fields = {}
+            for f in fields:
+                collection_name = None
+                if type(f.owner) == models.Bank:
+                    collection_name = 'col_' + f.owner.english_name.strip()
+                else:
+                    collection_name = 'edge_' + f.owner.english_name.strip()
+                
+                field_name = 'f_' + f.english_name.strip()
+                if not collections_and_fields.get(collection_name):
+                    collections_and_fields[collection_name] = []
+                collections_and_fields[collection_name].append(field_name)
+            
+            for key, value in collections_and_fields.items():
+                links[key] = {}
+                links[key]['analyzers'] = []
+                links[key]['fields'] = {}
+                for f in value:
+                    links[key]['fields'][f] = {'analyzers': [self.db.db_name + '::arabic_text_analyzer',self.db.db_name + '::arabic_collation_analyzer']}
+                links[key]['includeAllFields'] = False
+                links[key]['storeValues'] = 'none'
+                links[key]['trackListPositions'] = False
+        return links
 
+    def delete_arangosearch_view_collection(self, name, collection_name):
+        name = 'asview_' + name.strip()
+        view = self.db.view(name)
+        collection_name ='col_' + collection_name.strip()
+        links = view.get('links')
+        if links and links.get(collection_name):
+            del links[collection_name]
+            self.db.update_arangosearch_view(name, properties={'links': links})
+
+    def delete_arangosearch_view_edge(self, name, edge_name):
+        name = 'asview_' + name.strip()
+        view = self.db.view(name)
+        edge_name ='edge_' + edge_name.strip()
+        links = view.get('links')
+        if links and links.get(edge_name):
+            del links[edge_name]
+            self.db.update_arangosearch_view(name, properties={'links': links})
+
+    def add_arangosearch_view_field(self, name, field):
+        name = 'asview_' + name.strip()
+        view = self.db.view(name)
+        collection_name = None
+        field_name = 'f_' + field.english_name.strip()
+        if type(field.owner) == models.Bank:
+            collection_name = 'col_' + field.owner.english_name.strip()
+        else:
+            collection_name = 'edge_' + field.owner.english_name.strip()
+        links = view.get('links')
+        if links:
+            col_def = links.get(collection_name)
+            if col_def:
+                col_def_fields = col_def.get('fields')
+                if col_def_fields:
+                    col_def_fields[field_name]= {'analyzers': [self.db.db_name + '::arabic_text_analyzer',self.db.db_name + '::arabic_collation_analyzer']}
+                    self.db.update_arangosearch_view(name, properties={'links': links})
+
+    def delete_arangosearch_view_field(self, name, field):
+        name = 'asview_' + name.strip()
+        view = self.db.view(name)
+        collection_name = None
+        field_name = 'f_' + field.english_name.strip()
+        if type(field.owner) == models.Bank:
+            collection_name = 'col_' + field.owner.english_name.strip()
+        else:
+            collection_name = 'edge_' + field.owner.english_name.strip()
+        links = view.get('links')
+        if links:
+            col_def = links.get(collection_name)
+            if col_def:
+                col_def_fields = col_def.get('fields')
+                if col_def_fields and col_def_fields.get(field_name):
+                    del col_def_fields[field_name]
+                    self.db.update_arangosearch_view(name, properties={'links': links})
+    
     def create_arabic_text_analyzer(self):
         found = False
         for an in self.db.analyzers():

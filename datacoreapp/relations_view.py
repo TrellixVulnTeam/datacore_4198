@@ -143,10 +143,16 @@ class RelationsView(master_entity_view.MasterEntityView):
                         break
                 
                 if not fieldFound:
-                    oldEntity.data_fields.remove(df)
                     #delete arango field#
                     ArangoAgent(db.english_name).delete_persistent_index_for_edge_field(oldEntity.english_name, df.english_name)     
+                    for view in models.View.objects.all().iterator():
+                        if view.data_fields:
+                            for v_df in view.data_fields.all().iterator():
+                                if v_df.id == df.id:
+                                    ArangoAgent(db.english_name).delete_arangosearch_view_field(view.english_name, df)
+                                    break
                     #--------------------#
+                    oldEntity.data_fields.remove(df)
         
         oldEntity.arabic_name = data['arabic_name']
         oldEntity.save(force_update=True)
@@ -163,6 +169,12 @@ class RelationsView(master_entity_view.MasterEntityView):
             return('1', 'لا يوجد علاقة بنفس الاسم')
 
         ArangoAgent(db.english_name).delete_grph(oldEntity.english_name)
+        for view in models.View.objects.all().iterator():
+            if view.data_fields:
+                for v_df in view.data_fields.all().iterator():
+                    if type(v_df.owner)==models.Relation and v_df.owner.id == oldEntity.id:
+                        ArangoAgent(db.english_name).delete_arangosearch_view_edge(view.english_name, oldEntity.english_name)
+                        break
         oldEntity.delete()
 
         return ('0','تمّت العمليّة بنجاح')

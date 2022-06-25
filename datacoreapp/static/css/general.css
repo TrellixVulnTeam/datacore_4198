@@ -46,6 +46,10 @@ a.disabled {
     padding-top: 15px !important;
 }
 
+.modal-header {
+    background-color: #f8f9fa;
+}
+
 .flex-column > .nav-item {
     border-bottom: #dfdfdf solid 1px;
 }
@@ -203,7 +207,7 @@ td > .form-select-no-validate {
     position: absolute !important;
     left: -17px !important;
     top: 30px !important;
-    background-color: #212529 !important;
+    background-color: #004866 !important;
     right: unset !important;
 }
 

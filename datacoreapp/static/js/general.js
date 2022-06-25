@@ -21,41 +21,171 @@ $(document).ready(function() {
       $(".no-cards-label").removeClass('hidden');
     }
   });
+
+  $('.en-only').on('paste', function (e) {
+    e.preventDefault();
+  });
+
+  $('.ar-only').on('paste', function (e) {
+    e.preventDefault();
+  });
+
+  $('.en-only').on('keydown', function (e) {
+    save_last_key_down(e);
+  });
+
+  $('.ar-only').on('keydown', function (e) {
+    save_last_key_down(e);
+  });
+
+  $('.en-only').on('keypress', function (e) {
+    validate_en(e);
+  });
+
+  $('.ar-only').on('keypress', function (e) {
+    validate_ar(e);
+  });
+
 })
 
-function validate_en(evt) {
-  var theEvent = evt || window.event;
+let last_key_down_event_code = 0;
 
-  // Handle paste
-  if (theEvent.type === 'paste') {
-      key = event.clipboardData.getData('text/plain');
-  } else {
-  // Handle key press
-      var key = theEvent.keyCode || theEvent.which;
-      key = String.fromCharCode(key);
-  }
-  var regex = /[a-zA-Z0-9_]|\./;
-  if( !regex.test(key) ) {
+function save_last_key_down(e){
+  last_key_down_event_code = e.keyCode
+  setTimeout(function() {
+    last_key_down_event_code = 0
+  }, 200);
+}
+
+function validate_en(evt) {
+  var ar_to_en_dic = {
+    'ض':'q',
+    'ص':'w',
+    'ث':'e',
+    'ق':'r',
+    'ف':'t',
+    'غ':'y',
+    'ع':'u',
+    'ه':'i',
+    'خ':'o',
+    'ح':'p',
+    'ش':'a',
+    'س':'s',
+    'ي':'d',
+    'ب':'f',
+    'ل':'g',
+    'ا':'h',
+    'ت':'j',
+    'ن':'k',
+    'م':'l',
+    'ئ':'z',
+    'ء':'x',
+    'ؤ':'c',
+    'ر':'v',
+    'لا':'b',
+    'ى':'n',
+    'ة':'m',
+  };
+  var theEvent = evt || window.event;
+  var key = theEvent.keyCode || theEvent.which;
+  key = String.fromCharCode(key);
+  if (key ==' '){
     theEvent.returnValue = false;
-    if(theEvent.preventDefault) theEvent.preventDefault();
+    if(theEvent.preventDefault) theEvent.preventDefault(); 
+    replaceKey($(evt.target),'_')
+  }else{
+    var regex = /[a-zA-Z0-9_]/;
+    if(typeof ar_to_en_dic[key.toLowerCase()] !== 'undefined'){
+      if(last_key_down_event_code==66 && ar_to_en_dic[key.toLowerCase()]=='h'){
+        last_key_down_event_code = 0
+      }else if(last_key_down_event_code==66){
+        replaceKey($(evt.target),'b')
+      }else{
+        replaceKey($(evt.target),ar_to_en_dic[key.toLowerCase()])
+      }
+      theEvent.returnValue = false;
+      if(theEvent.preventDefault) theEvent.preventDefault();
+    }else if( !regex.test(key) ) {
+      theEvent.returnValue = false;
+      if(theEvent.preventDefault) theEvent.preventDefault();
+    }else{
+      if(key != key.toLowerCase()){
+        theEvent.returnValue = false;
+        if(theEvent.preventDefault) theEvent.preventDefault(); 
+        replaceKey($(evt.target),key.toLowerCase())
+      }else{
+        theEvent.returnValue = true;
+        return true;
+      }
+    }
   }
 }
 
-function validate_ar(evt) {
-  var theEvent = evt || window.event;
+function replaceKey(input, key){
+  var cursorPos = input.prop('selectionStart');
+  var v = input.val();
+  var textBefore = v.substring(0,  cursorPos);
+  var textAfter  = v.substring(input.prop('selectionEnd'), v.length);
 
-  // Handle paste
-  if (theEvent.type === 'paste') {
-      key = event.clipboardData.getData('text/plain');
-  } else {
-  // Handle key press
-      var key = theEvent.keyCode || theEvent.which;
-      key = String.fromCharCode(key);
-  }
-  var regex = /[\u0621-\u064A0-9_]|\./;
-  if( !regex.test(key) ) {
+  input.val(textBefore + key + textAfter);
+  //input.append(key.charAt(0)).focus();
+  //input.trigger({type: 'keydown', which: key.charCodeAt(0), keyCode: key.charCodeAt(0)});
+}
+
+function validate_ar(evt) {
+  var en_to_ar_dic = {
+    'q':'ض',
+    'w':'ص',
+    'e':'ث',
+    'r':'ق',
+    't':'ف',
+    'y':'غ',
+    'u':'ع',
+    'i':'ه',
+    'o':'خ',
+    'p':'ح',
+    '[':'ج',
+    ']':'د',
+    'a':'ش',
+    's':'س',
+    'd':'ي',
+    'f':'ب',
+    'g':'ل',
+    'h':'ا',
+    'j':'ت',
+    'k':'ن',
+    ';':'ك',
+    '\'':'ط',
+    'l':'م',
+    'z':'ئ',
+    'x':'ء',
+    'c':'ؤ',
+    'v':'ر',
+    'b':'لا',
+    'n':'ى',
+    'm':'ة',
+    ',':'و',
+    '.':'ز',
+    '/':'ظ',
+    '`':'ذ'
+  };
+  var theEvent = evt || window.event;
+  var key = theEvent.keyCode || theEvent.which;
+  key = String.fromCharCode(key);
+  if (key ==' '){
+    replaceKey($(evt.target),'_')
     theEvent.returnValue = false;
-    if(theEvent.preventDefault) theEvent.preventDefault();
+    if(theEvent.preventDefault) theEvent.preventDefault(); 
+  }else if(typeof en_to_ar_dic[key.toLowerCase()] !== 'undefined'){
+    theEvent.returnValue = false;
+    if(theEvent.preventDefault) theEvent.preventDefault(); 
+    replaceKey($(evt.target),en_to_ar_dic[key.toLowerCase()])
+  }else{
+    var regex = /[\u0621-\u064A0-9_]/;
+    if( !regex.test(key) ) {
+      theEvent.returnValue = false;
+      if(theEvent.preventDefault) theEvent.preventDefault();
+    }
   }
 }
 

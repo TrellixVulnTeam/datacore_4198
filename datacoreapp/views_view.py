@@ -42,16 +42,18 @@ class ViewsView(master_entity_view.MasterEntityView):
         view.compressed = str2bool(data['compressed'])
         view.database = db  
         #add arango view here#
-        ArangoAgent(db.english_name).create_arangosearch_view(view.english_name, view.compressed)
-        #--------------------#
-        view.save()
         view_fields = []
         for df in data["data_fields"].split(','):
             data_field = models.DataField.objects.filter(id=int(df)).first()
-            view.data_fields.add(data_field)
-            view_fields.append[data_field.owner.english_name + '.' + data_field.english_name]
+            view_fields.append(data_field)
+        ArangoAgent(db.english_name).create_arangosearch_view(view.english_name, view.compressed, view_fields)
+        #--------------------#
+        view.save()
 
-        ArangoAgent(db.english_name).generate_view_links(view_fields)
+        for df in data["data_fields"].split(','):
+            data_field = models.DataField.objects.filter(id=int(df)).first()
+            view.data_fields.add(data_field)
+            
         view.save()
 
         return ('0','تمّت العمليّة بنجاح')
@@ -82,10 +84,11 @@ class ViewsView(master_entity_view.MasterEntityView):
                     found = True
                     break
             if not found:
+                d_f = models.DataField.objects.filter(id=int(df)).first()
                 #add arango view-field here#
-
+                ArangoAgent(db.english_name).add_arangosearch_view_field(oldEntity.english_name, d_f)
                 #--------------------#
-                oldEntity.data_fields.add(models.DataField.objects.filter(id=int(df)).first())
+                oldEntity.data_fields.add(d_f)
 
         for vdf in oldEntity.data_fields.iterator():
             found = False
@@ -95,7 +98,7 @@ class ViewsView(master_entity_view.MasterEntityView):
                     break
             if not found:
                 #remove arango view-field here#
-
+                ArangoAgent(db.english_name).delete_arangosearch_view_field(oldEntity.english_name, vdf)
                 #--------------------#
                 oldEntity.data_fields.remove(vdf)
 
