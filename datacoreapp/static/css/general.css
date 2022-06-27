@@ -7,6 +7,38 @@ body {
     font-family: cairo;
 }
 
+*::-webkit-scrollbar {
+    width: 0.7em;
+}
+
+*::-webkit-scrollbar-track {
+    box-shadow: inset 0 0 6px rgba(0, 195, 255, 0.3);
+}
+
+*::-webkit-scrollbar-thumb {
+    background-color: rgb(202, 202, 202);
+    outline: 1px solid rgb(202, 202, 202);
+    border-radius: 15px;
+}
+
+html{
+    overflow-y: auto;
+}
+
+body::-webkit-scrollbar {
+    width: 0em !important;
+}
+
+body::-webkit-scrollbar-track {
+    box-shadow: inset 0 0 6px rgba(255, 255, 255, 0);
+}
+
+body::-webkit-scrollbar-thumb {
+    background-color: rgb(202, 202, 202);
+    outline: 1px solid rgb(202, 202, 202);
+    border-radius: 15px;
+}
+
 * {
     box-shadow: none !important;
 }
@@ -54,12 +86,14 @@ a.disabled {
     border-bottom: #dfdfdf solid 1px;
 }
 
-[class="nav-link dropdown-toggle"] {
-    font-weight: bold !important;
+
+a {
+    color: #00adff;
 }
 
 .selected {
-    color: #0088ff !important;
+    color: #37b2fb !important;
+    text-shadow: 1px 1px #d3e5ed;
 }
 
 ul .flex-column{
@@ -77,11 +111,35 @@ ul .flex-column{
 }
 
 .selectable-card:hover{
-    background-color: #d9f5ff;
+    background-color: #0099ebb5;
 }
 
 .selectable-card{
-    background-color: #f8f9fa;
+    background-color: #60c5fb;
+}
+
+.selectable-card > * {
+    color: white !important;
+}
+
+.selectable-card .card-action {
+    color: white !important;
+}
+.selectable-card .card-action:hover {
+    color: #686868 !important;
+}
+
+.selectable-card .card-delete {
+    color: white !important;
+}
+.selectable-card .card-delete:hover {
+    color: #686868 !important;
+}
+.bi-star-fill{
+    color: white !important;
+}
+.text-muted {
+    color: #e9e9e9 !important;
 }
 
 .ellipsis-multiline{
@@ -215,4 +273,28 @@ td > .form-select-no-validate {
     padding: 0rem 0.65rem 0.2rem 0.15rem !important;
     width: 70px;
     background-position: left 0.15rem center;
+}
+
+.btn-primary, btn-primary:focus, btn-primary:active{
+    color: #fff !important;
+    background-color: #45aef3 !important;
+    border-color: #7eaefb !important;
+}
+
+.btn-primary:hover {
+    color: #fff !important;
+    background-color: #1a71c9 !important;
+    border-color: #5399ff !important;
+}
+
+.btn-danger, btn-danger:focus, btn-danger:active {
+    color: #fff !important;
+    background-color: #ef6774 !important;
+    border-color: #e59ca3 !important;
+}
+
+.btn-danger:hover {
+    color: #fff !important;
+    background-color: #bb2d3b !important;
+    border-color: #b02a37 !important;
 }
