@@ -10,7 +10,7 @@
 
 {% block content %}
 <div>
-    <div class="row" style="max-width: 500px;">
+    <div class="row" style="max-width: 600px;">
         <div class="form-group col-12" style="margin-top: 10px;">
             <label class="col-12" style="margin-bottom: 3px;">الاسم الأجنبي</label>
             <input type="text" name="english_name" maxlength="70" autocomplete="off" class="form-control en-only" required id="id_english_name" value="{{entity.english_name}}" {{action|if_equals_else:'edit,readonly,'}}>
@@ -72,7 +72,7 @@
                 }
             });
             var text = value.text.split('.')
-            return '<i class="' + icon_class + '" style="font-size: 14px; padding-left: 10px; padding-right:5px;"></i><strong style="color:#0088ff">' + text[0] + '</strong>.'+ text[1];
+            return '<i class="' + icon_class + '" style="font-size: 14px; padding-left: 10px; padding-right:5px;"></i><strong style="color:#00b8ff">' + text[0] + '</strong>.'+ text[1];
         } 
 
         function hideSelected(value) {

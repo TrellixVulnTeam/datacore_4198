@@ -236,6 +236,14 @@ ul .flex-column{
   outline:0px;
 }
 
+.bluetable tbody, td, tfoot, th, thead, tr {
+    border: 1px solid #ededed !important;
+}
+.bluetable th {
+    color: white;
+    background-color: #69bcf7 !important;
+}
+
 td > .form-control {
     height: 28px;
 }
@@ -277,7 +285,7 @@ td > .form-select-no-validate {
 
 .btn-primary, btn-primary:focus, btn-primary:active{
     color: #fff !important;
-    background-color: #45aef3 !important;
+    background-color: #009de1 !important;
     border-color: #7eaefb !important;
 }
 

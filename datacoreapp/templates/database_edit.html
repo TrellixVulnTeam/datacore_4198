@@ -11,10 +11,10 @@
 {% block content %}
 <div>
     <div class="alert alert-warning" role="alert" {% if has_databases %}style="display:none"{% endif %}>
-        <strong>ملاحظة:</strong> يجب إضافة قاعدة بيانات واحدة على الأقل للإستفادة من خدمات البرنامج.
+        <span class="bi-exclamation-triangle-fill pl10" style="color: orange;"></span>يجب إضافة قاعدة بيانات واحدة على الأقل للإستفادة من خدمات البرنامج.
     </div>
 
-    <div class="row" style="max-width: 500px;">
+    <div class="row" style="max-width: 600px;">
         <div class="form-group col-12" style="margin-top: 10px;">
             <label class="col-12" style="margin-bottom: 3px;">الاسم الأجنبي</label>
             <input type="text" name="english_name" maxlength="70" autocomplete="off" class="form-control en-only" required id="id_english_name" value="{{entity.english_name}}" {{action|if_equals_else:'edit,readonly,'}}>

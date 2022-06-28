@@ -2,7 +2,7 @@
 {% load static %}
 {% load datacore_tags %}
 {% block header_left %}
-    <a type="button" class="btn btn-outline-primary" href="{% url 'users' %}?action=add"><span class="bi-plus-lg pl10"></span>إضافة</a>
+    <a type="button" class="btn btn-primary" href="{% url 'users' %}?action=add"><span class="bi-plus-lg pl10"></span>إضافة</a>
 {% endblock %}
 
 {% block content %}
@@ -52,7 +52,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">كلا</button>
-          <button id="button-confirm-delete" type="button" data-bs-dismiss="modal" data-entityid="" class="btn btn-danger" onclick="delete_confirmed('/users/','{{ csrf_token }}',event)">نعم</button>
+          <button id="button-confirm-delete" type="button" data-bs-dismiss="modal" data-entityid="" class="btn btn-primary" onclick="delete_confirmed('/users/','{{ csrf_token }}',event)">نعم</button>
         </div>
       </div>
     </div>

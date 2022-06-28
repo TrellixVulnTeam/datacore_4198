@@ -16,6 +16,9 @@ class DatabasesView(master_entity_view.MasterEntityView):
     template_name = 'database'
 
     def before_render(self, context, request):
+        context['has_database_in_setting'] = False
+        if request.user.current_database_name and len(request.user.current_database_name) > 0:
+            context['has_database_in_setting'] = True
         context['users'] = models.User.objects.filter(is_superuser=False)
         context['has_databases'] = (models.Database.objects.count() > 0)
 

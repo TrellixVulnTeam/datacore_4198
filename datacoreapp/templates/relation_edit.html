@@ -10,7 +10,7 @@
 
 {% block content %}
 <div>
-    <div class="row" style="max-width: 500px;">
+    <div class="row" style="max-width: 600px;">
         <div class="form-group col-12" style="margin-top: 10px;">
             <label class="col-12" style="margin-bottom: 3px;">الاسم الأجنبي</label>
             <input type="text" name="english_name" maxlength="70" autocomplete="off" class="form-control en-only" required id="id_english_name" value="{{entity.english_name}}" {{action|if_equals_else:'edit,readonly,'}}>
@@ -44,8 +44,8 @@
             <button class="btn btn-danger" type="button" style="height: 27px; line-height: 0.2;" onclick="deleteRow('dataTable')">إلغاء المحدد</button>
             <input type="hidden" id="data_fields_input" name="data_fields"/>
 
-            <div style="max-height: 270px; overflow: auto;border: 1px solid #ced4da;border-radius: 0.29rem;margin-top: 15px;">
-                <table id="dataTable"  class="table">
+            <div style="max-height: 300px; overflow: auto;margin-top: 15px;">
+                <table id="dataTable"  class="table bluetable">
                     <thead>
                         <tr>
                             <th scope="col">#</th>
@@ -68,12 +68,12 @@
                                     </td>
                                     <td>
                                         <select name="type" class="form-select narrow-padded-check" >
-                                            <option value="String" {{ field.data_type|if_equals_else:'String,selected,' }}>نص</option>
-                                            <option value="Number" {{ field.data_type|if_equals_else:'Number,selected,' }}">رقم</option>
-                                            <option value="Date" {{ field.data_type|if_equals_else:'Date,selected,' }}>تاريخ</option>
-                                            <option value="Bool" {{ field.data_type|if_equals_else:'Bool,selected,' }}>حقيقة</option>
-                                            <option value="Array" {{ field.data_type|if_equals_else:'Array,selected,' }}>لائحة</option>
-                                            <option value="Object" {{ field.data_type|if_equals_else:'Object,selected,' }}>شيء</option>
+                                            <option value="String" {{ field.data_type|if_equals_else:'String,selected="true",' }}>نص</option>
+                                            <option value="Number" {{ field.data_type|if_equals_else:'Number,selected="true",' }}">رقم</option>
+                                            <option value="Date" {{ field.data_type|if_equals_else:'Date,selected="true",' }}>تاريخ</option>
+                                            <option value="Bool" {{ field.data_type|if_equals_else:'Bool,selected="true",' }}>حقيقة</option>
+                                            <option value="Array" {{ field.data_type|if_equals_else:'Array,selected="true",' }}>لائحة</option>
+                                            <option value="Object" {{ field.data_type|if_equals_else:'Object,selected="true",' }}>شيء</option>
                                         </select>
                                     </td>
                                     <td>

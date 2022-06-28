@@ -165,6 +165,9 @@ class BanksView(master_entity_view.MasterEntityView):
         if not oldEntity:
             return('1', 'لا يوجد بنك بنفس الاسم')
 
+        if models.Relation.objects.filter(Q(from_bank = oldEntity.id) | Q(to_bank = oldEntity.id)).count() > 0:
+            return('1', 'يجب حذف كل العلاقات المرتبطة بهذا البنك قبل التمكن من حذفه')
+
         ArangoAgent(db.english_name).delete_collection(oldEntity.english_name)
         for view in models.View.objects.all().iterator():
             if view.data_fields:

@@ -1,8 +1,166 @@
 {% extends "base.html" %}
 
-{% block content %}
+{% load static %}
+{% load datacore_tags %}
+{% block additional_styles %}
+<link href="{% static 'select2/select2.min.css' %}" rel="stylesheet">
+<link href="{% static 'select2/select2-bootstrap4.min.css' %}" rel="stylesheet">
+{% endblock %}
 
- import
- 
- 
+{% block content %}
+<div class="row" style="max-width: 800px;">
+    <div class="form-group col-12" style="margin-top: 10px;">
+        <label class="col-12" style="margin-bottom: 3px;">استيراد من ملف</label>
+        <div class="input-group mb-3">
+            <span class="input-group-text" id="basic-addon3" onclick="document.getElementById('file-input').click()">إختر ملف</span>
+            <input type="text" class="form-control" placeholder="لم يتم اختيار ملف بعد" id="file-input-holder" aria-describedby="basic-addon3" onclick="document.getElementById('file-input').click()">
+            <input class="form-control" type="file" name="fileinput" id="file-input" style="display: none;" accept=".csv" onclick="this.value=null;"/>
+        </div
+    </div>
+    <div class="form-group col-12" style="margin-top: 10px;">
+        <label class="col-12" style="margin-bottom: 3px;">استيراد الى</label>
+        <select class="form-control icon-picker" id="select-source" name="source">
+            {% for b in banks|iterator %}
+            <option value="bank.{{b.id}}" data-icon="{{b.icon_class}}" data-ar-src="بنك">{{b.arabic_name}}</option>
+            {% endfor %}
+            {% for r in relations|iterator %}
+            <option value="relation.{{r.id}}" data-icon="bi-diagram-3-fill" data-ar-src="علاقة">{{r.arabic_name}}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="form-group col-12" style="margin-top: 10px;">
+        <table id="tableimport" class="table bluetable" style="width: -webkit-fill-available;">
+            <thead>
+                <tr>
+                    <th style="min-width: 150px;">البنك/العلاقة</th>
+                    <th>الحقل</th>
+                    <th style="min-width: 100px;">نوع الحقل</th>
+                    <th>المعالجة</th>
+                    <th>مُعرّف؟</th>
+                    <th style="min-width: 150px;">الحقل المُوازي</th>
+                </tr>
+            </thead>
+            <tbody>
+
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}
+    <div class="form-group col-12" style="margin-top: 10px;">
+        <input id="btn-submit" type="submit" class="btn btn-primary" style="float: left;" value="إستيراد" />
+    </div>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{% static 'select2/select2.min.js' %}" type="text/javascript"></script>
+<script>
+
+    var dict = $.parseJSON('{{sources}}'.replace(/&quot;/g, '"'))
+    var fields = [];
+    var usedfields = [];
+
+    function format(value) {
+        if (!value.id) { return value.text; }
+        var icon_class = '';
+        var ar_src = '';
+        $('#select-source option').each(function () {
+            if ($(this).text() == value.text) {
+                icon_class = $(this).attr('data-icon')
+                ar_src = $(this).attr('data-ar-src')
+                return false;
+            }
+        });
+        return '<i class="' + icon_class + '" style="font-size: 14px; padding-left: 10px; padding-right:5px;"></i><strong style="color:#00b8ff">' + ar_src + '</strong>.' + value.text;
+    }
+
+    $(document).ready(function () {
+        $('#select-source').select2({
+            formatResult: format,
+            formatSelection: format,
+            templateResult: format,
+            templateSelection: format,
+            escapeMarkup: function (m) { return m; }
+        });
+
+        $('#select-source').change(function(e){
+            $("#tableimport > tbody tr").remove(); 
+            dict[$('#select-source').val()].forEach(function myFunction(item) {
+                addRows(item);
+            });
+            fill_file_fields();
+        })
+
+        $('#select-source').val(Object.keys(dict)[0])
+        $('#select-source').trigger('change');
+    });
+
+    function addRows(data) {
+        var tbodyRef  = document.getElementById('tableimport').getElementsByTagName('tbody')[0];
+        var row = tbodyRef .insertRow();
+
+        var cell1 = row.insertCell(0);
+        cell1.innerHTML = '<i name="source" data-type="'+data[0]+'" data-source="'+data[1]+'"><span class="'+data[3]+' pl10"></span>'+data[2]+'</i>';
+        var cell2 = row.insertCell(1);
+        cell2.innerHTML = '<i name="field" data-field="'+data[4]+'">'+data[5]+'</i>';
+        var cell3 = row.insertCell(2);
+        cell3.innerHTML = '<i>'+data[6]+'</i>';
+        var cell4 = row.insertCell(3);
+        disabled_text = ''
+        if (data[7] == false) disabled_text = 'disabled';
+        cell4.innerHTML = '<input name="format" type="text" class="form-control" ' + disabled_text + '/>';
+        var cell5 = row.insertCell(4);
+        cell5.innerHTML = '<input name="identity" type="checkbox" class="form-check" style="margin-right: 12px;">';
+        var cell6 = row.insertCell(5);
+        cell6.innerHTML = '<select name="file-field" class="form-select">';
+    }
+
+    $('input[name=fileinput]').change(function (ev) {
+        var file = document.getElementById("file-input").files[0];
+        if (file) {
+            var reader = new FileReader();
+            reader.readAsText(file, "UTF-8");
+            reader.onload = function (evt) {
+                try {
+                    first_line_end = evt.target.result.indexOf('\n');
+                    header = ''
+                    if(first_line_end==-1)
+                        header = evt.target.result;
+                    else
+                        header = evt.target.result.substring(0, evt.target.result.indexOf('\n'));
+                    fields = header.split(',');
+                    fields = fields.map(s => s.trim());
+                    fields = fields.filter(s => s.length>0);
+                    if(fields.length==0)
+                    {
+                        fields = [];
+                        showError('فشل اثناء قراءة الملف، الرجاء التأكد من أن الملف مطابق للمواصفات')
+                        return false;
+                    }
+                    fill_file_fields();
+                    $("#file-input-holder").val(file.name);
+                } catch (e) {
+                    showError('فشل اثناء قراءة الملف، الرجاء التأكد من أن الملف مطابق للمواصفات')
+                    console.error(e)
+                }
+            }
+            reader.onerror = function (evt) {
+                showError('فشل اثناء قراءة الملف، الرجاء التأكد من أن الملف مطابق للمواصفات')
+            }
+        }
+    })
+
+    function fill_file_fields(){
+        $('select[name=file-field]').each(function myFunction(item) {
+            var select = $(this)
+            select.empty();
+            fields.forEach(function myFunction(f) {
+                select[0].add(new Option(f));
+            });
+        });
+    }
+</script>
 {% endblock %}

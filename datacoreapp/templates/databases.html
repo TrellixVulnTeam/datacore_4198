@@ -2,10 +2,18 @@
 {% load static %}
 {% load datacore_tags %}
 {% block header_left %}
-    <a type="button" class="btn btn-outline-primary" href="{% url 'databases' %}?action=add"><span class="bi-plus-lg pl10"></span>إضافة</a>
+    <a type="button" class="btn btn-primary" href="{% url 'databases' %}?action=add"><span class="bi-plus-lg pl10"></span>إضافة</a>
 {% endblock %}
 
 {% block content %}
+
+<div class="alert alert-warning" role="alert" {% if has_databases %}style="display:none"{% endif %}>
+  <span class="bi-exclamation-triangle-fill pl10" style="color: orange;"></span>يجب إضافة قاعدة بيانات واحدة على الأقل للإستفادة من خدمات البرنامج.
+</div>
+
+<div class="alert alert-warning" role="alert" {% if has_database_in_setting %}style="display:none"{% endif %}>
+  <span class="bi-exclamation-triangle-fill pl10" style="color: orange;"></span>يجب إختيار قاعدة بيانات في <a href="{% url 'settings' %}">الإعدادات</a> للإستفادة من خدمات البرنامج.
+</div>
 
 <div class="no-cards-label {{ databases|iterator|loop_count|if_equals_else:'0,,hidden' }}" style="margin-top: 150px; display: flex;justify-content: center;align-items: center;flex-direction: column;" >
   <img src="{% static 'images/empty_box.png' %}" style="margin-right: -113px;width: 200px;"/>
@@ -55,7 +63,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">كلا</button>
-          <button id="button-confirm-delete" type="button" data-bs-dismiss="modal" data-entityid="" class="btn btn-danger" onclick="delete_confirmed('/databases/','{{ csrf_token }}',event)">نعم</button>
+          <button id="button-confirm-delete" type="button" data-bs-dismiss="modal" data-entityid="" class="btn btn-primary" onclick="delete_confirmed('/databases/','{{ csrf_token }}',event)">نعم</button>
         </div>
       </div>
     </div>

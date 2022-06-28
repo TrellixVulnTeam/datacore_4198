@@ -62,6 +62,7 @@ class MasterEntityView(master_view.MasterView):
             else:
                 context[self.template_name + "s"] = self.model.objects.filter(database__english_name=request.user.current_database_name)
             context['subtitle'] = None
+            self.before_render(context, request)
             result = render(request, self.template_name + 's.html', context)
         
         page.validate()

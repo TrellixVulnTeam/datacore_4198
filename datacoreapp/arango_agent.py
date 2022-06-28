@@ -17,7 +17,7 @@ class ArangoAgent():
         if not database:
             self.db = client.db(self.connection_info['system_database'], self.connection_info['username'], self.connection_info['password'])
         else:
-            self.db = client.db(database, self.connection_info['username'], self.connection_info['password'])
+            self.db = client.db('db_' +database, self.connection_info['username'], self.connection_info['password'])
 
     def create_database(self, dbname):
         dbname = 'db_' + dbname.strip()
@@ -26,8 +26,8 @@ class ArangoAgent():
 
     def delete_database(self, dbname):
         dbname = 'db_' + dbname.strip()
-        if self.db.has_database():
-            self.db.delete_database()
+        if self.db.has_database(dbname):
+            self.db.delete_database(dbname)
     
     def create_collection(self, name, rep_factor):
         name = 'col_' + name.strip()

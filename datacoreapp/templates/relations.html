@@ -2,7 +2,7 @@
 {% load static %}
 {% load datacore_tags %}
 {% block header_left %}
-    <a type="button" class="btn btn-outline-primary" href="{% url 'relations' %}?action=add"><span class="bi-plus-lg pl10"></span>إضافة</a>
+    <a type="button" class="btn btn-primary" href="{% url 'relations' %}?action=add"><span class="bi-plus-lg pl10"></span>إضافة</a>
 {% endblock %}
 
 {% block content %}
@@ -38,9 +38,9 @@
                             <h6 class="card-subtitle mb-2 text-muted ellipsis" style="max-width: 150px;">{{r.from_bank.english_name}}</h6>
                         </span>
                     </span>
-                    <span class="bi-three-dots" style="padding-right: 5px; padding-top: 20px;font-size: 17px; color: black;"></span>
-                    <span class="bi-three-dots" style="margin-right: -1px;padding-top: 20px;font-size: 17px; color: black;"></span>
-                    <span class="bi-caret-left-fill" style="margin-right: -4px;padding-left: 5px;padding-top: 20px;font-size: 17px; color: black;"></span>
+                    <span class="bi-three-dots" style="padding-right: 5px; padding-top: 20px;font-size: 17px; color: white;"></span>
+                    <span class="bi-three-dots" style="margin-right: -1px;padding-top: 20px;font-size: 17px; color: white;"></span>
+                    <span class="bi-caret-left-fill" style="margin-right: -4px;padding-left: 5px;padding-top: 20px;font-size: 17px; color: white;"></span>
                     <span style="display: flex; flex-direction: row; border: 1px solid lightgrey;padding: 5px 10px 0px 5px; border-radius: 5px;">
                         {% if r.to_bank.icon_class and r.to_bank.icon_class.strip %}
                             <span style="font-size: 30px; margin-left: 15px;color: #ffffff" class="{{r.to_bank.icon_class}}"></span>
@@ -76,7 +76,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">كلا</button>
-          <button id="button-confirm-delete" type="button" data-bs-dismiss="modal" data-entityid="" class="btn btn-danger" onclick="delete_confirmed('/relations/','{{ csrf_token }}',event)">نعم</button>
+          <button id="button-confirm-delete" type="button" data-bs-dismiss="modal" data-entityid="" class="btn btn-primary" onclick="delete_confirmed('/relations/','{{ csrf_token }}',event)">نعم</button>
         </div>
       </div>
     </div>

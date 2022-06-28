@@ -141,3 +141,20 @@ def loop_count(v):
             count+=1
         return count
     return 0
+
+@register.filter(name='to_arabic_data_type')
+def to_arabic_data_type(v):
+    if v:
+        if v.lower() == 'string':
+            return 'نص'
+        elif v.lower() == 'bool':
+            return 'حقيقة'
+        elif v.lower() == 'date':
+            return 'تاريخ'
+        elif v.lower() == 'number':
+            return 'رقم'
+        elif v.lower() == 'array':
+            return 'لائحة'
+        elif v.lower() == 'object':
+            return 'شيء'
+    return v

@@ -9,12 +9,12 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div>
     <div class="alert alert-warning" role="alert" {% if has_database %}style="display:none"{% endif %}>
-        <strong>ملاحظة:</strong> يجب إختيار قاعدة بيانات للإستفادة من خدمات البرنامج.
+        <span class="bi-exclamation-triangle-fill pl10" style="color: orange;"></span>يجب إختيار قاعدة بيانات للإستفادة من خدمات البرنامج.
     </div>
 
-    <div class="row" style="max-width: 500px;">
+    <div class="row" style="max-width: 600px;">
         <div class="form-group col-12" style="margin-top: 10px;">
             <label class="col-12" style="margin-bottom: 3px;">قاعدة البيانات</label>
             <select class="form-control icon-picker" id="icon-picker-database" name="database" required>
