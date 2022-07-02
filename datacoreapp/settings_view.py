@@ -25,15 +25,15 @@ class SettingsView(master_page_view.MasterPageView):
     
     def post_recieved(self, data, request):
         if not data['database'] or len(data['database'])==0:
-            return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
+            return super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'),'json')
 
         db = models.Database.objects.filter(english_name=data['database']).first()
         if not db:
-            return('1', 'لا يوجد قاعدة بيانات بنفس الاسم')
+            return super().parse_response(('1', 'لا يوجد قاعدة بيانات بنفس الاسم'),'json')
 
         currentuser = models.User.objects.filter(id=request.user.id).first()
         currentuser.current_database_name = db.english_name
         currentuser.save()
         request.user.current_database_name = db.english_name
 
-        return ('0','تمّت العمليّة بنجاح')
+        return super().parse_response(('0','تمّت العمليّة بنجاح'),'json')

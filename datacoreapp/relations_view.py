@@ -22,36 +22,36 @@ class RelationsView(master_entity_view.MasterEntityView):
     def add(self, data, request):
         db = models.Database.objects.filter(english_name=request.user.current_database_name).first()
         if not db:
-            return('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة')
+            return super().parse_response(('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة'),'json')
 
         if not data["english_name"] or not data["arabic_name"]:
-            return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
+            return super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'),'json')
         
         oldEntity = self.model.objects.filter(Q(english_name = data['english_name']) | Q(arabic_name = data['arabic_name']), database__id=db.id).first()
 
         if oldEntity:
-            return('1', 'يوجد علاقة بنفس الاسم، الرجاء اختيار اسم آخر')
+            return super().parse_response(('1', 'يوجد علاقة بنفس الاسم، الرجاء اختيار اسم آخر'),'json')
 
         if not data['from_bank'] or not data['to_bank']:
-            return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
+            return super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'),'json')
 
         oldEntity = self.model.objects.filter(from_bank = data['from_bank'], to_bank = data['to_bank']).first()
 
         if oldEntity:
-            return('1', 'يوجد علاقة بين هذين البنكين، الرجاء تغيير اتجاه العلاقة')
+            return super().parse_response(('1', 'يوجد علاقة بين هذين البنكين، الرجاء تغيير اتجاه العلاقة'),'json')
         
         if data['data_fields']:
             jsonarray = json.loads(data['data_fields'])
 
             for f in jsonarray:
                 if not f["english_name"] or not f["arabic_name"] or not len(f["english_name"])>0 or not len(f["arabic_name"])>0:
-                    return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
+                    return super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'),'json')
                 countf = 0
                 for f2 in jsonarray:
                     if f["english_name"] == f2["english_name"] or f["arabic_name"] == f2["arabic_name"]:
                         countf+=1
                 if countf > 1:
-                    return('1', 'لا يمكن وجود حقلين بنفس الاسم')
+                    return super().parse_response(('1', 'لا يمكن وجود حقلين بنفس الاسم'),'json')
 
         from_bank  = models.Bank.objects.filter(id = data['from_bank']).first()
         to_bank  = models.Bank.objects.filter(id = data['to_bank']).first()
@@ -82,29 +82,29 @@ class RelationsView(master_entity_view.MasterEntityView):
                 #--------------------#
                 tempdf.save()
         
-        return ('0','تمّت العمليّة بنجاح')
+        return super().parse_response(('0','تمّت العمليّة بنجاح'),'json')
 
     def edit(self, data, request):
         db = models.Database.objects.filter(english_name=request.user.current_database_name).first()
         if not db:
-            return('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة')
+            return super().parse_response(('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة'),'json')
             
         if not data["english_name"] or not data["arabic_name"]:
-            return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
+            return super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'),'json')
             
         oldEntity = self.model.objects.filter(english_name = data['english_name'], database__id=db.id).first()
         if not oldEntity:
-            return('1', 'لا يوجد علاقة بنفس الاسم')
+            return super().parse_response(('1', 'لا يوجد علاقة بنفس الاسم'),'json')
 
         tempentity = self.model.objects.filter(~Q(english_name = data['english_name']), Q(arabic_name = data['arabic_name']), database__id=db.id).first()
         if tempentity:
-            return('1', 'يوجد علاقة بنفس الاسم العربي')
+            return super().parse_response(('1', 'يوجد علاقة بنفس الاسم العربي'),'json')
         
         if data['data_fields']:
             jsonarray = json.loads(data['data_fields'])
             for f in jsonarray:
                 if not f["english_name"] or not f["arabic_name"] or not len(f["english_name"])>0 or not len(f["arabic_name"])>0:
-                    return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
+                    return super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'),'json')
             
             for f in jsonarray:
                 fieldFound = False
@@ -157,16 +157,16 @@ class RelationsView(master_entity_view.MasterEntityView):
         oldEntity.arabic_name = data['arabic_name']
         oldEntity.save(force_update=True)
 
-        return ('0','تمّت العمليّة بنجاح')
+        return super().parse_response(('0','تمّت العمليّة بنجاح'),'json')
 
     def delete(self, data, request):
         db = models.Database.objects.filter(english_name=request.user.current_database_name).first()
         if not db:
-            return('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة')
+            return super().parse_response(('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة'),'json')
             
         oldEntity = self.model.objects.filter(english_name = data['entityid'], database__id=db.id).first()
         if not oldEntity:
-            return('1', 'لا يوجد علاقة بنفس الاسم')
+            return super().parse_response(('1', 'لا يوجد علاقة بنفس الاسم'),'json')
 
         ArangoAgent(db.english_name).delete_grph(oldEntity.english_name)
         for view in models.View.objects.all().iterator():
@@ -177,4 +177,4 @@ class RelationsView(master_entity_view.MasterEntityView):
                         break
         oldEntity.delete()
 
-        return ('0','تمّت العمليّة بنجاح')
+        return super().parse_response(('0','تمّت العمليّة بنجاح'),'json')

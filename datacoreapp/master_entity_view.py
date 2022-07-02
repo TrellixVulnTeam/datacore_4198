@@ -22,14 +22,11 @@ class MasterEntityView(master_view.MasterView):
     form = None
     
     def get(self, request):
-        context = views.get_context(request)
-
-        master_check_result = super().master_check(self.model(), context, request)
-        if master_check_result and not request.path.startswith('/'+master_check_result.split('/')[1]) and not request.path.startswith('/error'):
-            return redirect(master_check_result)
-        
-        if not super().user_has_permission(self.model,context, request) and not request.path.startswith('/error'):
-            return redirect('/error/?code=403&cause=' + urllib.parse.quote('ليس لديك صلاحيّة للمتابعة'.encode('utf8')))
+        result = super().get(request)
+        if self.page_redirected:
+            return result
+        else:
+            context = result
 
         page = next((p for p in context['pages'] if p.english_name == self.english_name), None)
         page.selected = True
@@ -66,17 +63,16 @@ class MasterEntityView(master_view.MasterView):
             result = render(request, self.template_name + 's.html', context)
         
         page.validate()
-        return result
+        return self.parse_response(result)
     
     def before_render(self, context, request):
-        pass
+        super().before_render(context,request)
+
+    def parse_response(self, response, parser=None, content_type=None, file_name = None):
+        return super().parse_response(response, parser, content_type, file_name)
 
     def put(self, request):
-        return HttpResponse(
-                json.dumps({"code": "0",
-                    "message": "put method not implemented"}),
-                content_type="application/json"
-            )
+        return self.parse_response({"code": "0", "message": "put method not implemented"}, 'json')
     
     def post(self, request):
         try:
@@ -86,45 +82,30 @@ class MasterEntityView(master_view.MasterView):
 
             form_data = Form(request.POST)
             action = form_data.data['action']
-            code = "0"
-            message = 'تمّت العمليّة بنجاح'
+            result = None
             if form_data.is_valid():
                 if action == 'add':
                    result = self.add(form_data.data, request)
-                   code = result[0]
-                   message = result[1]
                 elif action == 'edit':
                     result = self.edit(form_data.data, request)
-                    code = result[0]
-                    message = result[1]
                 elif action == 'delete':
                     result = self.delete(form_data.data, request)
-                    code = result[0]
-                    message = result[1]
                 else:
-                    code = '1'
-                    message = 'unknown action parameter'
+                    result = self.parse_response({"code":  '1' , "message": 'unknown action parameter' }, 'json')
             else:
-                code = '1'
-                message = 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'
+                result = self.parse_response({"code":  '1' , "message": 'الرجاء التأكد من تعبئة كل الخانات المطلوبة' }, 'json')
 
-            return HttpResponse(
-                json.dumps({"code":  code , "message": message }),
-                content_type="application/json"
-            )
+            return result
         except Exception as e:
             logging.error(traceback.format_exc())
             code = '1'
-            return HttpResponse(
-                json.dumps({"code":  code , "message": str(e) }),
-                content_type="application/json"
-            )
+            return self.parse_response({"code":  code , "message": str(e) }, 'json')
 
-    def add(data, request):
+    def add(self, data, request):
         raise NotImplementedError("Method 'add' not implemented!")
 
-    def edit(data, request):
+    def edit(self, data, request):
         raise NotImplementedError("Method 'edit' not implemented!")
 
-    def delete(data, request):
+    def delete(self, data, request):
         raise NotImplementedError("Method 'add' not implemented!")

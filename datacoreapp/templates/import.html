@@ -5,6 +5,29 @@
 {% block additional_styles %}
 <link href="{% static 'select2/select2.min.css' %}" rel="stylesheet">
 <link href="{% static 'select2/select2-bootstrap4.min.css' %}" rel="stylesheet">
+<style>
+
+.select2-container--default .select2-selection--single .select2-selection__clear {
+    padding-right: 2px;
+    margin-left: 18px;
+    height: 100%;
+    color: coral;
+}
+
+td > .select2-container {
+    max-width: 200px;
+}
+
+td > .select2-container > .selection > .select2-selection > .select2-selection__rendered {
+    line-height: 28px !important;
+}
+td > .select2-container > .selection > .select2-selection {
+    height: 28px !important;
+}
+td > .select2-container > .selection > .select2-selection > .select2-selection__arrow {
+    height: 28px !important;
+}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -18,13 +41,27 @@
         </div
     </div>
     <div class="form-group col-12" style="margin-top: 10px;">
+        <label class="col-12" style="margin-bottom: 3px;">السطر الأول يحتوي على العناوين؟</label>
+        <select class="form-control form-select" id="select-hasheader" name="hasheader">
+            <option value="true">نعم</option>
+            <option value="false">كلا</option>
+        </select>
+    </div>
+    <div class="form-group col-12" style="margin-top: 10px;">
+        <label class="col-12" style="margin-bottom: 3px;">استيراد كل الملفات القريبة؟</label>
+        <select class="form-control form-select" id="select-importall" name="importall">
+            <option value="true">نعم</option>
+            <option value="false">كلا</option>
+        </select>
+    </div>
+    <div class="form-group col-12" style="margin-top: 10px;">
         <label class="col-12" style="margin-bottom: 3px;">استيراد الى</label>
         <select class="form-control icon-picker" id="select-source" name="source">
             {% for b in banks|iterator %}
-            <option value="bank.{{b.id}}" data-icon="{{b.icon_class}}" data-ar-src="بنك">{{b.arabic_name}}</option>
+            <option value="collection.{{b.id}}" data-icon="{{b.icon_class}}" data-ar-src="بنك">{{b.arabic_name}}</option>
             {% endfor %}
             {% for r in relations|iterator %}
-            <option value="relation.{{r.id}}" data-icon="bi-diagram-3-fill" data-ar-src="علاقة">{{r.arabic_name}}
+            <option value="edge.{{r.id}}" data-icon="bi-diagram-3-fill" data-ar-src="علاقة">{{r.arabic_name}}
             </option>
             {% endfor %}
         </select>
@@ -107,33 +144,51 @@
         var cell2 = row.insertCell(1);
         cell2.innerHTML = '<i name="field" data-field="'+data[4]+'">'+data[5]+'</i>';
         var cell3 = row.insertCell(2);
-        cell3.innerHTML = '<i>'+data[6]+'</i>';
+        cell3.innerHTML = '<i name="field-data-type" data-type="'+data[6]+'">'+data[7]+'</i>';
         var cell4 = row.insertCell(3);
         disabled_text = ''
-        if (data[7] == false) disabled_text = 'disabled';
+        if (data[8] == false) disabled_text = 'disabled';
         cell4.innerHTML = '<input name="format" type="text" class="form-control" ' + disabled_text + '/>';
         var cell5 = row.insertCell(4);
         cell5.innerHTML = '<input name="identity" type="checkbox" class="form-check" style="margin-right: 12px;">';
         var cell6 = row.insertCell(5);
-        cell6.innerHTML = '<select name="file-field" class="form-select">';
+        var time_now = Date.now();
+        cell6.innerHTML = '<select id="sel_' + time_now + '" name="file-field" class="form-select">';
+
+        $('#sel_' + time_now).select2({
+            allowClear: true,
+            width: '200px',
+            placeholder: "اختر حقل"
+        });
+        $('#sel_' + time_now).val(null)
+        $('#sel_' + time_now).trigger('change');
+        $('#sel_' + time_now).change(on_file_field_select);
+    }
+
+    function on_file_field_select(e1){
+        select = $(this);
+        val = select.val();
+        $('select[name=file-field]').each(function (e2) {
+            select2 = $(this);
+            if(select2[0].id != select[0].id){
+                if(select2.val()==val && val != null){
+                    select2.val(null);
+                    select2.trigger('change');
+                }
+            }
+        });
     }
 
     $('input[name=fileinput]').change(function (ev) {
         var file = document.getElementById("file-input").files[0];
         if (file) {
+            blob = file.slice(0, (file.size < 1000) ? file.size : 1000);
             var reader = new FileReader();
-            reader.readAsText(file, "UTF-8");
+            reader.readAsText(blob, "UTF-8");
             reader.onload = function (evt) {
                 try {
-                    first_line_end = evt.target.result.indexOf('\n');
-                    header = ''
-                    if(first_line_end==-1)
-                        header = evt.target.result;
-                    else
-                        header = evt.target.result.substring(0, evt.target.result.indexOf('\n'));
-                    fields = header.split(',');
-                    fields = fields.map(s => s.trim());
-                    fields = fields.filter(s => s.length>0);
+                    array = CSVToArray(evt.target.result);
+                    fields = array[0]
                     if(fields.length==0)
                     {
                         fields = [];
@@ -157,10 +212,145 @@
         $('select[name=file-field]').each(function myFunction(item) {
             var select = $(this)
             select.empty();
-            fields.forEach(function myFunction(f) {
-                select[0].add(new Option(f));
+            fields.forEach(function myFunction(f,i) {
+                select[0].add(new Option(f,i));
             });
+            select.val(null)
+            select.trigger('change');
         });
+    }
+
+    function CSVToArray( strData, strDelimiter ){
+        strDelimiter = (strDelimiter || ",");
+        var objPattern = new RegExp(
+            (
+                // Delimiters.
+                "(\\" + strDelimiter + "|\\r?\\n|\\r|^)" +
+
+                // Quoted fields.
+                "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" +
+
+                // Standard fields.
+                "([^\"\\" + strDelimiter + "\\r\\n]*))"
+            ),
+            "gi"
+            );
+        var arrData = [[]];
+        var arrMatches = null;
+        while (arrMatches = objPattern.exec( strData )){
+            var strMatchedDelimiter = arrMatches[ 1 ];
+            if (
+                strMatchedDelimiter.length &&
+                strMatchedDelimiter !== strDelimiter
+                ){
+                arrData.push( [] );
+            }
+
+            var strMatchedValue;
+            if (arrMatches[ 2 ]){
+                strMatchedValue = arrMatches[ 2 ].replace(
+                    new RegExp( "\"\"", "g" ),
+                    "\""
+                    );
+
+            } else {
+                strMatchedValue = arrMatches[ 3 ];
+
+            }
+            arrData[ arrData.length - 1 ].push( strMatchedValue );
+        }
+        return( arrData );
+    }
+
+    function create_post() {
+        $('#btn-submit').prop('disabled', true);
+            
+        showOverlay();
+
+        try {
+            data = {
+                "file_name": document.getElementById("file-input").files[0].name,
+                "has_header": ($('#select-hasheader').val() === 'true'),
+                "import_all_files":  ($('#select-importall').val() === 'true'),
+                "used_fields" : [],
+                "collections": [],
+                "edges": []
+            };
+            lastCollectionName = null
+            $('#tableimport > tbody > tr').each(function(e){
+                tr = $(this);
+                selected_field_select = tr.find('select[name=file-field]').first();
+                if(selected_field_select != undefined && selected_field_select.val()!=null) {
+                    collection_label = tr.find('i[name=source]').first();
+                    collection_name = collection_label.attr('data-source')
+                    type = parseInt(collection_label.attr('data-type'))
+
+                    if (lastCollectionName!=collection_name){
+                        if(type==0){
+                            data['collections'].push({
+                                "name": collection_name,
+                                "fields_indecies" : [],
+                                "fields" : []
+                            })
+                        }else if(type==1){
+                            data['edges'].push({
+                                "name": collection_name,
+                                "fields_indecies" : [],
+                                "fields" : []
+                            })
+                        }
+                    }
+
+                    lastCollectionName = collection_name;
+                    ff_index = parseInt(tr.find('select[name=file-field]').first().val())
+                    cfields = {
+                        "name": tr.find('i[name=field]').first().attr('data-field'),
+                        "type": tr.find('i[name=field-data-type]').first().attr('data-type'),
+                        "date_format": tr.find('input[name=format]').first().val(),
+                        "match": tr.find('input[name=identity]').first().is(':checked'),
+                        "ff_index": ff_index
+                    }
+
+                    if(type==0){
+                        data['collections'][data['collections'].length - 1]['fields'].push(cfields);
+                        data['collections'][data['collections'].length - 1]['fields_indecies'].push(ff_index);
+                    }else if(type==1){
+                        data['edges'][data['edges'].length - 1]['fields'].push(cfields);
+                        data['edges'][data['edges'].length - 1]['fields_indecies'].push(ff_index);
+                    }
+
+                    data['used_fields'].push(ff_index);
+                }
+            });
+            console.log(JSON.stringify(data));
+
+            $.ajax({
+                url : "/import/", // the endpoint
+                type : "POST", // http method
+                data : { 
+                    action: 'generate_python_importer',
+                    csrfmiddlewaretoken: '{{ csrf_token }}',
+                    meta : JSON.stringify(data)
+                }, // data sent with the post request
+
+                success : function(response) {
+                    hideOverlay();
+                    showSuccess('جاري تحميل الملف')
+                    const link = document.createElement("a");
+                    link.href = 'data:text/plain,' + response.replaceAll('true','True').replaceAll('false','False');
+                    link.download = 'import.py';
+                    link.click();
+                    $('#btn-submit').prop('disabled', false);
+                },
+
+                error : get_ajax_error_function()
+            });
+        } catch (e) {
+            showError(e);
+            console.error(e);
+            $('#btn-submit').prop('disabled', false);
+            hideOverlay();
+        }
     }
 </script>
 {% endblock %}

@@ -18,16 +18,12 @@ from datacoreapp import master_page_view
 
 class MasterPageView(master_view.MasterView):
     def get(self, request):
-        context = views.get_context(request)
-        self.before_render(context, request)
-
-        master_check_result = super().master_check(None, context, request)
-        if master_check_result and not request.path.startswith('/'+master_check_result.split('/')[1]) and not request.path.startswith('/error'):
-            return redirect(master_check_result)
+        result = super().get(request)
+        if self.page_redirected:
+            return result
+        else:
+            context = result
         
-        if not super().user_has_permission(None,context, request) and not request.path.startswith('/error'):
-            return redirect('/error/?code=403&cause=' + urllib.parse.quote('ليس لديك صلاحيّة للمتابعة'.encode('utf8')))
-
         if not self.template_name == 'error':
             page = next((p for p in context['pages'] if p.english_name == self.english_name), None)
             page.selected = True
@@ -38,10 +34,13 @@ class MasterPageView(master_view.MasterView):
             context['code'] = request.GET.get('code')
             context['cause'] = request.GET.get('cause')
 
-        return render(request, self.template_name + '.html', context)
+        return self.parse_response(render(request, self.template_name + '.html', context))
     
     def before_render(self, context, request):
-        pass
+        super().before_render(context, request)
+
+    def parse_response(self, response, parser=None, content_type=None, file_name = None):
+        return super().parse_response(response, parser, content_type, file_name)
 
     def post(self, request):
         try:
@@ -50,27 +49,17 @@ class MasterPageView(master_view.MasterView):
                 return super_result;
             
             form_data = Form(request.POST)
-            code = "0"
-            message = 'تمّت العمليّة بنجاح'
+            result = None
             if form_data.is_valid():
                 result = self.post_recieved(form_data.data, request)
-                code = result[0]
-                message = result[1]
             else:
-                code = '1'
-                message = 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'
+                result = self.parse_response({"code":  '1' , "message": 'الرجاء التأكد من تعبئة كل الخانات المطلوبة' }, 'json')
 
-            return HttpResponse(
-                json.dumps({"code":  code , "message": message }),
-                content_type="application/json"
-            )
+            return result
         except Exception as e:
             logging.error(traceback.format_exc())
             code = '1'
-            return HttpResponse(
-                json.dumps({"code":  code , "message": str(e) }),
-                content_type="application/json"
-            )
+            return self.parse_response({"code":  code , "message": str(e) }, 'json')
 
-    def post_recieved(data, request):
-        raise NotImplementedError("Method 'add' not implemented!")
+    def post_recieved(self, data, request):
+        return self.parse_response({"code":  '1' , "message": 'method not implemented \'post_recieved\'' }, 'json')

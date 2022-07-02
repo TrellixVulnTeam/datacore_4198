@@ -1,4 +1,5 @@
 import json
+from operator import truediv
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.views import View 
@@ -16,10 +17,10 @@ class ImportView(master_page_view.MasterPageView):
         context['relations'] = models.Relation.objects.all()
         sources = {}
         for b in models.Bank.objects.all().iterator():
-            sources['bank.' + str(b.id)] = self.get_bank_fields(b)
+            sources['collection.' + str(b.id)] = self.get_bank_fields(b)
         
         for r in models.Relation.objects.all().iterator():
-            sources['relation.' + str(r.id)] = self.get_relation_fields(r)
+            sources['edge.' + str(r.id)] = self.get_relation_fields(r)
         
         context['sources'] = json.dumps(sources)
     
@@ -27,7 +28,7 @@ class ImportView(master_page_view.MasterPageView):
         fields = []
         fields += self.get_bank_fields(r.from_bank)
         for f in r.data_fields.all().iterator():
-            field = ['relation', r.id, r.arabic_name, 'bi-diagram-3-fill', f.id, f.arabic_name, datacore_tags.to_arabic_data_type(f.data_type), datacore_tags.equals(f.data_type.lower(),'date')]
+            field = ['1', 'edge_' +r.english_name, r.arabic_name, 'bi-diagram-3-fill', 'f_' + f.english_name, f.arabic_name, f.data_type, datacore_tags.to_arabic_data_type(f.data_type), datacore_tags.equals(f.data_type.lower(),'date')]
             fields.append(field)
         fields += self.get_bank_fields(r.to_bank)
         return fields
@@ -35,6 +36,15 @@ class ImportView(master_page_view.MasterPageView):
     def get_bank_fields(self, b):
         fields = []
         for f in b.data_fields.all().iterator():
-            field = ['bank', b.id, b.arabic_name, b.icon_class, f.id, f.arabic_name, datacore_tags.to_arabic_data_type(f.data_type), datacore_tags.equals(f.data_type.lower(),'date')]
+            field = ['0', 'col_' + b.english_name, b.arabic_name, b.icon_class, 'f_' + f.english_name, f.arabic_name, f.data_type, datacore_tags.to_arabic_data_type(f.data_type), datacore_tags.equals(f.data_type.lower(),'date')]
             fields.append(field)
         return fields
+
+
+    def post_recieved(self, data, request):
+        if not data['meta'] or len(data['meta'])==0:
+            return super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'), 'json')
+
+        json_meta = json.loads(data['meta'],)
+        context = {'config' : json.dumps(json_meta, indent=4, sort_keys=True)}
+        return super().parse_response(render(request, 'import_template.py',context))

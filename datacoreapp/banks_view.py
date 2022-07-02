@@ -27,27 +27,27 @@ class BanksView(master_entity_view.MasterEntityView):
     def add(self, data, request):
         db = models.Database.objects.filter(english_name=request.user.current_database_name).first()
         if not db:
-            return('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة')
+            return super().parse_response(('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة'),'json')
 
         if not data["english_name"] or not data["arabic_name"]:
-            return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
+            return super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'),'json')
 
         oldEntity = self.model.objects.filter(Q(english_name = data['english_name']) | Q(arabic_name = data['arabic_name']), database__id=db.id).first()
 
         if oldEntity:
-            return('1', 'يوجد بنك بنفس الاسم، الرجاء اختيار اسم آخر')
+            return super().parse_response(('1', 'يوجد بنك بنفس الاسم، الرجاء اختيار اسم آخر'),'json')
 
         if data['data_fields']:
             jsonarray = json.loads(data['data_fields'])
             for f in jsonarray:
                 if not f["english_name"] or not f["arabic_name"] or not len(f["english_name"])>0 or not len(f["arabic_name"])>0:
-                    return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
+                    return super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'),'json')
                 countf = 0
                 for f2 in jsonarray:
                     if f["english_name"] == f2["english_name"] or f["arabic_name"] == f2["arabic_name"]:
                         countf+=1
                 if countf > 1:
-                    return('1', 'لا يمكن وجود حقلين بنفس الاسم')
+                    return super().parse_response(('1', 'لا يمكن وجود حقلين بنفس الاسم'),'json')
 
         bank = models.Bank()
         bank.english_name = data['english_name']
@@ -76,29 +76,29 @@ class BanksView(master_entity_view.MasterEntityView):
                 #--------------------#
                 tempdf.save()
         
-        return ('0','تمّت العمليّة بنجاح')
+        return  super().parse_response(('0','تمّت العمليّة بنجاح'),'json')
 
     def edit(self, data, request):
         db = models.Database.objects.filter(english_name=request.user.current_database_name).first()
         if not db:
-            return('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة')
+            return super().parse_response(('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة'),'json')
         
         if not data["english_name"] or not data["arabic_name"]:
-            return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
+            return super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'),'json')
 
         oldEntity = self.model.objects.filter(english_name = data['english_name'], database__id=db.id).first()
         if not oldEntity:
-            return('1', 'لا يوجد بنك بنفس الاسم')
+            return super().parse_response(('1', 'لا يوجد بنك بنفس الاسم'),'json')
 
         tempentity = self.model.objects.filter(~Q(english_name = data['english_name']), Q(arabic_name = data['arabic_name']), database__id=db.id).first()
         if tempentity:
-            return('1', 'يوجد بنك بنفس الاسم العربي')
+            return super().parse_response(('1', 'يوجد بنك بنفس الاسم العربي'),'json')
 
         if data['data_fields']:
             jsonarray = json.loads(data['data_fields'])
             for f in jsonarray:
                 if not f["english_name"] or not f["arabic_name"] or not len(f["english_name"])>0 or not len(f["arabic_name"])>0:
-                    return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
+                    return super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'),'json')
             
             for f in jsonarray:
                 fieldFound = False
@@ -154,19 +154,19 @@ class BanksView(master_entity_view.MasterEntityView):
         oldEntity.replication_factor = int(data['replication_factor'])
         oldEntity.save(force_update=True)
 
-        return ('0','تمّت العمليّة بنجاح')
+        return super().parse_response(('0','تمّت العمليّة بنجاح'),'json')
 
     def delete(self, data, request):
         db = models.Database.objects.filter(english_name=request.user.current_database_name).first()
         if not db:
-            return('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة')
+            return super().parse_response(('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة'),'json')
             
         oldEntity = self.model.objects.filter(english_name = data['entityid'], database__id=db.id).first()
         if not oldEntity:
-            return('1', 'لا يوجد بنك بنفس الاسم')
+            return super().parse_response(('1', 'لا يوجد بنك بنفس الاسم'),'json')
 
         if models.Relation.objects.filter(Q(from_bank = oldEntity.id) | Q(to_bank = oldEntity.id)).count() > 0:
-            return('1', 'يجب حذف كل العلاقات المرتبطة بهذا البنك قبل التمكن من حذفه')
+            return super().parse_response(('1', 'يجب حذف كل العلاقات المرتبطة بهذا البنك قبل التمكن من حذفه'),'json')
 
         ArangoAgent(db.english_name).delete_collection(oldEntity.english_name)
         for view in models.View.objects.all().iterator():
@@ -177,4 +177,4 @@ class BanksView(master_entity_view.MasterEntityView):
                         break
         oldEntity.delete()
 
-        return ('0','تمّت العمليّة بنجاح')
+        return super().parse_response(('0','تمّت العمليّة بنجاح'),'json')

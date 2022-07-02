@@ -24,12 +24,12 @@ class DatabasesView(master_entity_view.MasterEntityView):
 
     def add(self, data, request):
         if not data['english_name'] or not data['arabic_name']:
-            return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
+            return  super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'),'json')
 
         oldEntity = self.model.objects.filter(Q(english_name = data['english_name']) | Q(arabic_name = data['arabic_name'])).first()
 
         if oldEntity:
-            return('1', 'يوجد قاعدة بيانات بنفس الاسم، الرجاء اختيار اسم آخر')
+            return  super().parse_response(('1', 'يوجد قاعدة بيانات بنفس الاسم، الرجاء اختيار اسم آخر'),'json')
 
         db = models.Database()
         db.english_name = data['english_name']
@@ -44,19 +44,19 @@ class DatabasesView(master_entity_view.MasterEntityView):
 
             db.save()
 
-        return ('0','تمّت العمليّة بنجاح')
+        return  super().parse_response(('0','تمّت العمليّة بنجاح'),'json')
 
     def edit(self, data, request):
         if not data['english_name'] or not data['arabic_name']:
-            return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
+            return  super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'),'json')
         
         oldEntity = self.model.objects.filter(english_name = data['english_name']).first()
         if not oldEntity:
-            return('1', 'لا يوجد قاعدة بيانات بنفس الاسم')
+            return  super().parse_response(('1', 'لا يوجد قاعدة بيانات بنفس الاسم'),'json')
 
         tempentity = self.model.objects.filter(~Q(english_name = data['english_name']), Q(arabic_name = data['arabic_name'])).first()
         if tempentity:
-            return('1', 'يوجد قاعدة بيانات بنفس الاسم العربي')
+            return  super().parse_response(('1', 'يوجد قاعدة بيانات بنفس الاسم العربي'),'json')
 
         if data['allowed_users'] and len(data['allowed_users'])>0:
             for df in data["allowed_users"].split(','):
@@ -84,12 +84,12 @@ class DatabasesView(master_entity_view.MasterEntityView):
         oldEntity.arabic_name = data['arabic_name']
         oldEntity.save()
 
-        return ('0','تمّت العمليّة بنجاح')
+        return  super().parse_response(('0','تمّت العمليّة بنجاح'),'json')
 
     def delete(self, data, request):
         oldEntity = self.model.objects.filter(english_name = data['entityid']).first()
         if not oldEntity:
-            return('1', 'لا يوجد قاعدة بيانات بنفس الاسم')
+            return super().parse_response(('1', 'لا يوجد قاعدة بيانات بنفس الاسم'),'json')
 
         ArangoAgent().delete_database(oldEntity.english_name)
 
@@ -100,6 +100,6 @@ class DatabasesView(master_entity_view.MasterEntityView):
 
         oldEntity.delete()
 
-        return ('0','تمّت العمليّة بنجاح')
+        return super().parse_response(('0','تمّت العمليّة بنجاح'),'json')
 
    

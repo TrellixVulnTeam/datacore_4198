@@ -23,18 +23,18 @@ class ViewsView(master_entity_view.MasterEntityView):
     def add(self, data, request):
         db = models.Database.objects.filter(english_name=request.user.current_database_name).first()
         if not db:
-            return('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة')
+            return super().parse_response(('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة'),'json')
             
         if not data["english_name"] or not data["arabic_name"]:
-            return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
+            return super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'),'json')
         
         oldEntity = self.model.objects.filter(Q(english_name = data['english_name']) | Q(arabic_name = data['arabic_name']), database__id=db.id).first()
 
         if oldEntity:
-            return('1', 'يوجد ملف بنفس الاسم، الرجاء اختيار اسم آخر')
+            return super().parse_response(('1', 'يوجد ملف بنفس الاسم، الرجاء اختيار اسم آخر'),'json')
 
         if not data['data_fields'] or len(data['data_fields'])==0:
-            return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
+            return super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'),'json')
 
         view = models.View()
         view.english_name = data['english_name']
@@ -56,26 +56,26 @@ class ViewsView(master_entity_view.MasterEntityView):
             
         view.save()
 
-        return ('0','تمّت العمليّة بنجاح')
+        return super().parse_response(('0','تمّت العمليّة بنجاح'),'json')
 
     def edit(self, data, request):
         db = models.Database.objects.filter(english_name=request.user.current_database_name).first()
         if not db:
-            return('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة')
+            return super().parse_response(('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة'),'json')
             
         if not data["english_name"] or not data["arabic_name"]:
-            return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
+            return super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'),'json')
 
         oldEntity = self.model.objects.filter(english_name = data['english_name'], database__id=db.id).first()
         if not oldEntity:
-            return('1', 'لا يوجد ملف بنفس الاسم')
+            return super().parse_response(('1', 'لا يوجد ملف بنفس الاسم'),'json')
 
         tempentity = self.model.objects.filter(~Q(english_name = data['english_name']), Q(arabic_name = data['arabic_name']), database__id=db.id).first()
         if tempentity:
-            return('1', 'يوجد ملف بنفس الاسم العربي')
+            return super().parse_response(('1', 'يوجد ملف بنفس الاسم العربي'),'json')
 
         if not data['data_fields'] or len(data['data_fields'])==0:
-            return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
+            return super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'),'json')
         
         for df in data["data_fields"].split(','):
             found = False
@@ -106,20 +106,20 @@ class ViewsView(master_entity_view.MasterEntityView):
         oldEntity.compressed = str2bool(data['compressed'])
         oldEntity.save()
 
-        return ('0','تمّت العمليّة بنجاح')
+        return super().parse_response(('0','تمّت العمليّة بنجاح'),'json')
 
     def delete(self, data, request):
         db = models.Database.objects.filter(english_name=request.user.current_database_name).first()
         if not db:
-            return('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة')
+            return super().parse_response(('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة'),'json')
             
         oldEntity = self.model.objects.filter(english_name = data['entityid'], database__id=db.id).first()
         if not oldEntity:
-            return('1', 'لا يوجد ملف بنفس الاسم')
+            return super().parse_response(('1', 'لا يوجد ملف بنفس الاسم'),'json')
 
         ArangoAgent(db.english_name).delete_arangosearch_view(oldEntity.english_name)
         oldEntity.delete()
 
-        return ('0','تمّت العمليّة بنجاح')
+        return super().parse_response(('0','تمّت العمليّة بنجاح'),'json')
 
    

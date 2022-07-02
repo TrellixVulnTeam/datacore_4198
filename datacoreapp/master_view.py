@@ -4,18 +4,35 @@ import traceback
 from django.contrib.auth.decorators import login_required
 from django.forms import Form
 from django.http import HttpResponse
+from django.shortcuts import redirect
 from django.utils.decorators import method_decorator
-from django.views import View 
+from django.views import View
+import urllib 
 from datacoreapp import models, views
 
 @method_decorator(login_required, name='dispatch')
 class MasterView(View):
     english_name = ''
     template_name = ''
+    page_redirected = False
 
-    def master_check(self, entity, context, request):
+    def get(self, request):
+        context = views.get_context(request)
+        self.before_render(context, request)
+
+        master_check_result = self.master_check(context, request)
+        if master_check_result and not request.path.startswith('/'+master_check_result.split('/')[1]) and not request.path.startswith('/error'):
+            self.page_redirected = True
+            return redirect(master_check_result)
+        elif not self.user_has_permission(context, request) and not request.path.startswith('/error'):
+            return redirect('/error/?code=403&cause=' + urllib.parse.quote('ليس لديك صلاحيّة للمتابعة'.encode('utf8')))
+        else:
+            self.page_redirected = False
+            return self.parse_response(context)
+
+    def master_check(self, context, request):
         if models.Database.objects.count() == 0 and not request.path.startswith('/users'):
-            context['entity'] = entity
+            context['entity'] = models.Database()
             context['action'] = 'add'
             context['subtitle'] = 'جديد'
             context['arabic_action'] = 'إضافة'
@@ -38,12 +55,15 @@ class MasterView(View):
                 
         return None
     
-    def user_has_permission(self, entity, context, request):
+    def user_has_permission(self, context, request):
         if not request.user.is_superuser:
             if not request.user.user_permissions or request.path.split('/')[1].lower() not in request.user.user_permissions.split(','):
                 return False
         return True
 
+    def before_render(self, context, request):
+        pass
+    
     def post(self, request):
         try:
             form_data = Form(request.POST)
@@ -86,14 +106,25 @@ class MasterView(View):
                 code = '1'
                 message = 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'
 
-            return HttpResponse(
-                json.dumps({"code":  code , "message": message }),
-                content_type="application/json"
-            )
+            return self.parse_response({"code":  code , "message": message },'json')
         except Exception as e:
             logging.error(traceback.format_exc())
             code = '1'
+            return self.parse_response({"code":  code , "message": str(e)},'json')
+
+    def parse_response(self, response, parser=None, content_type=None, file_name = None):
+        if parser == None:
+            return response
+        elif parser == 'json':
+            if isinstance(response, tuple):
+                response = {"code":  response[0] , "message": response[1]}
             return HttpResponse(
-                json.dumps({"code":  code , "message": str(e) }),
-                content_type="application/json"
-            )
+                    json.dumps(response),
+                    content_type="application/json"
+                )
+        elif parser == 'file':
+            response = HttpResponse(response, content_type=content_type)
+            response['Content-Disposition'] = 'inline; filename=' + file_name
+            return response
+        else:
+            return response

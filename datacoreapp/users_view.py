@@ -19,12 +19,12 @@ class UsersView(master_entity_view.MasterEntityView):
 
     def add(self, data, request):
         if not data["english_name"] or not data["arabic_name"]:
-            return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
+            return  super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'),'json')
         
         oldEntity = self.model.objects.filter(Q(username = data['english_name']) | Q(arabic_name = data['arabic_name'])).first()
 
         if oldEntity:
-            return('1', 'يوجد مستخدم بنفس الاسم، الرجاء اختيار اسم آخر')
+            return  super().parse_response(('1', 'يوجد مستخدم بنفس الاسم، الرجاء اختيار اسم آخر'),'json')
 
         user = models.User.objects.create_user(data['english_name'], password='123456789')
         user.english_name = data['english_name']
@@ -37,25 +37,25 @@ class UsersView(master_entity_view.MasterEntityView):
         user.current_database_name = data["current_database_name"]
         user.save()
 
-        return ('0','تمّت العمليّة بنجاح')
+        return  super().parse_response(('0','تمّت العمليّة بنجاح'),'json')
 
     def edit(self, data, request):
         if not data["english_name"] or not data["arabic_name"]:
-            return('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة')
+            return  super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'),'json')
 
         oldEntity = self.model.objects.filter(username = data['english_name']).first()
         if not oldEntity:
-            return('1', 'لا يوجد مستخدم بنفس الاسم')
+            return  super().parse_response(('1', 'لا يوجد مستخدم بنفس الاسم'),'json')
 
         if oldEntity.username == 'admin':
-            return('1', 'لا يمكن تعديل مستخدم المدير')
+            return  super().parse_response(('1', 'لا يمكن تعديل مستخدم المدير'),'json')
 
         if oldEntity.username == request.user.username:
-            return('1', 'لا يمكن تعديل المستخدم الحالي')
+            return  super().parse_response(('1', 'لا يمكن تعديل المستخدم الحالي'),'json')
 
         tempentity = self.model.objects.filter(~Q(username = data['english_name']), Q(arabic_name = data['arabic_name'])).first()
         if tempentity:
-            return('1', 'يوجد مستخدم بنفس الاسم العربي')
+            return  super().parse_response(('1', 'يوجد مستخدم بنفس الاسم العربي'),'json')
 
         oldEntity.first_name = data['arabic_name']
         oldEntity.arabic_name = data['arabic_name']
@@ -65,20 +65,20 @@ class UsersView(master_entity_view.MasterEntityView):
         oldEntity.current_database_name = data["current_database_name"]
         oldEntity.save()
 
-        return ('0','تمّت العمليّة بنجاح')
+        return  super().parse_response(('0','تمّت العمليّة بنجاح'),'json')
 
     def delete(self, data, request):
         if data['entityid'] == 'admin':
-            return('1', 'لا يمكن حذف مستخدم المدير')
+            return  super().parse_response(('1', 'لا يمكن حذف مستخدم المدير'),'json')
         
         if data['entityid'] == request.user.username:
-            return('1', 'لا يمكن حذف المستخدم الحالي')
+            return  super().parse_response(('1', 'لا يمكن حذف المستخدم الحالي'),'json')
 
         oldEntity = self.model.objects.filter(username = data['entityid']).first()
         if not oldEntity:
-            return('1', 'لا يوجد مستخدم بنفس الاسم')
+            return  super().parse_response(('1', 'لا يوجد مستخدم بنفس الاسم'),'json')
         oldEntity.delete()
 
-        return ('0','تمّت العمليّة بنجاح')
+        return  super().parse_response(('0','تمّت العمليّة بنجاح'),'json')
 
    
