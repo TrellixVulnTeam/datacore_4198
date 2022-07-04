@@ -336,3 +336,37 @@ function change_password(csrf_token, userid) {
       }
   });
 };
+
+function createTable(tableData) {
+  var table = document.createElement('table');
+  table.classList="table table-striped"
+  var tableHead = document.createElement('thead');
+  var tableBody = document.createElement('tbody');
+
+  tableData.forEach(function(rowData, index) {
+    var row = document.createElement('tr');
+
+    var c_ = document.createElement('th');
+    c_.appendChild(document.createTextNode(index==0 ? '#' : index));
+    row.appendChild(c_);
+
+    rowData.forEach(function(cellData) {
+      var cell = document.createElement(index==0 ? 'th' : 'td');
+      cell.classList = "ellipsis"
+      cell.style = "max-width:100px"
+      if(index>1 && index==tableData.length-1)
+        cellData = '...';
+      cell.appendChild(document.createTextNode(cellData));
+      row.appendChild(cell);
+    });
+
+    if(index==0)
+      tableHead.appendChild(row)
+    else
+      tableBody.appendChild(row);
+  });
+
+  table.appendChild(tableHead);
+  table.appendChild(tableBody);
+  return table;
+}

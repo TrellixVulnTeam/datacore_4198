@@ -11,11 +11,14 @@ from datacoreapp.templatetags import datacore_tags
 class ImportView(master_page_view.MasterPageView):
     english_name = 'Import'
     template_name = 'import'
-
+    col_index = -1
+    edge_index = -1
     def before_render(self, context, request):
         context['banks'] = models.Bank.objects.all()
         context['relations'] = models.Relation.objects.all()
         sources = {}
+        self.col_index = -1
+        self.edge_index = -1
         for b in models.Bank.objects.all().iterator():
             sources['collection.' + str(b.id)] = self.get_bank_fields(b)
         
@@ -26,17 +29,19 @@ class ImportView(master_page_view.MasterPageView):
     
     def get_relation_fields(self, r):
         fields = []
+        self.edge_index += 1
         fields += self.get_bank_fields(r.from_bank)
         for f in r.data_fields.all().iterator():
-            field = ['1', 'edge_' +r.english_name, r.arabic_name, 'bi-diagram-3-fill', 'f_' + f.english_name, f.arabic_name, f.data_type, datacore_tags.to_arabic_data_type(f.data_type), datacore_tags.equals(f.data_type.lower(),'date')]
+            field = ['1', 'edge_' +r.english_name, r.arabic_name, 'bi-diagram-3-fill', 'f_' + f.english_name, f.arabic_name, f.data_type, datacore_tags.to_arabic_data_type(f.data_type), datacore_tags.equals(f.data_type.lower(),'date'), self.edge_index]
             fields.append(field)
         fields += self.get_bank_fields(r.to_bank)
         return fields
 
     def get_bank_fields(self, b):
         fields = []
+        self.col_index += 1
         for f in b.data_fields.all().iterator():
-            field = ['0', 'col_' + b.english_name, b.arabic_name, b.icon_class, 'f_' + f.english_name, f.arabic_name, f.data_type, datacore_tags.to_arabic_data_type(f.data_type), datacore_tags.equals(f.data_type.lower(),'date')]
+            field = ['0', 'col_' + b.english_name, b.arabic_name, b.icon_class, 'f_' + f.english_name, f.arabic_name, f.data_type, datacore_tags.to_arabic_data_type(f.data_type), datacore_tags.equals(f.data_type.lower(),'date'),self.col_index]
             fields.append(field)
         return fields
 
@@ -46,5 +51,5 @@ class ImportView(master_page_view.MasterPageView):
             return super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'), 'json')
 
         json_meta = json.loads(data['meta'],)
-        context = {'config' : json.dumps(json_meta, indent=4, sort_keys=True)}
+        context = {'config' : json.dumps(json_meta, indent=4, sort_keys=False)}
         return super().parse_response(render(request, 'import_template.py',context))

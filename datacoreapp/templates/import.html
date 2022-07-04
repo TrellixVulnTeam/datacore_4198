@@ -14,6 +14,24 @@
     color: coral;
 }
 
+.vertical-center {
+  margin: 0;
+  position: absolute;
+  top: 50%;
+  -ms-transform: translateY(-50%);
+  transform: translateY(-50%);
+  align-items: center;
+  right: 44%;
+}
+
+.select2-container {
+    width: auto !important;
+}
+
+table{
+    width: 100%;
+}
+
 td > .select2-container {
     max-width: 200px;
 }
@@ -31,57 +49,67 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
 {% endblock %}
 
 {% block content %}
-<div class="row" style="max-width: 800px;">
-    <div class="form-group col-12" style="margin-top: 10px;">
-        <label class="col-12" style="margin-bottom: 3px;">استيراد من ملف</label>
-        <div class="input-group mb-3">
-            <span class="input-group-text" id="basic-addon3" onclick="document.getElementById('file-input').click()">إختر ملف</span>
-            <input type="text" class="form-control" placeholder="لم يتم اختيار ملف بعد" id="file-input-holder" aria-describedby="basic-addon3" onclick="document.getElementById('file-input').click()">
-            <input class="form-control" type="file" name="fileinput" id="file-input" style="display: none;" accept=".csv" onclick="this.value=null;"/>
-        </div
-    </div>
-    <div class="form-group col-12" style="margin-top: 10px;">
-        <label class="col-12" style="margin-bottom: 3px;">السطر الأول يحتوي على العناوين؟</label>
-        <select class="form-control form-select" id="select-hasheader" name="hasheader">
-            <option value="true">نعم</option>
-            <option value="false">كلا</option>
-        </select>
-    </div>
-    <div class="form-group col-12" style="margin-top: 10px;">
-        <label class="col-12" style="margin-bottom: 3px;">استيراد كل الملفات القريبة؟</label>
-        <select class="form-control form-select" id="select-importall" name="importall">
-            <option value="true">نعم</option>
-            <option value="false">كلا</option>
-        </select>
-    </div>
-    <div class="form-group col-12" style="margin-top: 10px;">
-        <label class="col-12" style="margin-bottom: 3px;">استيراد الى</label>
-        <select class="form-control icon-picker" id="select-source" name="source">
-            {% for b in banks|iterator %}
-            <option value="collection.{{b.id}}" data-icon="{{b.icon_class}}" data-ar-src="بنك">{{b.arabic_name}}</option>
-            {% endfor %}
-            {% for r in relations|iterator %}
-            <option value="edge.{{r.id}}" data-icon="bi-diagram-3-fill" data-ar-src="علاقة">{{r.arabic_name}}
-            </option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="form-group col-12" style="margin-top: 10px;">
-        <table id="tableimport" class="table bluetable" style="width: -webkit-fill-available;">
-            <thead>
-                <tr>
-                    <th style="min-width: 150px;">البنك/العلاقة</th>
-                    <th>الحقل</th>
-                    <th style="min-width: 100px;">نوع الحقل</th>
-                    <th>المعالجة</th>
-                    <th>مُعرّف؟</th>
-                    <th style="min-width: 150px;">الحقل المُوازي</th>
-                </tr>
-            </thead>
-            <tbody>
+<div style="display: flex; flex-direction: row;">
+    <div style="max-width: 800px;">
+        <div class="form-group col-12" style="margin-top: 10px;">
+            <label class="col-12" style="margin-bottom: 3px;">استيراد من ملف</label>
+            <div class="input-group mb-3">
+                <span class="input-group-text" id="basic-addon3" onclick="document.getElementById('file-input').click()">إختر ملف</span>
+                <input type="text" style="z-index: 0;" class="form-control" placeholder="لم يتم اختيار ملف بعد" id="file-input-holder" aria-describedby="basic-addon3" onclick="document.getElementById('file-input').click()">
+                <input class="form-control" type="file" name="fileinput" id="file-input" style="display: none;" accept=".csv" onclick="this.value=null;"/>
+            </div>
+        </div>
+        <div class="form-group col-12" style="margin-top: 10px;">
+            <label class="col-12" style="margin-bottom: 3px;">السطر الأول يحتوي على العناوين؟</label>
+            <select class="form-control form-select" id="select-hasheader" name="hasheader">
+                <option value="true">نعم</option>
+                <option value="false">كلا</option>
+            </select>
+        </div>
+        <div class="form-group col-12" style="margin-top: 10px;">
+            <label class="col-12" style="margin-bottom: 3px;">استيراد كل الملفات القريبة؟</label>
+            <select class="form-control form-select" id="select-importall" name="importall">
+                <option value="true">نعم</option>
+                <option value="false">كلا</option>
+            </select>
+        </div>
+        <div class="form-group col-12" style="margin-top: 10px;">
+            <label class="col-12" style="margin-bottom: 3px;">استيراد الى</label>
+            <select class="form-control icon-picker" id="select-source" name="source">
+                {% for b in banks|iterator %}
+                    <option value="collection.{{b.id}}" data-icon="{{b.icon_class}}" data-ar-src="بنك">{{b.arabic_name}}</option>
+                {% endfor %}
+                {% for r in relations|iterator %}
+                    <option value="edge.{{r.id}}" data-icon="bi-diagram-3-fill" data-ar-src="علاقة">{{r.arabic_name}}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group col-12" style="margin-top: 10px;">
+            <table id="tableimport" class="table bluetable" style="width: -webkit-fill-available;">
+                <thead>
+                    <tr>
+                        <th style="min-width: 150px;">البنك/العلاقة</th>
+                        <th>الحقل</th>
+                        <th style="min-width: 100px;">نوع الحقل</th>
+                        <th>المعالجة</th>
+                        <th>مُعرّف؟</th>
+                        <th style="min-width: 150px;">الحقل المُوازي</th>
+                    </tr>
+                </thead>
+                <tbody>
 
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div id="preview-container" style="position: relative; flex-grow: 1;background-color: rgb(243 243 243 / 35%);margin: 35px 35px 10px 0px; overflow-x: auto;max-height: 446px; border: 1px solid #efefef;">
+        <div id="data-preview-empty" class="vertical-center" style="display: flex; flex-direction: column;">
+            <span class="bi-table" style="font-size: 22px; color: lightgray;"></span>
+            <span style="font-size: 12px; color: lightgray;">العرض غير متوفر</span>
+        </div>
+        <div id="data-preview" style="background-color: white;">
+            
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -129,6 +157,7 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
                 addRows(item);
             });
             fill_file_fields();
+            $('#preview-container').css({"maxHeight": + (document.getElementById('tableimport').clientHeight + 273) + 'px'});
         })
 
         $('#select-source').val(Object.keys(dict)[0])
@@ -137,18 +166,25 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
 
     function addRows(data) {
         var tbodyRef  = document.getElementById('tableimport').getElementsByTagName('tbody')[0];
-        var row = tbodyRef .insertRow();
+        var row = tbodyRef.insertRow();
+        if(data[0]==0)
+            row.style = "background-color: rgb(190 245 255 / 43%);"
+        else
+            row.style = "background-color: #f9ffd5;"
 
         var cell1 = row.insertCell(0);
-        cell1.innerHTML = '<i name="source" data-type="'+data[0]+'" data-source="'+data[1]+'"><span class="'+data[3]+' pl10"></span>'+data[2]+'</i>';
+        cell1.innerHTML = '<i name="source" source-index="' + data[9] + '" data-type="'+data[0]+'" data-source="'+data[1]+'"><span class="'+data[3]+' pl10"></span>'+data[2]+'</i>';
         var cell2 = row.insertCell(1);
         cell2.innerHTML = '<i name="field" data-field="'+data[4]+'">'+data[5]+'</i>';
         var cell3 = row.insertCell(2);
         cell3.innerHTML = '<i name="field-data-type" data-type="'+data[6]+'">'+data[7]+'</i>';
         var cell4 = row.insertCell(3);
         disabled_text = ''
-        if (data[8] == false) disabled_text = 'disabled';
-        cell4.innerHTML = '<input name="format" type="text" class="form-control" ' + disabled_text + '/>';
+        if (data[8] == false) 
+            disabled_text = 'disabled';
+        else
+            disabled_text = 'value="%d/%m/%y %H:%M"'
+        cell4.innerHTML = '<input name="format" type="text" style="direction: ltr;" class="form-control" ' + disabled_text + '/>';
         var cell5 = row.insertCell(4);
         cell5.innerHTML = '<input name="identity" type="checkbox" class="form-check" style="margin-right: 12px;">';
         var cell6 = row.insertCell(5);
@@ -179,15 +215,25 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
         });
     }
 
-    $('input[name=fileinput]').change(function (ev) {
+    $('input[name=fileinput]').change(file_changed)
+    $('#select-hasheader').change(file_changed)
+
+    function file_changed(ev){
         var file = document.getElementById("file-input").files[0];
         if (file) {
-            blob = file.slice(0, (file.size < 1000) ? file.size : 1000);
+            blob = file.slice(0, (file.size < 1300) ? file.size : 1300);
             var reader = new FileReader();
             reader.readAsText(blob, "UTF-8");
             reader.onload = function (evt) {
                 try {
                     array = CSVToArray(evt.target.result);
+                    if(!($('#select-hasheader').val() === 'true')){
+                        header = []
+                        for(let i = 0;i<array[0].length;i++){
+                            header[i] = 'حقل_' + i;
+                        }
+                        array.splice(0,0, header);
+                    }
                     fields = array[0]
                     if(fields.length==0)
                     {
@@ -197,6 +243,9 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
                     }
                     fill_file_fields();
                     $("#file-input-holder").val(file.name);
+                    $('#data-preview-empty').hide();
+                    $('#data-preview > table').remove();
+                    document.getElementById('data-preview').appendChild(createTable(array))
                 } catch (e) {
                     showError('فشل اثناء قراءة الملف، الرجاء التأكد من أن الملف مطابق للمواصفات')
                     console.error(e)
@@ -206,7 +255,7 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
                 showError('فشل اثناء قراءة الملف، الرجاء التأكد من أن الملف مطابق للمواصفات')
             }
         }
-    })
+    }
 
     function fill_file_fields(){
         $('select[name=file-field]').each(function myFunction(item) {
@@ -276,52 +325,73 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
                 "collections": [],
                 "edges": []
             };
-            lastCollectionName = null
+            lastSourceName = null;
+            lastCollectionIndex = -1;
             $('#tableimport > tbody > tr').each(function(e){
                 tr = $(this);
                 selected_field_select = tr.find('select[name=file-field]').first();
                 if(selected_field_select != undefined && selected_field_select.val()!=null) {
-                    collection_label = tr.find('i[name=source]').first();
-                    collection_name = collection_label.attr('data-source')
-                    type = parseInt(collection_label.attr('data-type'))
+                    source_label = tr.find('i[name=source]').first();
+                    source_name = source_label.attr('data-source')
+                    type = parseInt(source_label.attr('data-type'))
 
-                    if (lastCollectionName!=collection_name){
+                    if (lastSourceName!=source_name){
                         if(type==0){
+                            lastCollectionIndex = source_label.attr('source-index');
+                            if(data['edges'].length>0)
+                                data['edges'][data['edges'].length-1]["to_col"] = parseInt(lastCollectionIndex);
+
                             data['collections'].push({
-                                "name": collection_name,
+                                "index": parseInt(lastCollectionIndex),
+                                "name": source_name,
                                 "fields_indecies" : [],
-                                "fields" : []
+                                "fields_names" : [],
+                                "fields" : [],
+                                "identity_fields" : []
                             })
                         }else if(type==1){
                             data['edges'].push({
-                                "name": collection_name,
+                                "name": source_name,
+                                "from_col": parseInt(lastCollectionIndex),
+                                "to_col": -1, 
                                 "fields_indecies" : [],
-                                "fields" : []
+                                "fields_names" : [],
+                                "fields" : [],
+                                "identity_fields" : []
                             })
                         }
                     }
 
-                    lastCollectionName = collection_name;
-                    ff_index = parseInt(tr.find('select[name=file-field]').first().val())
+                    lastSourceName = source_name;
+                    ff_index = parseInt(tr.find('select[name=file-field]').first().val());
+                    f_name = tr.find('i[name=field]').first().attr('data-field');
+                    match = tr.find('input[name=identity]').first().is(':checked');
                     cfields = {
-                        "name": tr.find('i[name=field]').first().attr('data-field'),
+                        "name": f_name,
                         "type": tr.find('i[name=field-data-type]').first().attr('data-type'),
                         "date_format": tr.find('input[name=format]').first().val(),
-                        "match": tr.find('input[name=identity]').first().is(':checked'),
+                        "match": match,
                         "ff_index": ff_index
                     }
 
                     if(type==0){
                         data['collections'][data['collections'].length - 1]['fields'].push(cfields);
                         data['collections'][data['collections'].length - 1]['fields_indecies'].push(ff_index);
+                        data['collections'][data['collections'].length - 1]['fields_names'].push(f_name);
+                        if(match)
+                            data['collections'][data['collections'].length - 1]['identity_fields'].push(ff_index);
                     }else if(type==1){
                         data['edges'][data['edges'].length - 1]['fields'].push(cfields);
                         data['edges'][data['edges'].length - 1]['fields_indecies'].push(ff_index);
+                        data['edges'][data['edges'].length - 1]['fields_names'].push(f_name);
+                        if(match)
+                            data['edges'][data['edges'].length - 1]['identity_fields'].push(ff_index);
                     }
 
                     data['used_fields'].push(ff_index);
                 }
             });
+
             console.log(JSON.stringify(data));
 
             $.ajax({
