@@ -341,6 +341,7 @@ function createTable(tableData) {
   var table = document.createElement('table');
   table.classList="table table-striped"
   var tableHead = document.createElement('thead');
+  tableHead.style="background-color: #dfdfdf !important;";
   var tableBody = document.createElement('tbody');
 
   tableData.forEach(function(rowData, index) {

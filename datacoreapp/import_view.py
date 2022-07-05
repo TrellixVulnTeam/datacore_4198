@@ -1,4 +1,6 @@
 import json
+import os, shutil
+import time
 from operator import truediv
 from django.shortcuts import render
 from django.http import HttpResponse
@@ -50,6 +52,23 @@ class ImportView(master_page_view.MasterPageView):
         if not data['meta'] or len(data['meta'])==0:
             return super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'), 'json')
 
-        json_meta = json.loads(data['meta'],)
-        context = {'config' : json.dumps(json_meta, indent=4, sort_keys=False)}
-        return super().parse_response(render(request, 'import_template.py',context))
+        json_meta = json.loads(data['meta'])
+        context = {'config' : json.dumps(json_meta, indent=4, sort_keys=False).replace('true','True').replace('false','False')}
+        pycontent = render(request, 'import_template.py',context).content
+        fileName = 'importer_' + str(time.time_ns()) + '.py'
+
+        downloads_folder = os.path.dirname(os.path.realpath(__file__)) + '\\static\\download\\'
+        for filename in os.listdir(downloads_folder):
+            file_path = os.path.join(downloads_folder, filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+            except Exception as e:
+                print('Failed to delete %s. Reason: %s' % (file_path, e))
+
+        f = open(downloads_folder + fileName, 'x', encoding="utf-8")
+        f.write(pycontent.decode("utf-8"))
+        f.close()
+        return super().parse_response('/static/download/' + fileName,'plain')

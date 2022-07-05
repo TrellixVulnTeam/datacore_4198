@@ -45,6 +45,9 @@ td > .select2-container > .selection > .select2-selection {
 td > .select2-container > .selection > .select2-selection > .select2-selection__arrow {
     height: 28px !important;
 }
+.table>:not(:first-child) {
+    border-top: none;
+}
 </style>
 {% endblock %}
 
@@ -165,6 +168,7 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
     });
 
     function addRows(data) {
+        var time_now = Date.now();
         var tbodyRef  = document.getElementById('tableimport').getElementsByTagName('tbody')[0];
         var row = tbodyRef.insertRow();
         if(data[0]==0)
@@ -173,22 +177,35 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
             row.style = "background-color: #f9ffd5;"
 
         var cell1 = row.insertCell(0);
-        cell1.innerHTML = '<i name="source" source-index="' + data[9] + '" data-type="'+data[0]+'" data-source="'+data[1]+'"><span class="'+data[3]+' pl10"></span>'+data[2]+'</i>';
+        cell1.innerHTML = '<i name="source" source-index="' + data[9] + '" data-type="'+data[0]+'" data-source="'+data[1]+'" data-source-ar="'+data[2]+'"><span class="'+data[3]+' pl10"></span>'+data[2]+'</i>';
         var cell2 = row.insertCell(1);
-        cell2.innerHTML = '<i name="field" data-field="'+data[4]+'">'+data[5]+'</i>';
+        cell2.innerHTML = '<i name="field" data-field="'+data[4]+'" data-field-ar="'+data[5]+'">'+data[5]+'</i>';
         var cell3 = row.insertCell(2);
         cell3.innerHTML = '<i name="field-data-type" data-type="'+data[6]+'">'+data[7]+'</i>';
+
         var cell4 = row.insertCell(3);
         disabled_text = ''
-        if (data[8] == false) 
-            disabled_text = 'disabled';
-        else
+        if (data[8] == true){
             disabled_text = 'value="%d/%m/%y %H:%M"'
-        cell4.innerHTML = '<input name="format" type="text" style="direction: ltr;" class="form-control" ' + disabled_text + '/>';
+            cell4.innerHTML = '<input name="format" type="text" style="direction: ltr;text-align: end;font-size: 14px;" class="form-control" ' + disabled_text + '/>';
+        }else if(data[6]=='String'){
+            cell4.innerHTML = '<select id="sel_format' + time_now + '" name="format" type="select" class="form-select"><option value="translate">ترجمة</option><select>';
+            $('#sel_format' + time_now).select2({
+                allowClear: true,
+                width: '200px',
+                minimumResultsForSearch: -1,
+                placeholder: "اختر نوع المعالجة"
+            });
+            $('#sel_format' + time_now).val(null);
+            $('#sel_format' + time_now).trigger('change');
+        }else{
+            cell4.innerHTML = '<input name="format" type="text" style="direction: ltr;" class="form-control" disabled/>';
+        }
+       
         var cell5 = row.insertCell(4);
         cell5.innerHTML = '<input name="identity" type="checkbox" class="form-check" style="margin-right: 12px;">';
+
         var cell6 = row.insertCell(5);
-        var time_now = Date.now();
         cell6.innerHTML = '<select id="sel_' + time_now + '" name="file-field" class="form-select">';
 
         $('#sel_' + time_now).select2({
@@ -317,6 +334,11 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
         showOverlay();
 
         try {
+
+            if(document.getElementById("file-input").files==null || document.getElementById("file-input").files.length==0){
+                throw new Error('يجب اختيار ملف أوّلاً');
+            }
+
             data = {
                 "file_name": document.getElementById("file-input").files[0].name,
                 "has_header": ($('#select-hasheader').val() === 'true'),
@@ -333,6 +355,7 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
                 if(selected_field_select != undefined && selected_field_select.val()!=null) {
                     source_label = tr.find('i[name=source]').first();
                     source_name = source_label.attr('data-source')
+                    source_name_ar = source_label.attr('data-source-ar')
                     type = parseInt(source_label.attr('data-type'))
 
                     if (lastSourceName!=source_name){
@@ -344,6 +367,7 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
                             data['collections'].push({
                                 "index": parseInt(lastCollectionIndex),
                                 "name": source_name,
+                                "name_ar": source_name_ar,
                                 "fields_indecies" : [],
                                 "fields_names" : [],
                                 "fields" : [],
@@ -352,6 +376,7 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
                         }else if(type==1){
                             data['edges'].push({
                                 "name": source_name,
+                                "name_ar": source_name_ar,
                                 "from_col": parseInt(lastCollectionIndex),
                                 "to_col": -1, 
                                 "fields_indecies" : [],
@@ -365,11 +390,15 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
                     lastSourceName = source_name;
                     ff_index = parseInt(tr.find('select[name=file-field]').first().val());
                     f_name = tr.find('i[name=field]').first().attr('data-field');
+                    f_name_ar = tr.find('i[name=field]').first().attr('data-field-ar');
                     match = tr.find('input[name=identity]').first().is(':checked');
+                    type_ = tr.find('i[name=field-data-type]').first().attr('data-type');
+                    format_ = tr.find('[name=format]').first().val();
                     cfields = {
                         "name": f_name,
-                        "type": tr.find('i[name=field-data-type]').first().attr('data-type'),
-                        "date_format": tr.find('input[name=format]').first().val(),
+                        "name_ar": f_name_ar,
+                        "type": type_,
+                        "format": format_ ?? '',
                         "match": match,
                         "ff_index": ff_index
                     }
@@ -392,7 +421,35 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
                 }
             });
 
-            console.log(JSON.stringify(data));
+            if(data['collections'].length==0){
+                throw new Error('يجب اختيار حقل بنك واحد على الأقل للمتابعة');
+            }
+
+            for (var i = 0; i < data['collections'].length; i++) {
+                collection = data['collections'][i];
+                for (var j = 0; j < collection['fields'].length; j++) {
+                    field = collection['fields'][j];
+                    if(field['type']=='Date' && (field['format']==null || field['format'].trim()==0)){
+                        throw new Error('يجب ادخال نوع المعالجة لحقل \'' + collection['name_ar'] + '.' + field['name_ar'] + '\'');
+                    }
+                }
+            }
+
+            for (var i = 0; i < data['edges'].length; i++) {
+                edge = data['edges'][i];
+                if(edge['from_col']==-1 || edge['to_col']==-1){
+                    throw new Error('يجب اختيار حقول من الطرفين للعلاقة \'' + edge['name_ar'] + '\' من أجل اتمامها');
+                }
+                for (var j = 0; j < edge['fields'].length; j++) {
+                    field = edge['fields'][j];
+                    if(field['type']=='Date' && (field['format']==null || field['format'].trim()==0)){
+                        throw new Error('يجب ادخال نوع المعالجة لحقل \'' + edge['name_ar'] + '.' + field['name_ar'] + '\'');
+                    }
+                }
+            }
+
+            meta_ = JSON.stringify(data);
+            console.log(meta_);
 
             $.ajax({
                 url : "/import/", // the endpoint
@@ -400,23 +457,27 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
                 data : { 
                     action: 'generate_python_importer',
                     csrfmiddlewaretoken: '{{ csrf_token }}',
-                    meta : JSON.stringify(data)
+                    meta : meta_
                 }, // data sent with the post request
 
                 success : function(response) {
                     hideOverlay();
-                    showSuccess('جاري تحميل الملف')
-                    const link = document.createElement("a");
-                    link.href = 'data:text/plain,' + response.replaceAll('true','True').replaceAll('false','False');
-                    link.download = 'import.py';
-                    link.click();
                     $('#btn-submit').prop('disabled', false);
+                    if(response.constructor == Object && response['code'] == '1'){
+                        showError(response['message']);
+                    }else{
+                        showSuccess('جاري تحميل الملف')
+                        const link = document.createElement("a");
+                        link.href = response;
+                        link.download = 'import.py';
+                        link.click();
+                    }
                 },
 
                 error : get_ajax_error_function()
             });
         } catch (e) {
-            showError(e);
+            showError(e.message);
             console.error(e);
             $('#btn-submit').prop('disabled', false);
             hideOverlay();

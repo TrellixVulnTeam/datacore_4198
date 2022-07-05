@@ -33,7 +33,7 @@ def cast_fields(source):
 		elif field['type'] == 'Number':
 			fields_by_type['Number'].append(field['name'])
 		elif field['type'] == 'Date':
-			pd.to_datetime(source['data'][field['name']], format=field['date_format'], exact=False)
+			pd.to_datetime(source['data'][field['name']], format=field['format'], exact=False)
 		elif field['type'] == 'Bool':
 			fields_by_type['Bool'].append(field['name'])
 	

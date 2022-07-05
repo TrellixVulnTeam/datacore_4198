@@ -115,6 +115,11 @@ class MasterView(View):
     def parse_response(self, response, parser=None, content_type=None, file_name = None):
         if parser == None:
             return response
+        elif parser == 'plain':
+            return HttpResponse(
+                    response,
+                    content_type="text/plain"
+                )
         elif parser == 'json':
             if isinstance(response, tuple):
                 response = {"code":  response[0] , "message": response[1]}
