@@ -6,12 +6,118 @@ import sys, os
 import argostranslate.package, argostranslate.translate
 from arango import ArangoClient
 
-arango_host = '{{arango_host}}'
-arango_database = 'db_' + '{{arango_database}}'
-arango_username = '{{arango_username}}'
-arango_password = '{{arango_password}}'
+arango_host = 'http://127.0.0.1:8529/'
+arango_database = 'db_' + 'db1'
+arango_username = 'root'
+arango_password = '123456789'
 
-config = {{config|safe}}
+config = {
+    "file_name": "Subnational-period-life-tables-2017-2019-CSV.csv",
+    "has_header": True,
+    "import_all_files": True,
+    "used_fields": [
+        0,
+        2,
+        3,
+        7,
+        5
+    ],
+    "collections": [
+        {
+            "index": 4,
+            "name": "col_person",
+            "name_ar": "\u0627\u0641\u0631\u0627\u062f",
+            "fields_indecies": [
+                0,
+                2,
+                3
+            ],
+            "fields_names": [
+                "f_name",
+                "f_adress",
+                "f_mobile"
+            ],
+            "fields": [
+                {
+                    "name": "f_name",
+                    "name_ar": "\u0627\u0644\u0627\u0633\u0645",
+                    "type": "String",
+                    "format": "",
+                    "match": True,
+                    "ff_index": 0
+                },
+                {
+                    "name": "f_adress",
+                    "name_ar": "\u0627\u0644\u0633\u0643\u0646",
+                    "type": "String",
+                    "format": "",
+                    "match": False,
+                    "ff_index": 2
+                },
+                {
+                    "name": "f_mobile",
+                    "name_ar": "\u0627\u0644\u0647\u0627\u062a\u0641",
+                    "type": "String",
+                    "format": "translate",
+                    "match": False,
+                    "ff_index": 3
+                }
+            ],
+            "identity_fields": [
+                "f_name"
+            ]
+        },
+        {
+            "index": 5,
+            "name": "col_hotel",
+            "name_ar": "\u0641\u0646\u062f\u0642",
+            "fields_indecies": [
+                5
+            ],
+            "fields_names": [
+                "f_name"
+            ],
+            "fields": [
+                {
+                    "name": "f_name",
+                    "name_ar": "\u0627\u0644\u0627\u0633\u0645",
+                    "type": "String",
+                    "format": "",
+                    "match": True,
+                    "ff_index": 5
+                }
+            ],
+            "identity_fields": [
+                "f_name"
+            ]
+        }
+    ],
+    "edges": [
+        {
+            "name": "edge_reserver",
+            "name_ar": "\u0646\u0632\u0644_\u0641\u064a",
+            "from_col": 4,
+            "to_col": 5,
+            "fields_indecies": [
+                7
+            ],
+            "fields_names": [
+                "f_days"
+            ],
+            "fields": [
+                {
+                    "name": "f_days",
+                    "name_ar": "\u0639\u062f\u062f_\u0627\u0644\u0627\u064a\u0627\u0645",
+                    "type": "Number",
+                    "format": "",
+                    "match": False,
+                    "ff_index": 7
+                }
+            ],
+            "identity_fields": []
+        }
+    ]
+}
 
 start_time = time.time()
 header_conf = 'infer'
@@ -89,7 +195,6 @@ for col in config['collections']:
 	#translate collection fields if needed
 	col['data'] = translate_fields(col)
 	print('\n' + col['name'] + ' data:\n---------------------------\n')
-	print(col['data'])
 
 for edge in config['edges']:
 	#select required columns from dataframe
@@ -101,18 +206,10 @@ for edge in config['edges']:
 			#add collection _key column as _from to edge
 			edge['data'] = edge['data'].join(col['data']['_key'])
 			edge['data'] = edge['data'].rename({'_key':'_from'}, axis='columns')
-			#replacing nan _from and _to fields with the first available key
-			edge['data']['_from'] = edge['data']['_from'].fillna(method='ffill')
-			#adding collection name as prefix for the _from field
-			edge['data']['_from'] = edge['data']['_from'].apply(lambda x: f"{col['name']}/{x}")
 		elif col['index'] == edge['to_col']:
 			#add collection _key column as _to to edge
 			edge['data'] = edge['data'].join(col['data']['_key'])
 			edge['data'] = edge['data'].rename({'_key':'_to'}, axis='columns')
-			#replacing nan _from and _to fields with the first available key
-			edge['data']['_to'] = edge['data']['_to'].fillna(method='ffill')
-			#adding collection name as prefix for the _to field
-			edge['data']['_to'] = edge['data']['_to'].apply(lambda x: f"{col['name']}/{x}")
 	
 	#replacing nan _from and _to fields with the first available key
 	edge['data']['_from'] = edge['data']['_from'].fillna(method='ffill')
@@ -142,4 +239,4 @@ for edge in config['edges']:
 	arango_collection = db.collection(edge['name'])
 	arango_collection.import_bulk(json.loads(edge['data'].to_json(orient='records')))
 
-print(f'Done in {str(time.time()-start_time)} seconds.')
+print(f'Done in {str(time.time-start_time)}.')

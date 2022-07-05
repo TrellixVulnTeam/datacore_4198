@@ -408,13 +408,13 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
                         data['collections'][data['collections'].length - 1]['fields_indecies'].push(ff_index);
                         data['collections'][data['collections'].length - 1]['fields_names'].push(f_name);
                         if(match)
-                            data['collections'][data['collections'].length - 1]['identity_fields'].push(ff_index);
+                            data['collections'][data['collections'].length - 1]['identity_fields'].push(f_name);
                     }else if(type==1){
                         data['edges'][data['edges'].length - 1]['fields'].push(cfields);
                         data['edges'][data['edges'].length - 1]['fields_indecies'].push(ff_index);
                         data['edges'][data['edges'].length - 1]['fields_names'].push(f_name);
                         if(match)
-                            data['edges'][data['edges'].length - 1]['identity_fields'].push(ff_index);
+                            data['edges'][data['edges'].length - 1]['identity_fields'].push(f_name);
                     }
 
                     data['used_fields'].push(ff_index);

@@ -5,7 +5,7 @@ from operator import truediv
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.views import View 
-from datacoreapp import models
+from datacoreapp import arango_agent, models
 from datacoreapp import views
 from datacoreapp import master_page_view
 from datacoreapp.templatetags import datacore_tags
@@ -54,6 +54,11 @@ class ImportView(master_page_view.MasterPageView):
 
         json_meta = json.loads(data['meta'])
         context = {'config' : json.dumps(json_meta, indent=4, sort_keys=False).replace('true','True').replace('false','False')}
+        connectioninfo = arango_agent.ArangoAgent().connection_info
+        context['arango_host'] = connectioninfo['host']
+        context['arango_username'] = connectioninfo['username']
+        context['arango_password'] = connectioninfo['password']
+        context['arango_database'] = request.user.current_database_name
         pycontent = render(request, 'import_template.py',context).content
         fileName = 'importer_' + str(time.time_ns()) + '.py'
 
