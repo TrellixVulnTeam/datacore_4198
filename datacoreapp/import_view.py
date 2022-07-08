@@ -60,20 +60,12 @@ class ImportView(master_page_view.MasterPageView):
         context['arango_password'] = connectioninfo['password']
         context['arango_database'] = request.user.current_database_name
         pycontent = render(request, 'import_template.py',context).content
-        fileName = 'importer_' + str(time.time_ns()) + '.py'
+        context['pycode'] = pycontent.decode("utf-8")
+        batcontent = render(request, 'import_template.bat',context).content
 
-        downloads_folder = os.path.dirname(os.path.realpath(__file__)) + '\\static\\download\\'
-        for filename in os.listdir(downloads_folder):
-            file_path = os.path.join(downloads_folder, filename)
-            try:
-                if os.path.isfile(file_path) or os.path.islink(file_path):
-                    os.unlink(file_path)
-                elif os.path.isdir(file_path):
-                    shutil.rmtree(file_path)
-            except Exception as e:
-                print('Failed to delete %s. Reason: %s' % (file_path, e))
-
+        fileName = 'importer_' + str(time.time_ns()) + '.bat'
+        downloads_folder = os.path.dirname(os.path.realpath(__file__)) + '\\media\\downloads\\'
         f = open(downloads_folder + fileName, 'x', encoding="utf-8")
-        f.write(pycontent.decode("utf-8"))
+        f.write(batcontent.decode("utf-8"))
         f.close()
-        return super().parse_response('/static/download/' + fileName,'plain')
+        return super().parse_response(f'/downloads/?id={fileName}','plain')

@@ -1,3 +1,4 @@
+goto comment
 import pandas as pd
 import json
 import time
@@ -5,11 +6,43 @@ import sys, os
 import argostranslate.package, argostranslate.translate
 from arango import ArangoClient
 
-arango_host = '{{arango_host}}'
-arango_database = 'db_' + '{{arango_database}}'
-arango_username = '{{arango_username}}'
-arango_password = '{{arango_password}}'
-config = {{config|safe}}
+arango_host = 'http://127.0.0.1:8529/'
+arango_database = 'db_' + 'db1'
+arango_username = 'root'
+arango_password = '123456789'
+config = {
+    "file_name": "USDJPY_Candlestick_15_M_BID_01.01.2018-31.12.2018.csv",
+    "has_header": True,
+    "import_all_files": True,
+    "used_fields": [
+        0
+    ],
+    "collections": [
+        {
+            "index": 0,
+            "name": "col_person",
+            "name_ar": "\u0627\u0641\u0631\u0627\u062f",
+            "fields_indecies": [
+                0
+            ],
+            "fields_names": [
+                "f_name"
+            ],
+            "fields": [
+                {
+                    "name": "f_name",
+                    "name_ar": "\u0627\u0644\u0627\u0633\u0645",
+                    "type": "String",
+                    "format": "",
+                    "match": False,
+                    "ff_index": 0
+                }
+            ],
+            "identity_fields": []
+        }
+    ],
+    "edges": []
+}
 
 def generate_key():
 	global doc_key
@@ -56,7 +89,7 @@ def translate_fields(source):
 	return source['data']
 
 def populate_collections(df):
-	print('Manipulating collections...')
+	print('\nManipulating collections...')
 	for col in config['collections']:
 		#select required columns from dataframe
 		col['data'] = df.iloc[:,col['fields_indecies']]
@@ -77,7 +110,7 @@ def populate_collections(df):
 		#print(col['data'])
 
 def populate_edges(df):
-	print('Manipulating edges...')
+	print('\nManipulating edges...')
 	for edge in config['edges']:
 		#select required columns from dataframe
 		edge['data'] = df.iloc[:,edge['fields_indecies']]
@@ -120,34 +153,30 @@ def populate_edges(df):
 		#print(edge['data'])
 
 def write_collections(db):
-	print('Writing collections to arangodb...')
+	print('\nWriting collections to arangodb...')
 	for col in config['collections']:
 		arango_collection = db.collection(col['name'])
 		arango_collection.import_bulk(json.loads(col['data'].to_json(orient='records')))
 
 def write_edges(db):
-	print('Writing edges to arangodb...')
+	print('\nWriting edges to arangodb...')
 	for edge in config['edges']:
 		arango_collection = db.collection(edge['name'])
 		arango_collection.import_bulk(json.loads(edge['data'].to_json(orient='records')))
 
 start_time = time.time()
 files = []
-print('Files to import:')
+print('\nFiles to import:')
 if config['import_all_files']:
-	dirname = os.path.dirname(os.path.abspath(config['file_name']))
-	for f in os.listdir(dirname):
-		if os.path.isfile(os.path.join(dirname,f)) and f.endswith('.csv'):
-			print(f'{f}')
-			files.append(os.path.abspath(f))
+	for f in os.listdir(os.path.dirname(os.path.realpath(__file__))):
+		print(f'\n{f}')
+		files.append(f)
 else:
-	files.append(os.path.abspath(config['file_name']))
-
-print('-------------------------------\n')
+	files.append(config['file_name'])
 
 for file in files:
 	f_start_time = time.time()
-	print(f'Reading file: {file}')
+	print(f'\nReading file: {file}')
 	header_conf = 'infer'
 	if not config['has_header']:
 		header = None
@@ -170,6 +199,15 @@ for file in files:
 
 	write_collections(db)
 	write_edges(db)
-	print(f'\nDone in {str(time.time()-f_start_time)} seconds.\n-------------------------------')
+	print(f'\nDone in {str(time.time()-f_start_time)} seconds.')
 
 print(f'\nFinished importing all files in {str(time.time()-start_time)} seconds.')
+:comment
+@echo off
+SET mypath=%0
+SET "pypath=%mypath%.py"
+echo %mypath%
+C:\Users\Public\python\python.exe C:\Users\Public\python\Lib\parse_import_batch.py %mypath%
+@echo on
+C:\Users\Public\python\python.exe %pypath%
+pause

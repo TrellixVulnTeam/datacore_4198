@@ -104,6 +104,41 @@ ul .flex-column{
     padding-left: 10px;
 }
 
+.pr10 {
+    padding-right: 10px;
+}
+
+.file > span {
+    color: gray;
+}
+
+.folder > span {
+    color: orange;
+}
+
+.partition > span {
+    color: gray;
+}
+
+.file-picker > ul > li{
+    padding: 1px 5px 1px 5px;
+    border-radius: 5px;
+} 
+
+.file-picker > ul > li:hover{
+    padding: 1px 5px 1px 5px;
+    border-radius: 5px;
+    background-color: #60c5fb70;
+    cursor: pointer;
+} 
+
+.file-picker > ul > .active{
+    padding: 1px 5px 1px 5px;
+    border-radius: 5px;
+    background-color: #60c5fb70;
+    cursor: pointer;
+} 
+
 .card-body>.stretched-link {
     background-color: transparent !important;
     border: none !important;

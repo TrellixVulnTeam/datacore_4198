@@ -1,7 +1,10 @@
+import os
+import shutil
 from django.urls import path
 from django.contrib.auth import views as auth_views
 from django.urls import reverse_lazy
-from datacoreapp import error_view, users_view, views
+from datacore import settings
+from datacoreapp import download_view, error_view, file_picker_view, users_view, views
 from datacoreapp import home_view
 from datacoreapp import advanced_search_view
 from datacoreapp import banks_view
@@ -34,6 +37,8 @@ urlpatterns = [
 	path('views/', views_view.ViewsView.as_view(), name='views'),
 	path('users/', users_view.UsersView.as_view(), name='users'),
 	path('error/', error_view.ErrorView.as_view(), name='error'),
+	path('downloads/', download_view.DownloadView.as_view(), name='downloads'),
+	path('filepicker/', file_picker_view.FilePickerView.as_view(), name='filepicker'),
 ]
 
 def onStartup():
@@ -46,6 +51,13 @@ def onStartup():
 		user.first_name = 'المدير'
 		user.arabic_name = 'المدير'
 		user.save()
+	
+	project_path = str(settings.BASE_DIR)
+	python_path = os.path.join(project_path, 'python')
+	python_zip_path = os.path.join(project_path, 'datacoreapp\\media\\keep\\python')
+	if not os.path.isfile(python_zip_path + '.zip'):
+		print('creating python zip package...')
+		shutil.make_archive(python_zip_path, 'zip', python_path)
 
 onStartup()
 

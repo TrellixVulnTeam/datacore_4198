@@ -52,14 +52,25 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
 {% endblock %}
 
 {% block content %}
+
+<div class="alert alert-warning" role="alert" {% if has_databases %}style="display:none"{% endif %}>
+    <span class="bi-exclamation-triangle-fill pl10" style="color: orange;"></span><span>للإستيراد عبر الجهاز الحالي, الرجاء تحميل <a href="{% url 'downloads' %}?id=python.zip">Python.zip</a> وتحرير محتوى الملف الى المسار التالي على جهازك <i style="padding: 0px 4px 0px 4px;color:brown">'C:\Users\Public'</i></span>
+</div>
+
 <div style="display: flex; flex-direction: row;">
     <div style="max-width: 800px;">
         <div class="form-group col-12" style="margin-top: 10px;">
             <label class="col-12" style="margin-bottom: 3px;">استيراد من ملف</label>
-            <div class="input-group mb-3">
-                <span class="input-group-text" id="basic-addon3" onclick="document.getElementById('file-input').click()">إختر ملف</span>
-                <input type="text" style="z-index: 0;" class="form-control" placeholder="لم يتم اختيار ملف بعد" id="file-input-holder" aria-describedby="basic-addon3" onclick="document.getElementById('file-input').click()">
-                <input class="form-control" type="file" name="fileinput" id="file-input" style="display: none;" accept=".csv" onclick="this.value=null;"/>
+            <div style="display: flex; flex-direction: row;">
+                <select class="form-control form-select" style="max-width: 200px; margin-left: 10px;font-size: 14px;" id="select-import-type" name="importtype">
+                    <option value="client">عبر الجهاز الحالي</option>
+                    <option value="server">عبر الخادم</option>
+                </select>
+                <div class="input-group">
+                    <span class="input-group-text" id="basic-addon3" onclick="document.getElementById('file-input').click()">إختر ملف</span>
+                    <input type="text" style="z-index: 0;background-color: white !important;" class="form-control" placeholder="لم يتم اختيار ملف بعد" id="file-input-holder" aria-describedby="basic-addon3" onclick="select_file()" autocomplete="off" readonly>
+                    <input class="form-control" type="file" name="fileinput" id="file-input" style="display: none;" accept=".csv" onclick="this.value=null;" autocomplete="off"/>
+                </div>
             </div>
         </div>
         <div class="form-group col-12" style="margin-top: 10px;">
@@ -115,6 +126,27 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
         </div>
     </div>
 </div>
+
+<!-- Modal -->
+<div class="modal fade" id="serverfilepickerModal" tabindex="-1" role="dialog" aria-labelledby="serverfilepickerModalCenterTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="serverfilepickerModalCenterTitle">إختر ملف</h5>
+          <a class="bi-x-lg" role="button" style="color: gray;" data-bs-dismiss="modal"></a>
+        </div>
+        <div id="serverfilepickerModal-body" class="modal-body">
+            <div id="file-picker-tree" class="file-picker" style="max-height: 300px;overflow: auto;-moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; user-select:none;-o-user-select:none;" unselectable="on" onselectstart="return false;">
+
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+            <button id="confirm_selected_file" type="button" class="btn btn-primary" onclick="confirm_selected_file()">إختيار</button>
+          </div>
+      </div>
+    </div>
+  </div>
 {% endblock %}
 
 {% block footer %}
@@ -130,6 +162,78 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
     var dict = $.parseJSON('{{sources}}'.replace(/&quot;/g, '"'))
     var fields = [];
     var usedfields = [];
+
+    $('#select-import-type').change(function (e){
+        if($(this).val()=='server')
+            $('#server-file-path').attr('disabled', false)
+        else
+            $('#server-file-path').attr('disabled', true)
+    });
+
+    function select_file(){
+        if($('#select-import-type').val()=='server'){
+            file_picker_navigate("/")
+            $('#serverfilepickerModal').modal('show')
+        }else{
+            document.getElementById('file-input').click()
+        }
+    }
+
+    function confirm_selected_file(){
+        element = $('.file.active')[0]
+        $("#file-input-holder").val($(element).attr('data-value'));
+        $('#serverfilepickerModal').modal('hide')
+    }
+
+    function focus_file(e){
+        element = e.target
+        if(e.target.tagName.toLocaleLowerCase() == "span")
+            element = e.target.parentElement
+        
+        $('.file, .folder, .partition').removeClass("active");
+
+        $(element).addClass("active");
+
+        if(element.classList.contains('file')){
+            $("#confirm_selected_file").attr('disabled',false);
+        }else{
+            $("#confirm_selected_file").attr('disabled',true);
+        }
+    }
+    
+    function file_picker_file_selected(e){
+        element = e.target
+        if(e.target.tagName.toLocaleLowerCase() == "span")
+            element = e.target.parentElement
+        if(element.classList.contains('folder') || element.classList.contains('partition')){
+            file_picker_navigate($(element).attr('data-value'))
+        }else{
+            $("#file-input-holder").val($(element).attr('data-value'));
+            $('#serverfilepickerModal').modal('hide')
+        }
+    }
+
+    function file_picker_navigate(value){
+        if(value =='...')
+            value = $('#ul-navigation').attr('data-parent');
+        $.ajax({
+                url : "/filepicker/", // the endpoint
+                type : "POST", // http method
+                data : { 
+                    base: value,
+                    csrfmiddlewaretoken: '{{ csrf_token }}',
+                }, // data sent with the post request
+
+                success : function(response) {
+                    if(response.constructor == Object && response['code'] == '1'){
+                        showError(response['message']);
+                    }else{
+                        document.getElementById('file-picker-tree').innerHTML = response
+                    }
+                },
+                error : get_ajax_error_function()
+            });
+    }
 
     function format(value) {
         if (!value.id) { return value.text; }
@@ -160,7 +264,7 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
                 addRows(item);
             });
             fill_file_fields();
-            $('#preview-container').css({"maxHeight": + (document.getElementById('tableimport').clientHeight + 273) + 'px'});
+            $('#preview-container').css({"maxHeight": + (document.getElementById('tableimport').clientHeight + 345) + 'px'});
         })
 
         $('#select-source').val(Object.keys(dict)[0])

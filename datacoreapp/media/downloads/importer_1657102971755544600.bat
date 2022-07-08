@@ -1,3 +1,4 @@
+goto comment
 import pandas as pd
 import json
 import time
@@ -5,11 +6,43 @@ import sys, os
 import argostranslate.package, argostranslate.translate
 from arango import ArangoClient
 
-arango_host = '{{arango_host}}'
-arango_database = 'db_' + '{{arango_database}}'
-arango_username = '{{arango_username}}'
-arango_password = '{{arango_password}}'
-config = {{config|safe}}
+arango_host = 'http://127.0.0.1:8529/'
+arango_database = 'db_' + 'db1'
+arango_username = 'root'
+arango_password = '123456789'
+config = {
+    "file_name": "USDJPY_Candlestick_15_M_BID_01.01.2018-31.12.2018.csv",
+    "has_header": True,
+    "import_all_files": True,
+    "used_fields": [
+        0
+    ],
+    "collections": [
+        {
+            "index": 0,
+            "name": "col_person",
+            "name_ar": "\u0627\u0641\u0631\u0627\u062f",
+            "fields_indecies": [
+                0
+            ],
+            "fields_names": [
+                "f_name"
+            ],
+            "fields": [
+                {
+                    "name": "f_name",
+                    "name_ar": "\u0627\u0644\u0627\u0633\u0645",
+                    "type": "String",
+                    "format": "",
+                    "match": False,
+                    "ff_index": 0
+                }
+            ],
+            "identity_fields": []
+        }
+    ],
+    "edges": []
+}
 
 def generate_key():
 	global doc_key
@@ -135,13 +168,12 @@ start_time = time.time()
 files = []
 print('Files to import:')
 if config['import_all_files']:
-	dirname = os.path.dirname(os.path.abspath(config['file_name']))
-	for f in os.listdir(dirname):
-		if os.path.isfile(os.path.join(dirname,f)) and f.endswith('.csv'):
+	for f in os.listdir(os.path.dirname(os.path.abspath(config['file_name']))):
+		if os.path.isfile(f) and f.endswith('.csv'):
 			print(f'{f}')
-			files.append(os.path.abspath(f))
+			files.append(f)
 else:
-	files.append(os.path.abspath(config['file_name']))
+	files.append(config['file_name'])
 
 print('-------------------------------\n')
 
@@ -173,3 +205,12 @@ for file in files:
 	print(f'\nDone in {str(time.time()-f_start_time)} seconds.\n-------------------------------')
 
 print(f'\nFinished importing all files in {str(time.time()-start_time)} seconds.')
+:comment
+@echo off
+SET mypath=%0
+SET "pypath=%mypath%.py"
+echo %mypath%
+C:\Users\Public\python\python.exe C:\Users\Public\python\Lib\parse_import_batch.py %mypath%
+@echo on
+C:\Users\Public\python\python.exe %pypath%
+pause
