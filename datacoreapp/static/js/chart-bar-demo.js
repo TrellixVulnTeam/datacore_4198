@@ -7,7 +7,7 @@ var ctx = document.getElementById("myBarChart");
 var myLineChart = new Chart(ctx, {
   type: 'bar',
   data: {
-    labels: ["الأخبار", "الفنادق", "الأسفار", "السيارات المشبوهة", "الاتصالات", "الأفراد"],
+    labels: ["1بنك", "2بنك", "3بنك", "4بنك", "5بنك", "6بنك"],
     datasets: [{
       label: "Revenue",
       backgroundColor: "rgba(90,180,240,1)",
