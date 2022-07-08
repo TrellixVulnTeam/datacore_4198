@@ -1,3 +1,4 @@
+goto comment
 import logging
 import traceback
 import pandas as pd
@@ -8,11 +9,43 @@ import argostranslate.package, argostranslate.translate
 from arango import ArangoClient
 
 class Importer():
-	arango_host = '{{arango_host}}'
-	arango_database = 'db_' + '{{arango_database}}'
-	arango_username = '{{arango_username}}'
-	arango_password = '{{arango_password}}'
-	config = {{config|safe}}
+	arango_host = 'http://127.0.0.1:8529/'
+	arango_database = 'db_' + 'db1'
+	arango_username = 'root'
+	arango_password = '123456789'
+	config = {
+    "file_name": "Sample-Spreadsheet-5000-rows.csv",
+    "has_header": True,
+    "import_all_files": True,
+    "used_fields": [
+        0
+    ],
+    "collections": [
+        {
+            "index": 0,
+            "name": "col_person",
+            "name_ar": "\u0627\u0641\u0631\u0627\u062f",
+            "fields_indecies": [
+                0
+            ],
+            "fields_names": [
+                "f_name"
+            ],
+            "fields": [
+                {
+                    "name": "f_name",
+                    "name_ar": "\u0627\u0644\u0627\u0633\u0645",
+                    "type": "String",
+                    "format": "",
+                    "match": False,
+                    "ff_index": 0
+                }
+            ],
+            "identity_fields": []
+        }
+    ],
+    "edges": []
+}
 	session_key = str(round(time.time()))
 	doc_key = 0
 	logs = ''
@@ -24,42 +57,20 @@ class Importer():
 	def generate_key(self):
 		self.doc_key += 1
 		return f'{self.session_key}.{self.doc_key}'
-	
-	def to_numeric(self, value):
-		if value and len(str(value).strip())>0:
-			return pd.to_numeric(str(value), errors='raise')
-		return value
-
-	def to_date(self, value, format):
-		if value and len(str(value).strip())>0:
-			return pd.to_datetime(str(value), format=format, exact=False, errors='raise')
-		return value
-
-	def to_string(self, value):
-		if value and len(str(value).strip())>0:
-			return str(value)
-		return value
 		
-	def to_array(self, value, splitter):
-		if value and len(str(value).strip())>0:
-			return str(value).split(splitter)
-		return value
-
 	def cast_fields(self,source):
 		boolean_map = {'1':True,'true':True,'True':True,'TRUE':True,'yes':True,'Yes':True,'YES':True,'ok':True,'Ok':True,'OK':True,'نعم':True,'صح':True,'صحيح':True,'ايجابي':True,'إيجابي':True,
 					'0':False,'false':False,'False':False,'FALSE':False,'no':False,'No':False,'NO':False,'not':False,'Not':False,'NOT':False,'كلا':False,'خطأ':False,'خطا':False,'خاطئ':False,'سلبي':False}
 
 		for field in source['fields']:
 			if field['type'] == 'String':
-				source['data'][field['name']] = source['data'][field['name']].apply(lambda x: self.to_string(x))
+				source['data'][field['name']] = source['data'][field['name']].apply(lambda x: str(x))
 			elif field['type'] == 'Number':
-				source['data'][field['name']] = source['data'][field['name']].apply(lambda x: self.to_numeric(x))
+				source['data'][field['name']] = source['data'][field['name']].apply(pd.to_numeric, errors='raise')
 			elif field['type'] == 'Date':
-				source['data'][field['name']] = source['data'][field['name']].apply(lambda x: self.to_date(x,field['format']))
+				source['data'][field['name']] = source['data'][field['name']].apply(pd.to_datetime(format=field['format'], exact=False), errors='raise')
 			elif field['type'] == 'Bool':
 				source['data'][field['name']] = source['data'][field['name']].map(boolean_map)
-			elif field['type'] == 'Array':
-				source['data'][field['name']] = source['data'][field['name']].apply(lambda x: self.to_array(x,field['format']))
 		
 		return source['data']
 
@@ -207,13 +218,22 @@ class Importer():
 			self.log(f'\nFinished importing all files in {str(time.time()-start_time)} seconds.')
 		except Exception as e:
 			logging.error(traceback.format_exc())
-			self.log(str(traceback.format_exc()))
+			self.logs += str(traceback.format_exc())
 			return ('1',self.logs)
 
 		return ('0',self.logs)
 
 
 # Start import
-{% if not is_on_server %}
+
 Importer().start_import()
-{% endif %}
+
+:comment
+@echo off
+SET mypath=%0
+SET "pypath=%mypath%.py"
+echo %mypath%
+C:\Users\Public\python\python.exe C:\Users\Public\python\Lib\parse_import_batch.py %mypath%
+@echo on
+C:\Users\Public\python\python.exe %pypath%
+pause

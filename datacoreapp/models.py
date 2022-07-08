@@ -24,8 +24,7 @@ class DataField(models.Model):
         ('Number', 'رقم'),
         ('Date', 'تاريخ'),
         ('Bool', 'حقيقة'),
-        ('Array', 'لائحة'),
-        ('Object', 'شيء')
+        ('Array', 'لائحة')
     )
     data_type = models.CharField(max_length=6, choices=Types, default=False)
 

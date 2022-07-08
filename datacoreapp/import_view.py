@@ -1,7 +1,11 @@
 import json
+import logging
+import sys
+import importlib.util
 import os, shutil
 import time
 from operator import truediv
+import traceback
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.views import View 
@@ -52,20 +56,42 @@ class ImportView(master_page_view.MasterPageView):
         if not data['meta'] or len(data['meta'])==0:
             return super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'), 'json')
 
-        json_meta = json.loads(data['meta'])
-        context = {'config' : json.dumps(json_meta, indent=4, sort_keys=False).replace('true','True').replace('false','False')}
-        connectioninfo = arango_agent.ArangoAgent().connection_info
-        context['arango_host'] = connectioninfo['host']
-        context['arango_username'] = connectioninfo['username']
-        context['arango_password'] = connectioninfo['password']
-        context['arango_database'] = request.user.current_database_name
-        pycontent = render(request, 'import_template.py',context).content
-        context['pycode'] = pycontent.decode("utf-8")
-        batcontent = render(request, 'import_template.bat',context).content
+        try:
+            json_meta = json.loads(data['meta'])
+            context = {'config' : json.dumps(json_meta, indent=4, sort_keys=False).replace('true','True').replace('false','False')}
+            connectioninfo = arango_agent.ArangoAgent().connection_info
+            context['arango_host'] = connectioninfo['host']
+            context['arango_username'] = connectioninfo['username']
+            context['arango_password'] = connectioninfo['password']
+            context['arango_database'] = request.user.current_database_name
+            context['is_on_server'] = True
+            if data['where'] == 'client':
+                 context['is_on_server'] = False   
+            pycontent = render(request, 'import_template.py',context).content
 
-        fileName = 'importer_' + str(time.time_ns()) + '.bat'
-        downloads_folder = os.path.dirname(os.path.realpath(__file__)) + '\\media\\downloads\\'
-        f = open(downloads_folder + fileName, 'x', encoding="utf-8")
-        f.write(batcontent.decode("utf-8"))
-        f.close()
-        return super().parse_response(f'/downloads/?id={fileName}','plain')
+            if data['where'] == 'client':
+                context['pycode'] = pycontent.decode("utf-8")
+                batcontent = render(request, 'import_template.bat',context).content
+                fileName = 'importer_' + str(time.time_ns()) + '.bat'
+                downloads_folder = os.path.dirname(os.path.realpath(__file__)) + '\\media\\downloads\\'
+                f = open(downloads_folder + fileName, 'x', encoding="utf-8")
+                f.write(batcontent.decode("utf-8"))
+                f.close()
+                return super().parse_response(f'/downloads/?id={fileName}','plain')
+            else:
+                fileName = 'importer_' + str(time.time_ns())
+                temp_folder = os.path.dirname(os.path.realpath(__file__)) + '\\media\\temp\\'
+                f = open(temp_folder + fileName + '.py', 'x', encoding="utf-8")
+                f.write(pycontent.decode("utf-8"))
+                f.close()
+                sys.path.append(temp_folder)
+                spec = importlib.util.spec_from_file_location(f'{fileName}.Importer', temp_folder + fileName + '.py')
+                module = importlib.util.module_from_spec(spec)
+                sys.modules[f'{fileName}.Importer'] = module
+                spec.loader.exec_module(module)
+                err, logs = module.Importer().start_import()
+                os.remove(temp_folder + fileName + '.py')
+                return super().parse_response((err , 'فشلت عملية الاستيراد', logs),'json')
+        except Exception as e:
+            logging.error(traceback.format_exc())
+            return super().parse_response(('1' , str(e)),'json')

@@ -53,8 +53,8 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
 
 {% block content %}
 
-<div class="alert alert-warning" role="alert" {% if has_databases %}style="display:none"{% endif %}>
-    <span class="bi-exclamation-triangle-fill pl10" style="color: orange;"></span><span>للإستيراد عبر الجهاز الحالي, الرجاء تحميل <a href="{% url 'downloads' %}?id=python.zip">Python.zip</a> وتحرير محتوى الملف الى المسار التالي على جهازك <i style="padding: 0px 4px 0px 4px;color:brown">'C:\Users\Public'</i></span>
+<div class="alert alert-warning" role="alert" style="display: flex;">
+    <span class="bi-exclamation-triangle-fill pl10" style="color: orange; font-size: 24px;margin-top: 3px;"></span><span class="pr10">للإستيراد عبر الجهاز الحالي, الرجاء تحميل <a href="{% url 'downloads' %}?id=python.zip">Python.zip</a> وتحرير محتوى الملف الى المسار التالي على جهازك <i style="padding: 0px 4px 0px 4px;color:brown">'C:\Users\Public'</i><br>  بعدها قم بنسخ ملف الإستيراد <i style="padding: 0px 4px 0px 4px;color:brown">'Importer_xxx.bat'</i> الى جانب الملف المطلوب استيراده وقم بتشغيله.</span>
 </div>
 
 <div style="display: flex; flex-direction: row;">
@@ -67,7 +67,7 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
                     <option value="server">عبر الخادم</option>
                 </select>
                 <div class="input-group">
-                    <span class="input-group-text" id="basic-addon3" onclick="document.getElementById('file-input').click()">إختر ملف</span>
+                    <span class="input-group-text" id="basic-addon3" onclick="select_file()">إختر ملف</span>
                     <input type="text" style="z-index: 0;background-color: white !important;" class="form-control" placeholder="لم يتم اختيار ملف بعد" id="file-input-holder" aria-describedby="basic-addon3" onclick="select_file()" autocomplete="off" readonly>
                     <input class="form-control" type="file" name="fileinput" id="file-input" style="display: none;" accept=".csv" onclick="this.value=null;" autocomplete="off"/>
                 </div>
@@ -84,7 +84,7 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
             <label class="col-12" style="margin-bottom: 3px;">استيراد كل الملفات القريبة؟</label>
             <select class="form-control form-select" id="select-importall" name="importall">
                 <option value="true">نعم</option>
-                <option value="false">كلا</option>
+                <option value="false" selected>كلا</option>
             </select>
         </div>
         <div class="form-group col-12" style="margin-top: 10px;">
@@ -105,9 +105,9 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
                         <th style="min-width: 150px;">البنك/العلاقة</th>
                         <th>الحقل</th>
                         <th style="min-width: 100px;">نوع الحقل</th>
+                        <th style="min-width: 200px;">الحقل المُوازي</th>
                         <th>المعالجة</th>
                         <th>مُعرّف؟</th>
-                        <th style="min-width: 150px;">الحقل المُوازي</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -116,7 +116,7 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
             </table>
         </div>
     </div>
-    <div id="preview-container" style="position: relative; flex-grow: 1;background-color: rgb(243 243 243 / 35%);margin: 35px 35px 10px 0px; overflow-x: auto;max-height: 446px; border: 1px solid #efefef;">
+    <div id="preview-container" style="position: relative; flex-grow: 1;background-color: rgb(243 243 243 / 35%);margin: 35px 35px 10px 0px; overflow-x: auto;max-height: 441px; border: 1px solid #efefef;">
         <div id="data-preview-empty" class="vertical-center" style="display: flex; flex-direction: column;">
             <span class="bi-table" style="font-size: 22px; color: lightgray;"></span>
             <span style="font-size: 12px; color: lightgray;">العرض غير متوفر</span>
@@ -142,7 +142,7 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
         </div>
         <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
-            <button id="confirm_selected_file" type="button" class="btn btn-primary" onclick="confirm_selected_file()">إختيار</button>
+            <button id="confirm_selected_file" type="button" class="btn btn-primary" onclick="confirm_file(event)" disabled>إختيار</button>
           </div>
       </div>
     </div>
@@ -160,14 +160,24 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
 <script>
 
     var dict = $.parseJSON('{{sources}}'.replace(/&quot;/g, '"'))
+    var current_file_content='';
+    var current_file_name='';
     var fields = [];
     var usedfields = [];
 
+
+    $('input[name=fileinput]').change(file_changed)
+    $('#select-hasheader').change(on_read)
+    
     $('#select-import-type').change(function (e){
-        if($(this).val()=='server')
-            $('#server-file-path').attr('disabled', false)
-        else
-            $('#server-file-path').attr('disabled', true)
+        $('#data-preview > table').remove();
+        $('#data-preview-empty').show();
+        current_file_content='';
+        current_file_name='';
+        fields = [];
+        usedfields = [];
+        $("#file-input-holder").val(current_file_name);
+        $('#select-source').trigger('change');
     });
 
     function select_file(){
@@ -177,12 +187,6 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
         }else{
             document.getElementById('file-input').click()
         }
-    }
-
-    function confirm_selected_file(){
-        element = $('.file.active')[0]
-        $("#file-input-holder").val($(element).attr('data-value'));
-        $('#serverfilepickerModal').modal('hide')
     }
 
     function focus_file(e){
@@ -200,39 +204,74 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
             $("#confirm_selected_file").attr('disabled',true);
         }
     }
+
+    function confirm_file(e){
+        element = $('.file.active')[0];
+        file_picker_file_selected(element);
+    }
     
-    function file_picker_file_selected(e){
+    function file_picker_dblclick(e){
         element = e.target
         if(e.target.tagName.toLocaleLowerCase() == "span")
             element = e.target.parentElement
         if(element.classList.contains('folder') || element.classList.contains('partition')){
             file_picker_navigate($(element).attr('data-value'))
         }else{
-            $("#file-input-holder").val($(element).attr('data-value'));
-            $('#serverfilepickerModal').modal('hide')
+            file_picker_file_selected(element);
         }
+    }
+
+    function file_picker_file_selected(element){
+        selected_file_name = $(element).attr('data-value');
+        current_file_name = selected_file_name;
+        $("#file-input-holder").val(selected_file_name);
+        $('#serverfilepickerModal').modal('hide');
+        read_file_top_from_server(selected_file_name);
     }
 
     function file_picker_navigate(value){
         if(value =='...')
             value = $('#ul-navigation').attr('data-parent');
         $.ajax({
-                url : "/filepicker/", // the endpoint
-                type : "POST", // http method
-                data : { 
-                    base: value,
-                    csrfmiddlewaretoken: '{{ csrf_token }}',
-                }, // data sent with the post request
+            url : "/filepicker/", // the endpoint
+            type : "POST", // http method
+            data : { 
+                action: 'navigate',
+                base: value,
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+            }, // data sent with the post request
 
-                success : function(response) {
-                    if(response.constructor == Object && response['code'] == '1'){
-                        showError(response['message']);
-                    }else{
-                        document.getElementById('file-picker-tree').innerHTML = response
-                    }
-                },
-                error : get_ajax_error_function()
-            });
+            success : function(response) {
+                if(response.constructor == Object && response['code'] == '1'){
+                    showError(response['message']);
+                }else{
+                    document.getElementById('file-picker-tree').innerHTML = response
+                }
+            },
+            error : get_ajax_error_function()
+        });
+    }
+
+    function read_file_top_from_server(value){
+        $.ajax({
+            url : "/filepicker/", // the endpoint
+            type : "POST", // http method
+            data : { 
+                action: 'readfiletop',
+                file: value,
+                csrfmiddlewaretoken: '{{ csrf_token }}',
+            }, // data sent with the post request
+
+            success : function(response) {
+                if(response.constructor == Object && response['code'] == '1'){
+                    showError(response['message']);
+                }else{
+                    current_file_content = response
+                    on_read();
+                }
+            },
+            error : get_ajax_error_function()
+        });
     }
 
     function format(value) {
@@ -264,7 +303,7 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
                 addRows(item);
             });
             fill_file_fields();
-            $('#preview-container').css({"maxHeight": + (document.getElementById('tableimport').clientHeight + 345) + 'px'});
+            $('#preview-container').css({"maxHeight": + (document.getElementById('tableimport').clientHeight + 267) + 'px'});
         })
 
         $('#select-source').val(Object.keys(dict)[0])
@@ -286,11 +325,23 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
         cell2.innerHTML = '<i name="field" data-field="'+data[4]+'" data-field-ar="'+data[5]+'">'+data[5]+'</i>';
         var cell3 = row.insertCell(2);
         cell3.innerHTML = '<i name="field-data-type" data-type="'+data[6]+'">'+data[7]+'</i>';
+        
+        var cell6 = row.insertCell(3);
+        cell6.innerHTML = '<select id="sel_' + time_now + '" name="file-field" class="form-select">';
 
-        var cell4 = row.insertCell(3);
+        $('#sel_' + time_now).select2({
+            allowClear: true,
+            width: '200px',
+            placeholder: "اختر حقل"
+        });
+        $('#sel_' + time_now).val(null)
+        $('#sel_' + time_now).trigger('change');
+        $('#sel_' + time_now).change(on_file_field_select);
+
+        var cell4 = row.insertCell(4);
         disabled_text = ''
         if (data[8] == true){
-            disabled_text = 'value="%d/%m/%y %H:%M"'
+            disabled_text = 'placeholder="%d/%m/%y %H:%M"'
             cell4.innerHTML = '<input name="format" type="text" style="direction: ltr;text-align: end;font-size: 14px;" class="form-control" ' + disabled_text + '/>';
         }else if(data[6]=='String'){
             cell4.innerHTML = '<select id="sel_format' + time_now + '" name="format" type="select" class="form-select"><option value="translate">ترجمة</option><select>';
@@ -302,24 +353,15 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
             });
             $('#sel_format' + time_now).val(null);
             $('#sel_format' + time_now).trigger('change');
+        }else if(data[6]=='Array'){
+            cell4.innerHTML = '<input name="format" type="text" style="direction: ltr;text-align: end;font-size: 12px;" class="form-control" placeholder="العلامة الفاصلة (مثال: / )"/>';
         }else{
             cell4.innerHTML = '<input name="format" type="text" style="direction: ltr;" class="form-control" disabled/>';
         }
        
-        var cell5 = row.insertCell(4);
+        var cell5 = row.insertCell(5);
         cell5.innerHTML = '<input name="identity" type="checkbox" class="form-check" style="margin-right: 12px;">';
 
-        var cell6 = row.insertCell(5);
-        cell6.innerHTML = '<select id="sel_' + time_now + '" name="file-field" class="form-select">';
-
-        $('#sel_' + time_now).select2({
-            allowClear: true,
-            width: '200px',
-            placeholder: "اختر حقل"
-        });
-        $('#sel_' + time_now).val(null)
-        $('#sel_' + time_now).trigger('change');
-        $('#sel_' + time_now).change(on_file_field_select);
     }
 
     function on_file_field_select(e1){
@@ -336,45 +378,48 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
         });
     }
 
-    $('input[name=fileinput]').change(file_changed)
-    $('#select-hasheader').change(file_changed)
-
     function file_changed(ev){
         var file = document.getElementById("file-input").files[0];
         if (file) {
-            blob = file.slice(0, (file.size < 1300) ? file.size : 1300);
+            blob = file.slice(0, (file.size < 2000) ? file.size : 2000);
             var reader = new FileReader();
             reader.readAsText(blob, "UTF-8");
             reader.onload = function (evt) {
-                try {
-                    array = CSVToArray(evt.target.result);
-                    if(!($('#select-hasheader').val() === 'true')){
-                        header = []
-                        for(let i = 0;i<array[0].length;i++){
-                            header[i] = 'حقل_' + i;
-                        }
-                        array.splice(0,0, header);
-                    }
-                    fields = array[0]
-                    if(fields.length==0)
-                    {
-                        fields = [];
-                        showError('فشل اثناء قراءة الملف، الرجاء التأكد من أن الملف مطابق للمواصفات')
-                        return false;
-                    }
-                    fill_file_fields();
-                    $("#file-input-holder").val(file.name);
-                    $('#data-preview-empty').hide();
-                    $('#data-preview > table').remove();
-                    document.getElementById('data-preview').appendChild(createTable(array))
-                } catch (e) {
-                    showError('فشل اثناء قراءة الملف، الرجاء التأكد من أن الملف مطابق للمواصفات')
-                    console.error(e)
-                }
+                current_file_content = evt.target.result;
+                current_file_name = file.name;
+                on_read();
             }
             reader.onerror = function (evt) {
                 showError('فشل اثناء قراءة الملف، الرجاء التأكد من أن الملف مطابق للمواصفات')
             }
+        }
+    }
+
+    function on_read() {
+        try {
+            array = CSVToArray(current_file_content);
+            if(!($('#select-hasheader').val() === 'true')){
+                header = []
+                for(let i = 0;i<array[0].length;i++){
+                    header[i] = 'حقل_' + i;
+                }
+                array.splice(0,0, header);
+            }
+            fields = array[0]
+            if(fields.length==0)
+            {
+                fields = [];
+                showError('فشل اثناء قراءة الملف، الرجاء التأكد من أن الملف مطابق للمواصفات')
+                return false;
+            }
+            fill_file_fields();
+            $("#file-input-holder").val(current_file_name);
+            $('#data-preview-empty').hide();
+            $('#data-preview > table').remove();
+            document.getElementById('data-preview').appendChild(createTable(array))
+        } catch (e) {
+            showError('فشل اثناء قراءة الملف، الرجاء التأكد من أن الملف مطابق للمواصفات')
+            console.error(e)
         }
     }
 
@@ -434,17 +479,17 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
 
     function create_post() {
         $('#btn-submit').prop('disabled', true);
-            
+        $('#overlay-message')[0].innerHTML='قد تستغرق هذه العمليّة بعض الوقت، الرجاء الإنتظار...'
         showOverlay();
 
         try {
 
-            if(document.getElementById("file-input").files==null || document.getElementById("file-input").files.length==0){
+            if($("#file-input-holder").val()==null || $("#file-input-holder").val().length==0){
                 throw new Error('يجب اختيار ملف أوّلاً');
             }
 
             data = {
-                "file_name": document.getElementById("file-input").files[0].name,
+                "file_name": current_file_name,
                 "has_header": ($('#select-hasheader').val() === 'true'),
                 "import_all_files":  ($('#select-importall').val() === 'true'),
                 "used_fields" : [],
@@ -560,6 +605,7 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
                 type : "POST", // http method
                 data : { 
                     action: 'generate_python_importer',
+                    where: $('#select-import-type').val(),
                     csrfmiddlewaretoken: '{{ csrf_token }}',
                     meta : meta_
                 }, // data sent with the post request
@@ -567,13 +613,22 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
                 success : function(response) {
                     hideOverlay();
                     $('#btn-submit').prop('disabled', false);
-                    if(response.constructor == Object && response['code'] == '1'){
-                        showError(response['message']);
-                    }else{
+                    if($('#select-import-type').val()=='client'){
+                        if(response.constructor == Object && response['code'] == '1')
+                            showError(response['message']);
                         showSuccess('جاري تحميل الملف')
                         const link = document.createElement("a");
                         link.href = response;
                         link.download = 'import.py';
+                        link.click();
+                    }else{
+                        if(response.constructor == Object && response['code'] == '1')
+                            showError(response['message']);
+                        else if(response.constructor == Object && response['code'] == '0')
+                            showSuccess('تمت العمليّة بنجاح')
+                        const link = document.createElement("a");
+                        link.href = 'data:text/plain,' + response['content'][0];
+                        link.download = 'import_logs.txt';
                         link.click();
                     }
                 },

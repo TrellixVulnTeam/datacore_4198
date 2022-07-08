@@ -8,11 +8,43 @@ import argostranslate.package, argostranslate.translate
 from arango import ArangoClient
 
 class Importer():
-	arango_host = '{{arango_host}}'
-	arango_database = 'db_' + '{{arango_database}}'
-	arango_username = '{{arango_username}}'
-	arango_password = '{{arango_password}}'
-	config = {{config|safe}}
+	arango_host = 'http://127.0.0.1:8529/'
+	arango_database = 'db_' + 'db1'
+	arango_username = 'root'
+	arango_password = '123456789'
+	config = {
+    "file_name": "C:/Users/Gph spc/Downloads/input.csv",
+    "has_header": False,
+    "import_all_files": False,
+    "used_fields": [
+        1
+    ],
+    "collections": [
+        {
+            "index": 0,
+            "name": "col_person",
+            "name_ar": "\u0627\u0641\u0631\u0627\u062f",
+            "fields_indecies": [
+                1
+            ],
+            "fields_names": [
+                "f_dob"
+            ],
+            "fields": [
+                {
+                    "name": "f_dob",
+                    "name_ar": "\u0627\u0644\u0648\u0644\u0627\u062f\u0629",
+                    "type": "Date",
+                    "format": "%d/%m/%y",
+                    "match": False,
+                    "ff_index": 1
+                }
+            ],
+            "identity_fields": []
+        }
+    ],
+    "edges": []
+}
 	session_key = str(round(time.time()))
 	doc_key = 0
 	logs = ''
@@ -207,13 +239,10 @@ class Importer():
 			self.log(f'\nFinished importing all files in {str(time.time()-start_time)} seconds.')
 		except Exception as e:
 			logging.error(traceback.format_exc())
-			self.log(str(traceback.format_exc()))
+			self.logs += str(traceback.format_exc())
 			return ('1',self.logs)
 
 		return ('0',self.logs)
 
 
 # Start import
-{% if not is_on_server %}
-Importer().start_import()
-{% endif %}

@@ -1,3 +1,4 @@
+goto comment
 import logging
 import traceback
 import pandas as pd
@@ -8,11 +9,76 @@ import argostranslate.package, argostranslate.translate
 from arango import ArangoClient
 
 class Importer():
-	arango_host = '{{arango_host}}'
-	arango_database = 'db_' + '{{arango_database}}'
-	arango_username = '{{arango_username}}'
-	arango_password = '{{arango_password}}'
-	config = {{config|safe}}
+	arango_host = 'http://127.0.0.1:8529/'
+	arango_database = 'db_' + 'db1'
+	arango_username = 'root'
+	arango_password = '123456789'
+	config = {
+    "file_name": "input.csv",
+    "has_header": False,
+    "import_all_files": False,
+    "used_fields": [
+        0,
+        1,
+        3,
+        4
+    ],
+    "collections": [
+        {
+            "index": 0,
+            "name": "col_person",
+            "name_ar": "\u0627\u0641\u0631\u0627\u062f",
+            "fields_indecies": [
+                0,
+                1,
+                3,
+                4
+            ],
+            "fields_names": [
+                "f_name",
+                "f_dob",
+                "f_others",
+                "f_isTrue"
+            ],
+            "fields": [
+                {
+                    "name": "f_name",
+                    "name_ar": "\u0627\u0644\u0627\u0633\u0645",
+                    "type": "String",
+                    "format": "",
+                    "match": False,
+                    "ff_index": 0
+                },
+                {
+                    "name": "f_dob",
+                    "name_ar": "\u0627\u0644\u0648\u0644\u0627\u062f\u0629",
+                    "type": "Date",
+                    "format": "%d/%m/%y",
+                    "match": False,
+                    "ff_index": 1
+                },
+                {
+                    "name": "f_others",
+                    "name_ar": "\u0645\u0639\u0644\u0648\u0645\u0627\u062a_\u0627\u062e\u0631\u0649",
+                    "type": "Array",
+                    "format": "|",
+                    "match": False,
+                    "ff_index": 3
+                },
+                {
+                    "name": "f_isTrue",
+                    "name_ar": "\u0647\u0644_\u062d\u0642\u0627",
+                    "type": "Bool",
+                    "format": "",
+                    "match": False,
+                    "ff_index": 4
+                }
+            ],
+            "identity_fields": []
+        }
+    ],
+    "edges": []
+}
 	session_key = str(round(time.time()))
 	doc_key = 0
 	logs = ''
@@ -207,13 +273,22 @@ class Importer():
 			self.log(f'\nFinished importing all files in {str(time.time()-start_time)} seconds.')
 		except Exception as e:
 			logging.error(traceback.format_exc())
-			self.log(str(traceback.format_exc()))
+			self.logs += str(traceback.format_exc())
 			return ('1',self.logs)
 
 		return ('0',self.logs)
 
 
 # Start import
-{% if not is_on_server %}
+
 Importer().start_import()
-{% endif %}
+
+:comment
+@echo off
+SET mypath=%0
+SET "pypath=%mypath%.py"
+echo %mypath%
+C:\Users\Public\python\python.exe C:\Users\Public\python\Lib\parse_import_batch.py %mypath%
+@echo on
+C:\Users\Public\python\python.exe %pypath%
+pause

@@ -77,7 +77,6 @@
                                             <option value="Date" {{ field.data_type|if_equals_else:'Date,selected="true",' }}>تاريخ</option>
                                             <option value="Bool" {{ field.data_type|if_equals_else:'Bool,selected="true",' }}>حقيقة</option>
                                             <option value="Array" {{ field.data_type|if_equals_else:'Array,selected="true",' }}>لائحة</option>
-                                            <option value="Object" {{ field.data_type|if_equals_else:'Object,selected="true",' }}>شيء</option>
                                         </select>
                                     </td>
                                     <td>
@@ -149,7 +148,7 @@
             var cell3 = row.insertCell(2);
             cell3.innerHTML = '<input type="text" name="txtaname" class="form-control" onkeydown="save_last_key_down(event)" onkeypress="validate_ar(event)" autocomplete="off" required/>';
             var cell4 = row.insertCell(3);
-            cell4.innerHTML = '<select name="type" class="form-select narrow-padded-check"><option value="String">نص</option><option value="Number">رقم</option><option value="Date">تاريخ</option><option value="Bool">حقيقة</option><option value="Array">لائحة</option><option value="Object">شيء</option></select>';
+            cell4.innerHTML = '<select name="type" class="form-select narrow-padded-check"><option value="String">نص</option><option value="Number">رقم</option><option value="Date">تاريخ</option><option value="Bool">حقيقة</option><option value="Array">لائحة</option></select>';
             var cell5 = row.insertCell(4);
             cell5.innerHTML = '<input type="checkbox" name="chkindexed" class="form-check" style="margin-right: 15px;" disabled/>';
 
