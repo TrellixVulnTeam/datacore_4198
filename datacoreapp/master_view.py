@@ -121,10 +121,12 @@ class MasterView(View):
                     content_type="text/plain"
                 )
         elif parser == 'json':
+            resp = response
             if isinstance(response, tuple):
                 resp = {"code":  response[0] , "message": response[1], "content": []}
                 for i in range(2, len(response)):
                     resp['content'].append(response[i])
+            
             return HttpResponse(
                     json.dumps(resp),
                     content_type="application/json"

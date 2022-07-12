@@ -149,7 +149,7 @@ class ArangoAgent():
                 links[key]['analyzers'] = []
                 links[key]['fields'] = {}
                 for f in value:
-                    links[key]['fields'][f] = {'analyzers': [self.db.db_name + '::arabic_text_analyzer',self.db.db_name + '::arabic_collation_analyzer']}
+                    links[key]['fields'][f] = {'analyzers': [self.db.db_name + '::arabic_text_analyzer',self.db.db_name + '::arabic_collation_analyzer', 'text_en','identity']}
                 links[key]['includeAllFields'] = False
                 links[key]['storeValues'] = 'none'
                 links[key]['trackListPositions'] = False
@@ -188,7 +188,7 @@ class ArangoAgent():
             if col_def:
                 col_def_fields = col_def.get('fields')
                 if col_def_fields:
-                    col_def_fields[field_name]= {'analyzers': [self.db.db_name + '::arabic_text_analyzer',self.db.db_name + '::arabic_collation_analyzer']}
+                    col_def_fields[field_name]= {'analyzers': [self.db.db_name + '::arabic_text_analyzer',self.db.db_name + '::arabic_collation_analyzer', 'text_en','identity']}
                     self.db.update_arangosearch_view(name, properties={'links': links})
 
     def delete_arangosearch_view_field(self, name, field):
@@ -236,3 +236,50 @@ class ArangoAgent():
                 properties={'locale': "ar.utf-8"},
                 features=['frequency','norm','position']
             )
+
+    def full_text_search(self, fields, query):
+        query_tokens = query.split(' ')
+        fields_dic = {}
+        for f in fields:
+            parts = f.split('.') 
+            view_name =  'asview_' + parts[0]
+            if not view_name in fields_dic:
+                fields_dic[view_name] = []
+            fields_dic[view_name].append('f_' + parts[1])
+        
+        query_string = ''
+        docs_string = ','
+        results=[]
+        for vindex,view in enumerate(fields_dic.keys(), start=0):
+            results.append(f'QR{vindex+1}')
+            query_string+= f'\n\nLET QR{vindex+1} = (\n\tFOR doc_{view} IN {view}\n\tSEARCH\n'
+            like_query= '\tANALYZER(\n'
+            Levenshtein_query= '\tANALYZER(\n'
+            for findex,field in enumerate(fields_dic[view], start=0):
+                if findex > 0:
+                    like_query+= ' OR\n'
+                    Levenshtein_query+= ' OR\n'
+                for index, qtoken in enumerate(query_tokens, start=0):
+                    if index > 0:
+                        like_query+= ' OR\n'
+                        Levenshtein_query+= ' OR\n'
+                    like_query+= f'\t\tLike(doc_{view}.{field}, "%{qtoken}%")'
+                    Levenshtein_query+= f'\t\tLEVENSHTEIN_MATCH(doc_{view}.{field}, "{qtoken}",1,true)'
+            like_query+=',"identity")'
+            Levenshtein_query+=',"arabic_text_analyzer")'
+            query_string+= like_query + ' OR\n' + Levenshtein_query + ' OR\n\t'
+            query_string+= f'ANALYZER(\n\t\tPHRASE(doc_{view}.{field}, "{query.strip()}"), "arabic_text_analyzer")'
+            query_string+= f'\n\tLIMIT 10000'
+            query_string+= f'\n\tSORT BM25(doc_{view}) DESC'
+            query_string+= f'\n\tRETURN doc_{view})'
+
+        cursor = None
+        data = None
+        if len(results) > 1:
+            query_string += f'\n\nRETURN UNION_DISTINCT({docs_string.join(results)})'
+        else:
+            query_string += f'\n\nRETURN {results[0]}' 
+
+        cursor = self.db.aql.execute(query_string)
+        data = [doc for doc in cursor][0]
+        return {'time':cursor._stats['execution_time'],'count':len(data),'data':data}

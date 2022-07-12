@@ -1,0 +1,84 @@
+
+.gridjs-pagination .gridjs-pages button:first-child {
+    border-bottom-right-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 0px;
+    border-top-left-radius: 0px;
+}
+.gridjs-pagination .gridjs-pages button:hover {
+    background-color: #f7f7f7;
+    color: #3c4257;
+    outline: none;
+}
+
+.gridjs-pagination .gridjs-pages button {
+    background-color: #fff;
+    border: 1px solid #d2d6dc;
+    border-left: none;
+    outline: none;
+    padding: 5px 14px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.gridjs-pagination .gridjs-pages button:last-child {
+    border-bottom-left-radius: 6px;
+    border-left: 1px solid #d2d6dc;
+    border-top-left-radius: 6px;
+}
+
+.gridjs-pagination .gridjs-pages button:last-child {
+    border-bottom-right-radius: 0px;
+    border-right: 1px solid #d2d6dc;
+    border-top-right-radius: 0px;
+}
+
+.gridjs-footer {
+    background-color: #f9fafb;
+    border: 1px solid #ededed;
+}
+
+table.gridjs-table {
+    width: 100%;
+}
+
+th.gridjs-th .gridjs-th-content {
+    float: right;
+    text-align: right;
+}
+
+td.gridjs-td {
+    text-align: right;
+    padding: 8px 22px;
+    text-overflow: ellipsis !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+}
+
+.gridjs-head {
+    background: #f8f9fa;
+    margin: 0;
+    border: 1px solid #f1eeee;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom: none;
+}
+
+.gridjs-search {
+    float: left;
+    padding: 3px 0px 3px 10px;
+}
+
+input.gridjs-input {
+    height: 34px;
+}
+
+.gridjs-wrapper{
+    border-radius: 0;
+}
+
+th.gridjs-th {
+    padding: 8px 21px;
+}

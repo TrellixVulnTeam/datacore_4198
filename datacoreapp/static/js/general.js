@@ -1,16 +1,6 @@
 $(document).ready(function() {
   //handle form submition validation
-  $('#btn-submit').click(function(e) { 
-    var form = document.getElementById('myform')
-    if (!form.checkValidity()) {
-      e.preventDefault();
-      e.stopPropagation();
-      form.classList.add('was-validated')
-      showError('الرجاء التأكد من تعبئة كل الخانات المطلوبة');
-      return false
-    }
-    return true
-  })
+  $('#btn-submit').click(validate_form)
 
   //watch card adding or removal
   $(".cards-container").arrive(".card", function() {
@@ -47,6 +37,18 @@ $(document).ready(function() {
   });
 
 })
+
+function validate_form(e) { 
+  var form = document.getElementById('myform')
+  if (!form.checkValidity()) {
+    e.preventDefault();
+    e.stopPropagation();
+    form.classList.add('was-validated')
+    showError('الرجاء التأكد من تعبئة كل الخانات المطلوبة');
+    return false
+  }
+  return true
+}
 
 let last_key_down_event_code = 0;
 

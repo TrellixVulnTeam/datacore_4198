@@ -14,11 +14,16 @@ class Importer():
 	arango_username = 'root'
 	arango_password = '123456789'
 	config = {
-    "file_name": "Sample-Spreadsheet-5000-rows.csv",
+    "file_name": "MOCK_DATA.csv",
     "has_header": True,
-    "import_all_files": True,
+    "import_all_files": False,
     "used_fields": [
-        0
+        0,
+        1,
+        2,
+        6,
+        5,
+        7
     ],
     "collections": [
         {
@@ -26,10 +31,20 @@ class Importer():
             "name": "col_person",
             "name_ar": "\u0627\u0641\u0631\u0627\u062f",
             "fields_indecies": [
-                0
+                0,
+                1,
+                2,
+                6,
+                5,
+                7
             ],
             "fields_names": [
-                "f_name"
+                "f_name",
+                "f_adress",
+                "f_mobile",
+                "f_sejel",
+                "f_dob",
+                "f_others"
             ],
             "fields": [
                 {
@@ -39,6 +54,46 @@ class Importer():
                     "format": "",
                     "match": False,
                     "ff_index": 0
+                },
+                {
+                    "name": "f_adress",
+                    "name_ar": "\u0627\u0644\u0633\u0643\u0646",
+                    "type": "String",
+                    "format": "",
+                    "match": False,
+                    "ff_index": 1
+                },
+                {
+                    "name": "f_mobile",
+                    "name_ar": "\u0627\u0644\u0647\u0627\u062a\u0641",
+                    "type": "String",
+                    "format": "",
+                    "match": False,
+                    "ff_index": 2
+                },
+                {
+                    "name": "f_sejel",
+                    "name_ar": "\u0627\u0644\u0633\u062c\u0644",
+                    "type": "Number",
+                    "format": "",
+                    "match": False,
+                    "ff_index": 6
+                },
+                {
+                    "name": "f_dob",
+                    "name_ar": "\u0627\u0644\u0648\u0644\u0627\u062f\u0629",
+                    "type": "Date",
+                    "format": "%m/%d/%y",
+                    "match": False,
+                    "ff_index": 5
+                },
+                {
+                    "name": "f_others",
+                    "name_ar": "\u0645\u0639\u0644\u0648\u0645\u0627\u062a_\u0627\u062e\u0631\u0649",
+                    "type": "Array",
+                    "format": " ",
+                    "match": False,
+                    "ff_index": 7
                 }
             ],
             "identity_fields": []
@@ -57,20 +112,42 @@ class Importer():
 	def generate_key(self):
 		self.doc_key += 1
 		return f'{self.session_key}.{self.doc_key}'
+	
+	def to_numeric(self, value):
+		if value and len(str(value).strip())>0:
+			return pd.to_numeric(str(value), errors='raise')
+		return value
+
+	def to_date(self, value, format):
+		if value and len(str(value).strip())>0:
+			return pd.to_datetime(str(value), format=format, exact=False, errors='raise')
+		return value
+
+	def to_string(self, value):
+		if value and len(str(value).strip())>0:
+			return str(value)
+		return value
 		
+	def to_array(self, value, splitter):
+		if value and len(str(value).strip())>0:
+			return str(value).split(splitter)
+		return value
+
 	def cast_fields(self,source):
 		boolean_map = {'1':True,'true':True,'True':True,'TRUE':True,'yes':True,'Yes':True,'YES':True,'ok':True,'Ok':True,'OK':True,'نعم':True,'صح':True,'صحيح':True,'ايجابي':True,'إيجابي':True,
 					'0':False,'false':False,'False':False,'FALSE':False,'no':False,'No':False,'NO':False,'not':False,'Not':False,'NOT':False,'كلا':False,'خطأ':False,'خطا':False,'خاطئ':False,'سلبي':False}
 
 		for field in source['fields']:
 			if field['type'] == 'String':
-				source['data'][field['name']] = source['data'][field['name']].apply(lambda x: str(x))
+				source['data'][field['name']] = source['data'][field['name']].apply(lambda x: self.to_string(x))
 			elif field['type'] == 'Number':
-				source['data'][field['name']] = source['data'][field['name']].apply(pd.to_numeric, errors='raise')
+				source['data'][field['name']] = source['data'][field['name']].apply(lambda x: self.to_numeric(x))
 			elif field['type'] == 'Date':
-				source['data'][field['name']] = source['data'][field['name']].apply(pd.to_datetime(format=field['format'], exact=False), errors='raise')
+				source['data'][field['name']] = source['data'][field['name']].apply(lambda x: self.to_date(x,field['format']))
 			elif field['type'] == 'Bool':
 				source['data'][field['name']] = source['data'][field['name']].map(boolean_map)
+			elif field['type'] == 'Array':
+				source['data'][field['name']] = source['data'][field['name']].apply(lambda x: self.to_array(x,field['format']))
 		
 		return source['data']
 
@@ -218,7 +295,7 @@ class Importer():
 			self.log(f'\nFinished importing all files in {str(time.time()-start_time)} seconds.')
 		except Exception as e:
 			logging.error(traceback.format_exc())
-			self.logs += str(traceback.format_exc())
+			self.log(str(traceback.format_exc()))
 			return ('1',self.logs)
 
 		return ('0',self.logs)
