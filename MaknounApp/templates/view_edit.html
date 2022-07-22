@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% load static %}
+{% load custom_tags %}
+
+{% block additional_styles %}
+    <link href="{% static 'select2/select2.min.css' %}" rel="stylesheet">
+    <link href="{% static 'select2/select2-bootstrap4.min.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div>
+    <div class="row" style="max-width: 600px;">
+        <div class="form-group col-12" style="margin-top: 10px;">
+            <label class="col-12" style="margin-bottom: 3px;">الاسم الأجنبي</label>
+            <input type="text" name="english_name" maxlength="70" autocomplete="off" class="form-control en-only" required id="id_english_name" value="{{entity.english_name}}" {{action|if_equals_else:'edit,readonly,'}}>
+        </div>
+        
+        <div class="form-group col-12" style="margin-top: 10px;">
+            <label class="col-12" style="margin-bottom: 3px;">الإسم العربي</label>
+            <input type="text" name="arabic_name" maxlength="70" autocomplete="off" class="form-control ar-only" required id="id_arabic_name" value="{{entity.arabic_name}}">
+        </div>
+
+        <div class="form-group col-12" style="margin-top: 10px;">
+            <label class="col-12" style="margin-bottom: 3px;">استخدام الضغط؟</label>
+            <select class="form-select" id="select-compressed" name="compressed" {{action|if_equals_else:'edit,disabled,'}}>
+                <option value="True" {{entity.compressed|if_else:'selected,'}}>نعم</option>
+                <option value="False" {{entity.compressed|if_not_else:'selected,'}}>كلا</option>
+            </select>
+        </div>
+        <div class="form-group col-12" style="margin-top: 10px;">
+            <label class="col-12" style="margin-bottom: 3px;">الحقول</label>
+            <select class="form-select " id="select_fields" name="fields[]" multiple="multiple" required>
+                {% for b in banks|iterator %}
+                    {% for f in b.data_fields|iterator %}
+                            <option value="{{f.id}}" data-icon="{{b.icon_class}}">{{b.arabic_name}}.{{f.arabic_name}}</option>
+                    {% endfor %}
+                {% endfor %}
+                {% for r in relations|iterator %}
+                    {% for f in r.data_fields|iterator %}
+                            <option value="{{f.id}}" data-icon="bi-diagram-3-fill">{{r.arabic_name}}.{{f.arabic_name}}</option>
+                    {% endfor %}
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+</div>
+ 
+{% endblock %}
+
+
+{% block footer %}
+    <div class="form-group col-12" style="margin-top: 10px;">
+        <input id="btn-submit" type="submit" class="btn btn-primary" style="float: left;" value="{{arabic_action}}" />
+    </div>
+{% endblock %}
+
+{% block additional_scripts %}
+    <script src="{% static 'select2/select2.min.js' %}" type="text/javascript"></script>
+    <script>
+        function format(value) {
+            if (!value.id) { return value.text; }
+            var icon_class = '';
+            $('#select_fields option').each(function(){
+                if($(this).text() == value.text){
+                    icon_class = $(this).attr('data-icon')
+                    return false;
+                }
+            });
+            var text = value.text.split('.')
+            return '<i class="' + icon_class + '" style="font-size: 14px; padding-left: 10px; padding-right:5px;"></i><strong style="color:#00b8ff">' + text[0] + '</strong>.'+ text[1];
+        } 
+
+        function hideSelected(value) {
+            if (value && !value.selected) {
+                return format(value)
+            }
+        }
+
+        $(document).ready(function() {
+            $('#select_fields').select2({
+                formatResult: format,
+                formatSelection: format,
+                templateResult: hideSelected,
+                templateSelection: format,
+                escapeMarkup: function(m) { return m; }
+            });
+
+            $('#select_fields').val("{% if action|equals:'edit' %}{{entity|fetch_by_name:'data_fields'|iterator|select:'id'|array_to_string_no_brackets}}{% else %}null{% endif %}".split(','));
+            $('#select_fields').trigger('change');
+
+        });
+
+        // AJAX for posting
+        function create_post() {
+            console.log("create post is working!") // sanity check
+
+            $('#btn-submit').prop('disabled', true);
+            
+            showOverlay();
+
+            $.ajax({
+                url : "/views/", // the endpoint
+                type : "POST", // http method
+                data : { 
+                    csrfmiddlewaretoken: '{{ csrf_token }}',
+                    action: '{{action}}',
+                    english_name : $('#id_english_name').val(),
+                    arabic_name : $('#id_arabic_name').val(),
+                    compressed : $('#select-compressed').val(),
+                    data_fields :  $('#select_fields').val().toString()
+                }, // data sent with the post request
+
+                success : get_ajax_success_function('{{action}}', "/views"),
+
+                error : get_ajax_error_function()
+            });
+        };
+	
+    </script>
+{% endblock %}

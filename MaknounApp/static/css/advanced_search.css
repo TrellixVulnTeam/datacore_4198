@@ -1,0 +1,33 @@
+.card-header {
+    padding: 0px;
+}
+
+.accordion-button {
+    background-color: #f8f9fa;
+    padding: 0.5rem 1.25rem;
+}
+
+.select2-container{
+    flex-grow: 1;
+}
+
+.gridjs-head {
+    border-radius: 0px !important;
+}
+
+.gridjs-footer {
+    border-radius: 0px !important;
+}
+
+.gridjs-container{
+    padding: 0 !important;
+    display: block;
+}
+
+#collapseThree .accordion-body{
+    padding: 0 !important;
+}
+
+.select2-container--default .select2-selection--single {
+    border-radius: 4px 0px 0px 4px;
+}
