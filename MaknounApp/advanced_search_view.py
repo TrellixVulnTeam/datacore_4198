@@ -39,6 +39,9 @@ class AdvancedSearchView(master_page_view.MasterPageView):
         data[source_name] = {}
         data[source_name]['data'] = {}
         data[source_name]['data']['filters'] = []
+        data[source_name]['data']['filters'].append({'id':'_id','label':'المعرّف','type':'string','input':'text','operators':self.get_operators("String", False),'multiple':False})
+        data[source_name]['data']['filters'].append({'id':'_active','label':'مفعّل','type':'boolean','input':'select','operators':self.get_operators("Bool", False),'multiple':False, 'values':{True:'نعم',False:'كلا'}})
+        data[source_name]['data']['filters'].append({'id':'_creation','label':'تاريخ الإنشاء','type':'datetime','input':'text','operators':self.get_operators("Date", False),'multiple':True})
         for f in source.data_fields.all().iterator():
             field_data = {}
             field_data['id']= 'f_' + source_name + '_' + f.english_name
@@ -49,7 +52,7 @@ class AdvancedSearchView(master_page_view.MasterPageView):
             if view:
                 field_data['id'] = 'f_' + source_name + '_' + f.english_name + '@asview_' + view.english_name
             field_data['operators'] = self.get_operators(f.data_type, view!=None)
-            field_data['multiple'] = self.is_multiple(f.data_type, view!=None)
+            field_data['multiple'] = self.is_multiple(f.data_type)
             if field_data['type'] == 'boolean':
                 field_data['values'] = {True:'نعم',False:'كلا'}
             data[source_name]['data']['filters'].append(field_data)
@@ -76,27 +79,22 @@ class AdvancedSearchView(master_page_view.MasterPageView):
     
     def get_operators(self, t, inview):
         if t.endswith('String') and inview:
-            return ['equal','not_equal','in','not_in','begins_with','not_begins_with','contains','not_contains','ends_with','not_ends_with','is_empty','is_not_empty','is_null','is_not_null']
+            return ['equal','not_equal','in','not_in','begins_with','not_begins_with','contains','not_contains','similar','not_similar','ends_with','not_ends_with','is_empty','is_not_empty','is_null','is_not_null','is_defined','is_not_defined']
         elif t.endswith('String') and not inview:
-            return ['equal','not_equal','is_null','is_not_null','in','not_in']
+            return ['equal','not_equal','in','not_in','is_null','is_not_null','is_defined','is_not_defined']
         elif t.endswith('Number'):
-            return ['equal','not_equal','less','less_or_equal','greater','greater_or_equal','is_null','is_not_null']
+            return ['equal','not_equal','less','less_or_equal','greater','greater_or_equal','between','not_between','is_null','is_not_null','is_defined','is_not_defined']
         elif t.endswith('Date'):
-            return ['equal','not_equal','less','less_or_equal','greater','greater_or_equal','is_null','is_not_null']
+            return ['equal','not_equal','less','less_or_equal','greater','greater_or_equal','between','not_between','is_null','is_not_null','is_defined','is_not_defined']
         elif t.endswith('Bool'):
-            return ['equal','not_equal','is_null','is_not_null']
+            return ['equal','not_equal','is_null','is_not_null','is_defined','is_not_defined']
         else:
-            return ['equal','not_equal','is_null','is_not_null']
+            return ['equal','not_equal','is_null','is_not_null','is_defined','is_not_defined']
 
-    def is_multiple(self, t, inview):
-        if t.endswith('String') and inview:
+    def is_multiple(self, t):
+        if not t.endswith('String'):
             return True
-        elif t.endswith('Number') or t.endswith('Date'):
-            return False
-        elif t.endswith('Bool'):
-            return False
-        else:
-            return False
+        return False
     
     def post_recieved(self, data, request):
         try:

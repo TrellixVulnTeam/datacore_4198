@@ -626,18 +626,22 @@ QueryBuilder.OPERATORS = {
     less_or_equal:    { type: 'less_or_equal',    nb_inputs: 1, multiple: false, apply_to: ['number', 'datetime'] },
     greater:          { type: 'greater',          nb_inputs: 1, multiple: false, apply_to: ['number', 'datetime'] },
     greater_or_equal: { type: 'greater_or_equal', nb_inputs: 1, multiple: false, apply_to: ['number', 'datetime'] },
-    between:          { type: 'between',          nb_inputs: 2, multiple: false, apply_to: ['number', 'datetime'] },
-    not_between:      { type: 'not_between',      nb_inputs: 2, multiple: false, apply_to: ['number', 'datetime'] },
+    between:          { type: 'between',          nb_inputs: 2, multiple: true,  apply_to: ['number', 'datetime'] },
+    not_between:      { type: 'not_between',      nb_inputs: 2, multiple: true,  apply_to: ['number', 'datetime'] },
     begins_with:      { type: 'begins_with',      nb_inputs: 1, multiple: false, apply_to: ['string'] },
     not_begins_with:  { type: 'not_begins_with',  nb_inputs: 1, multiple: false, apply_to: ['string'] },
     contains:         { type: 'contains',         nb_inputs: 1, multiple: false, apply_to: ['string'] },
     not_contains:     { type: 'not_contains',     nb_inputs: 1, multiple: false, apply_to: ['string'] },
+    similar:          { type: 'similar',          nb_inputs: 1, multiple: false, apply_to: ['string'] },
+    not_similar:      { type: 'not_similar',      nb_inputs: 1, multiple: false, apply_to: ['string'] },
     ends_with:        { type: 'ends_with',        nb_inputs: 1, multiple: false, apply_to: ['string'] },
     not_ends_with:    { type: 'not_ends_with',    nb_inputs: 1, multiple: false, apply_to: ['string'] },
     is_empty:         { type: 'is_empty',         nb_inputs: 0, multiple: false, apply_to: ['string'] },
     is_not_empty:     { type: 'is_not_empty',     nb_inputs: 0, multiple: false, apply_to: ['string'] },
     is_null:          { type: 'is_null',          nb_inputs: 0, multiple: false, apply_to: ['string', 'number', 'datetime', 'boolean'] },
-    is_not_null:      { type: 'is_not_null',      nb_inputs: 0, multiple: false, apply_to: ['string', 'number', 'datetime', 'boolean'] }
+    is_not_null:      { type: 'is_not_null',      nb_inputs: 0, multiple: false, apply_to: ['string', 'number', 'datetime', 'boolean'] },
+    is_defined:       { type: 'is_defined',       nb_inputs: 0, multiple: false, apply_to: ['string', 'number', 'datetime', 'boolean'] },
+    is_not_defined:   { type: 'is_not_defined',   nb_inputs: 0, multiple: false, apply_to: ['string', 'number', 'datetime', 'boolean'] }
 };
 
 /**
@@ -701,12 +705,16 @@ QueryBuilder.DEFAULTS = {
         'not_begins_with',
         'contains',
         'not_contains',
+        'similar',
+        'not_similar',
         'ends_with',
         'not_ends_with',
         'is_empty',
         'is_not_empty',
         'is_null',
-        'is_not_null'
+        'is_not_null',
+        'is_defined',
+        'is_not_defined'
     ],
 
     icons: {
@@ -4757,12 +4765,16 @@ QueryBuilder.defaults({
         'not_begins_with':  'begins_with',
         'contains':         'not_contains',
         'not_contains':     'contains',
+        'similar':          'not_similar',
+        'not_similar':      'similar',
         'ends_with':        'not_ends_with',
         'not_ends_with':    'ends_with',
         'is_empty':         'is_not_empty',
         'is_not_empty':     'is_empty',
         'is_null':          'is_not_null',
-        'is_not_null':      'is_null'
+        'is_not_null':      'is_null',
+        'is_defined':       'is_not_defined',
+        'is_not_defined':   'is_defined'
     },
 
     conditionOpposites: {
@@ -4868,12 +4880,16 @@ QueryBuilder.defaults({
         not_begins_with:  function(v) { return { '$regex': '^(?!' + Utils.escapeRegExp(v[0]) + ')' }; },
         contains:         function(v) { return { '$regex': Utils.escapeRegExp(v[0]) }; },
         not_contains:     function(v) { return { '$regex': '^((?!' + Utils.escapeRegExp(v[0]) + ').)*$', '$options': 's' }; },
+        similar:      function(v) { return { '$regex': '^' + Utils.escapeRegExp(v[0]) }; },
+        not_similar:  function(v) { return { '$regex': '^(?!' + Utils.escapeRegExp(v[0]) + ')' }; },
         ends_with:        function(v) { return { '$regex': Utils.escapeRegExp(v[0]) + '$' }; },
         not_ends_with:    function(v) { return { '$regex': '(?<!' + Utils.escapeRegExp(v[0]) + ')$' }; },
         is_empty:         function(v) { return ''; },
         is_not_empty:     function(v) { return { '$ne': '' }; },
         is_null:          function(v) { return null; },
-        is_not_null:      function(v) { return { '$ne': null }; }
+        is_not_null:      function(v) { return { '$ne': null }; },
+        is_defined:          function(v) { return null; },
+        is_not_defined:      function(v) { return { '$ne': null }; }
         // @formatter:on
     },
 
@@ -6462,12 +6478,16 @@ QueryBuilder.regional['en'] = {
     "not_begins_with": "doesn't begin with",
     "contains": "contains",
     "not_contains": "doesn't contain",
+    "similar": "similar to",
+    "not_similar": "not similar to",
     "ends_with": "ends with",
     "not_ends_with": "doesn't end with",
     "is_empty": "is empty",
     "is_not_empty": "is not empty",
     "is_null": "is null",
-    "is_not_null": "is not null"
+    "is_not_null": "is not null",
+    "is_defined": "is defined",
+    "is_not_defined": "is not defined"
   },
   "errors": {
     "no_filter": "No filter selected",

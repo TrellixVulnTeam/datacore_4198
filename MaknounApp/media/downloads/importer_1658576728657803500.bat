@@ -1,3 +1,4 @@
+goto comment
 import datetime
 import logging
 import traceback
@@ -10,11 +11,43 @@ import argostranslate.package, argostranslate.translate
 from arango import ArangoClient
 
 class Importer():
-	arango_host = '{{arango_host}}'
-	arango_database = 'db_Maknoun_' + '{{arango_database}}'
-	arango_username = '{{arango_username}}'
-	arango_password = '{{arango_password}}'
-	config = {{config|safe}}
+	arango_host = 'http://127.0.0.1:8529/'
+	arango_database = 'db_Maknoun_' + 'db1'
+	arango_username = 'root'
+	arango_password = '123456789'
+	config = {
+    "file_name": "input.csv",
+    "has_header": True,
+    "import_all_files": False,
+    "used_fields": [
+        0
+    ],
+    "collections": [
+        {
+            "index": 0,
+            "name": "col_person",
+            "name_ar": "\u0627\u0644\u0627\u0641\u0631\u0627\u062f",
+            "fields_indecies": [
+                0
+            ],
+            "fields_names": [
+                "f_col_person_name"
+            ],
+            "fields": [
+                {
+                    "name": "f_col_person_name",
+                    "name_ar": "\u0627\u0644\u0627\u0633\u0645",
+                    "type": "String",
+                    "format": "",
+                    "match": False,
+                    "ff_index": 0
+                }
+            ],
+            "identity_fields": []
+        }
+    ],
+    "edges": []
+}
 	session_key = str(round(time.time()))
 	doc_key = 0
 	logs = ''
@@ -178,27 +211,19 @@ class Importer():
 		for col in self.config['collections']:
 			#select required columns from dataframe
 			col['data'] = df.iloc[:,col['fields_indecies']]
-
 			#change columns names
 			col['data'] = col['data'].set_axis(col['fields_names'], axis='columns')
-
 			#add _key column
 			col['data']['_key'] = col['data'].apply(lambda x: self.generate_key(), axis=1)
-
 			#merge duplicate rows based on identity_fields
 			if(len(col['identity_fields'])>0):
 				col['data'] = self.group_by_identity(col)
-
+			#add _active column
+			col['data'] = col['data'].assign(_active=True)
 			#cast collection fields to type and format
 			col['data'] = self.cast_fields(col)
-
 			#translate collection fields if needed
 			col['data'] = self.translate_fields(col)
-
-			#add _active & _creation columns
-			col['data']['_active'] = True
-			col['data']['_creation'] = pd.Timestamp.now()
-
 			self.log('\n' + col['name'] + ' data:\n---------------------------\n')
 			self.log(col['data'])
 
@@ -207,29 +232,23 @@ class Importer():
 		for edge in self.config['edges']:
 			#select required columns from dataframe
 			edge['data'] = df.iloc[:,edge['fields_indecies']]
-
 			#change columns names
 			edge['data'] = edge['data'].set_axis(edge['fields_names'], axis='columns')
 			for col in self.config['collections']:
 				if col['index'] == edge['from_col']:
-					
 					#add collection _key column as _from to edge
 					edge['data'] = edge['data'].join(col['data']['_key'])
 					edge['data'] = edge['data'].rename({'_key':'_from'}, axis='columns')
-
 					#replacing nan _from and _to fields with the first available key
 					edge['data']['_from'] = edge['data']['_from'].fillna(method='ffill')
-
 					#adding collection name as prefix for the _from field
 					edge['data']['_from'] = edge['data']['_from'].apply(lambda x: f"{col['name']}/{x}")
 				elif col['index'] == edge['to_col']:
 					#add collection _key column as _to to edge
 					edge['data'] = edge['data'].join(col['data']['_key'])
 					edge['data'] = edge['data'].rename({'_key':'_to'}, axis='columns')
-
 					#replacing nan _from and _to fields with the first available key
 					edge['data']['_to'] = edge['data']['_to'].fillna(method='ffill')
-
 					#adding collection name as prefix for the _to field
 					edge['data']['_to'] = edge['data']['_to'].apply(lambda x: f"{col['name']}/{x}")
 			
@@ -244,17 +263,15 @@ class Importer():
 			if(len(edge['identity_fields'])>0):
 				edge['identity_fields'] = edge['identity_fields'].extend(['_from','_to'])
 				edge['data'] = self.group_by_identity(edge)
+			
+			#add _active column
+			edge['data'] = edge['data'].assign(_active=True)
 
 			#cast edge fields to type and format
 			edge['data'] = self.cast_fields(edge)
-
 			#translate edge fields if needed
 			edge['data'] = self.translate_fields(edge)
-						
-			#add _active & _creation columns
-			edge['data']['_active'] = True
-			edge['data']['_creation'] = pd.Timestamp.now()
-
+			
 			self.log('\n' + edge['name'] + ' data:\n---------------------------\n')
 			self.log(edge['data'])
 
@@ -262,6 +279,7 @@ class Importer():
 		self.log('Writing collections to arangodb...')
 		for col in self.config['collections']:
 			arango_collection = db.collection(col['name'])
+			col['data']['_creation'] = pd.Timestamp.now()
 			jsondata = json.loads(col['data'].to_json(orient='records'))
 			arango_collection.import_bulk(jsondata)
 
@@ -269,6 +287,7 @@ class Importer():
 		self.log('Writing edges to arangodb...')
 		for edge in self.config['edges']:
 			arango_collection = db.collection(edge['name'])
+			edge['data']['_creation'] = pd.Timestamp.now()
 			jsondata = json.loads(edge['data'].to_json(orient='records'))
 			arango_collection.import_bulk(jsondata)
 
@@ -322,6 +341,15 @@ class Importer():
 
 
 # Start import
-{% if not is_on_server %}
+
 Importer().start_import()
-{% endif %}
+
+:comment
+@echo off
+SET mypath=%0
+SET "pypath=%mypath%.py"
+echo %mypath%
+C:\Users\Public\python\python.exe C:\Users\Public\python\Lib\parse_import_batch.py %mypath%
+@echo on
+C:\Users\Public\python\python.exe %pypath%
+pause

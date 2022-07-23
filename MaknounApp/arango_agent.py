@@ -351,6 +351,7 @@ class ArangoAgent():
         else:
             query_string += f'\n\nRETURN {results[0]}' 
 
+        print('Executing Query:\n' + query_string)
         cursor = self.db.aql.execute(query_string)
         data = [doc for doc in cursor]
         result = []
@@ -364,6 +365,7 @@ class ArangoAgent():
         final_query = f'FOR doc IN {source} FILTER'
         self.build_qb_query(rules['condition'], 0, rules['rules'], asquery, query)
         final_query = '\n'.join(asquery).strip() +  '\n\n' + final_query + '\n' + '\n'.join(query).strip() + '\nLIMIT 10000\nRETURN doc'
+        print('Executing Query:\n' + final_query)
         cursor = self.db.aql.execute(final_query)
         data = [doc for doc in cursor]
         return {'time':cursor._stats['execution_time'],'count':len(data),'data':data}
@@ -376,111 +378,131 @@ class ArangoAgent():
                 query.append(f'{(tab*indent)}{current_condition} (')
                 self.build_qb_query(rule['condition'], indent+1, rule['rules'], asquery, query)
                 query.append(f'{(tab*indent)})')
-            elif '@' in rule['id']:
+            else:
                 rule_index+=1
                 temp_q = ''
-                field_name = rule['id'].split('@')[0]
-                view_name = rule['id'].split('@')[1]
-                q_name = 'asquery_' + str(round(time.time()) - random.randint(0, 10000000))
-                temp_q += f'LET {q_name} = (FOR doc IN {view_name} SEARCH '
                 rvalue = rule['value']
+                rvalue2 = None
+                if type(rule['value']) is list:
+                    rvalue = rule['value'][0]
+                    rvalue2 = rule['value'][1]
+                
                 analyzer = 'text_en'
                 rvalue_formatted = rvalue
+                rvalue2_formatted = rvalue2
                 rvalue_array = ''
                 if rule['value'] and rule['type'] == 'string':
+                    rvalue = rvalue.strip()
                     rvalue_array = rule['value'].split(',')
                     rvalue_formatted = f'"{rvalue}"'
                     if self.has_arabic_chars(rvalue):
                         analyzer = 'arabic_text_analyzer'
                 elif rule['value'] and rule['type'] == 'datetime':
-                    rvalue_formatted = f'DATE_ISO8601("{self.format_date_iso(rvalue)}")'
-                    for i, temprv in enumerate(rvalue_array, start=0):
-                        rvalue_array[i] = f'DATE_ISO8601("{self.format_date_iso(temprv)}")'
+                    rvalue_formatted = f'DATE_ISO8601("{self.format_date_iso(rvalue)}").TIMESTAMP'
+                    if rvalue2:
+                        rvalue2_formatted = f'DATE_ISO8601("{self.format_date_iso(rvalue2)}").TIMESTAMP'
 
-                if rule['operator'] == 'equal':
-                    temp_q += f'doc.{field_name} == {rvalue_formatted}'
-                elif rule['operator'] == 'not_equal':
-                        temp_q += f'doc.{field_name} != {rvalue_formatted}'
-                elif rule['operator'] == 'in':
-                    temp_q += f'doc.{field_name} IN {rvalue_array}'
-                elif rule['operator'] == 'not_in':
-                    temp_q += f'doc.{field_name} NOT IN {rvalue_array}'
-                elif rule['operator'] == 'begins_with':
-                    temp_q += f'STARTS_WITH(doc.{field_name}, {rvalue_formatted})'
-                elif rule['operator'] == 'not_begins_with':
-                    temp_q += f'NOT STARTS_WITH(doc.{field_name}, {rvalue_formatted})'
-                elif rule['operator'] == 'contains':
-                    temp_q += f'LIKE(doc.{field_name}, "%{rvalue}%")'
-                elif rule['operator'] == 'not_contains':
-                    temp_q += f'NOT LIKE(doc.{field_name}, "%{rvalue}%")'
-                elif rule['operator'] == 'ends_with':
-                    temp_q += f'LIKE(doc.{field_name}, "%{rvalue}")'
-                elif rule['operator'] == 'not_ends_with':
-                    temp_q += f'NOT LIKE(doc.{field_name}, "%{rvalue}")'
-                elif rule['operator'] == 'similar':
-                    temp_q += f'ANALYZER(LEVENSHTEIN_MATCH(doc.{field_name}, {rvalue_formatted},1,true),"{analyzer}")'
-                elif rule['operator'] == 'is_empty':
-                    temp_q += f'doc.{field_name} == ""'
-                elif rule['operator'] == 'is_not_empty':
-                    temp_q += f'doc.{field_name} != ""'
-                elif rule['operator'] == 'is_null':
-                    temp_q += f'doc.{field_name} == null'
-                elif rule['operator'] == 'is_not_null':
-                    temp_q += f'doc.{field_name} != null'
-                elif rule['operator'] == 'less':
-                    temp_q += f'doc.{field_name} < {rvalue_formatted}'
-                elif rule['operator'] == 'less_or_equal':
-                    temp_q += f'doc.{field_name} <= {rvalue_formatted}'
-                elif rule['operator'] == 'greater':
-                    temp_q += f'doc.{field_name} > {rvalue_formatted}'
-                elif rule['operator'] == 'greater_or_equal':
-                    temp_q += f'doc.{field_name} >= {rvalue_formatted}'
+                if '@' in rule['id']:
+                    field_name = rule['id'].split('@')[0]
+                    view_name = rule['id'].split('@')[1]
+                    q_name = 'asquery_' + str(round(time.time()) - random.randint(0, 10000000))
+                    temp_q += f'LET {q_name} = (FOR doc IN {view_name} SEARCH '
+                    append_to_main = False
 
-                temp_q += ' RETURN doc._id)'
-                asquery.append(temp_q)
-                condition = f'{current_condition} ' if rule_index>0 else ''
-                query.append(f'{(tab*indent)}{condition}doc._id in {q_name}')
-            else:
-                rule_index+=1
-                field_name = rule['id']
-                rvalue = rule['value']
-                analyzer = 'text_en'
-                rvalue_formatted = rvalue
-                rvalue_array = ''
-                if rule['value'] and rule['type'] == 'string':
-                    rvalue_array = rule['value'].split(',')
-                    rvalue_formatted = f'"{rvalue}"'
-                elif rule['value'] and rule['type'] == 'datetime':
-                    rvalue_formatted = f'DATE_ISO8601("{self.format_date_iso(rvalue)}")'
-                    for i, temprv in enumerate(rvalue_array, start=0):
-                        rvalue_array[i] = f'DATE_ISO8601("{self.format_date_iso(temprv)}")'
+                    if rule['operator'] == 'equal':
+                        temp_q += f'doc.{field_name} == {rvalue_formatted}'
+                    elif rule['operator'] == 'not_equal':
+                            temp_q += f'doc.{field_name} != {rvalue_formatted}'
+                    elif rule['operator'] == 'in':
+                        temp_q += f'doc.{field_name} IN {rvalue_array}'
+                    elif rule['operator'] == 'not_in':
+                        temp_q += f'doc.{field_name} NOT IN {rvalue_array}'
+                    elif rule['operator'] == 'begins_with':
+                        temp_q += f'STARTS_WITH(doc.{field_name}, {rvalue_formatted})'
+                    elif rule['operator'] == 'not_begins_with':
+                        temp_q += f'NOT STARTS_WITH(doc.{field_name}, {rvalue_formatted})'
+                    elif rule['operator'] == 'contains':
+                        temp_q += f'LIKE(doc.{field_name}, "%{rvalue}%")'
+                    elif rule['operator'] == 'not_contains':
+                        temp_q += f'NOT LIKE(doc.{field_name}, "%{rvalue}%")'
+                    elif rule['operator'] == 'between':
+                        temp_q += f'IN_RANGE(doc.{field_name}, {rvalue_formatted}, {rvalue2_formatted}, true, true)'
+                    elif rule['operator'] == 'not_between':
+                        temp_q += f'NOT IN_RANGE(doc.{field_name}, {rvalue_formatted}, {rvalue2_formatted}, true, true)'
+                    elif rule['operator'] == 'ends_with':
+                        temp_q += f'LIKE(doc.{field_name}, "%{rvalue}")'
+                    elif rule['operator'] == 'not_ends_with':
+                        temp_q += f'NOT LIKE(doc.{field_name}, "%{rvalue}")'
+                    elif rule['operator'] == 'similar':
+                        temp_q += f'ANALYZER(LEVENSHTEIN_MATCH(doc.{field_name}, {rvalue_formatted},1,true),"{analyzer}")'
+                    elif rule['operator'] == 'not_similar':
+                        temp_q += f'NOT ANALYZER(LEVENSHTEIN_MATCH(doc.{field_name}, {rvalue_formatted},1,true),"{analyzer}")'
+                    elif rule['operator'] == 'is_empty':
+                        temp_q += f'doc.{field_name} == ""'
+                    elif rule['operator'] == 'is_not_empty':
+                        temp_q += f'doc.{field_name} != ""'
+                    elif rule['operator'] == 'is_null':
+                        temp_q += f'doc.{field_name} != null'
+                    elif rule['operator'] == 'is_not_null':
+                        temp_q += f'doc.{field_name} == null'
+                    elif rule['operator'] == 'less':
+                        temp_q += f'doc.{field_name} < {rvalue_formatted}'
+                    elif rule['operator'] == 'less_or_equal':
+                        temp_q += f'doc.{field_name} <= {rvalue_formatted}'
+                    elif rule['operator'] == 'greater':
+                        temp_q += f'doc.{field_name} > {rvalue_formatted}'
+                    elif rule['operator'] == 'greater_or_equal':
+                        temp_q += f'doc.{field_name} >= {rvalue_formatted}'
+                    elif rule['operator'] == 'is_defined':
+                        temp_q = f'HAS(doc, "{field_name}")'
+                        append_to_main = True
+                    elif rule['operator'] == 'is_not_defined':
+                        temp_q = f'NOT HAS(doc, "{field_name}")'
+                        append_to_main = True
+                    
+                    condition = f'{current_condition} ' if rule_index>0 else ''
+                    if not append_to_main:
+                        temp_q += ' RETURN doc._id)'
+                        asquery.append(temp_q)
+                        query.append(f'{(tab*indent)}{condition}doc._id in {q_name}')
+                    else:
+                        query.append(f'{(tab*indent)}{condition}{temp_q}')    
+                else:
+                    field_name = rule['id']
 
-                temp_q = ''
-                if rule['operator'] == 'equal':
-                    temp_q += f'doc.{field_name} == {rvalue_formatted}'
-                elif rule['operator'] == 'not_equal':
-                        temp_q += f'doc.{field_name} != {rvalue_formatted}'
-                elif rule['operator'] == 'in':
-                    temp_q += f'doc.{field_name} IN {rvalue_array}'
-                elif rule['operator'] == 'not_in':
-                    temp_q += f'doc.{field_name} NOT IN {rvalue_array}'
-                elif rule['operator'] == 'is_empty':
-                    temp_q += f'doc.{field_name} == ""'
-                elif rule['operator'] == 'is_not_empty':
-                    temp_q += f'doc.{field_name} != ""'
-                elif rule['operator'] == 'is_null':
-                    temp_q += f'doc.{field_name} == null'
-                elif rule['operator'] == 'is_not_null':
-                    temp_q += f'doc.{field_name} != null'
-                elif rule['operator'] == 'less':
-                    temp_q += f'doc.{field_name} < {rvalue_formatted}'
-                elif rule['operator'] == 'less_or_equal':
-                    temp_q += f'doc.{field_name} <= {rvalue_formatted}'
-                elif rule['operator'] == 'greater':
-                    temp_q += f'doc.{field_name} > {rvalue_formatted}'
-                elif rule['operator'] == 'greater_or_equal':
-                    temp_q += f'doc.{field_name} >= {rvalue_formatted}'
+                    if rule['operator'] == 'equal':
+                        temp_q += f'doc.{field_name} == {rvalue_formatted}'
+                    elif rule['operator'] == 'not_equal':
+                            temp_q += f'doc.{field_name} != {rvalue_formatted}'
+                    elif rule['operator'] == 'in':
+                        temp_q += f'doc.{field_name} IN {rvalue_array}'
+                    elif rule['operator'] == 'not_in':
+                        temp_q += f'doc.{field_name} NOT IN {rvalue_array}'
+                    elif rule['operator'] == 'between':
+                        temp_q += f'doc.{field_name} >= {rvalue_formatted} AND doc.{field_name} <= {rvalue2_formatted}'
+                    elif rule['operator'] == 'not_between':
+                        temp_q += f'doc.{field_name} < {rvalue_formatted} OR doc.{field_name} > {rvalue2_formatted}'
+                    elif rule['operator'] == 'is_empty':
+                        temp_q += f'doc.{field_name} == ""'
+                    elif rule['operator'] == 'is_not_empty':
+                        temp_q += f'doc.{field_name} != ""'
+                    elif rule['operator'] == 'is_null':
+                        temp_q += f'doc.{field_name} != null'
+                    elif rule['operator'] == 'is_not_null':
+                        temp_q += f'doc.{field_name} == null'
+                    elif rule['operator'] == 'less':
+                        temp_q += f'doc.{field_name} < {rvalue_formatted}'
+                    elif rule['operator'] == 'less_or_equal':
+                        temp_q += f'doc.{field_name} <= {rvalue_formatted}'
+                    elif rule['operator'] == 'greater':
+                        temp_q += f'doc.{field_name} > {rvalue_formatted}'
+                    elif rule['operator'] == 'greater_or_equal':
+                        temp_q += f'doc.{field_name} >= {rvalue_formatted}'
+                    elif rule['operator'] == 'is_defined':
+                        temp_q += f'HAS(doc, "{field_name}")'
+                    elif rule['operator'] == 'is_not_defined':
+                        temp_q += f'NOT HAS(doc, "{field_name}")'
 
-                condition = f'{current_condition} ' if rule_index>0 else ''
-                query.append(f'{(tab*indent)}{condition}{temp_q}')                          
+                    condition = f'{current_condition} ' if rule_index>0 else ''
+                    query.append(f'{(tab*indent)}{condition}{temp_q}')                          
             
