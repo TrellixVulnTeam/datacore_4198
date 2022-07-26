@@ -266,7 +266,7 @@ class ArangoAgent():
     def format_date_iso(self, dt):
         return datetime.datetime.strptime(dt.replace('ص','AM').replace('م','PM').replace('\u200f',''), '%d/%m/%Y %I:%M %p').isoformat()
 
-    def transform_result_readable(self, result):
+    def transform_result_gridjs(self, result):
         sources = {}
         data_fields = {}
         for b in models.Bank.objects.all().iterator():
@@ -303,6 +303,60 @@ class ArangoAgent():
                 elif col in data_fields.keys():
                     src['columns'][index] = data_fields[col]
 
+        del result['data']
+        return result
+    
+    def get_object_by_id(self, id):
+        colname = id.split('/')[0]
+        _id = id.split('/')[1]
+        col = self.db.collection(colname)
+        return col.get(_id)
+    
+    def transform_result_devexpress(self, result):
+        sources = {}
+        data_fields = {}
+        for b in models.Bank.objects.all().iterator():
+            sources[b.english_name] = {'name':b.arabic_name,'icon':b.icon_class}
+        for r in models.Relation.objects.all().iterator():
+            sources[r.english_name] = {'name':r.arabic_name,'icon':'bi-diagram-3-fill'}
+        for f in models.DataField.objects.all().iterator():
+            data_fields[f'f_{"col" if type(f.owner) is models.Bank else "edge"}_{f.owner.english_name}_{f.english_name}'] = f.arabic_name
+
+        data_fields['_id'] = 'المعرّف'
+        data_fields['_active'] = 'مفعّل'
+        data_fields['_creation'] = 'تاريخ الإنشاء'
+        data_fields['_from'] = 'من'
+        data_fields['_to'] = 'إلى'
+
+        result['srouces'] = {}
+        for row in result['data']:
+            del row['_key']
+            del row['_rev']
+            for fname in row.keys():
+                src_name = row['_id'].split('/')[0]
+                source_type = None
+                if src_name.startswith('edge'):
+                    src_name = src_name[5:]
+                    source_type = 'edge'
+                else:
+                    src_name = src_name[4:]
+                    source_type = 'collection'
+                if src_name not in result['srouces']:
+                    result['srouces'][src_name] = {'icon':sources[src_name]['icon'], 'type': source_type, 'ar_name': sources[src_name]['name'], 'columns': [], 'data': []}
+                if fname not in result['srouces'][src_name]['columns']:
+                    if data_fields.get(fname,fname) not in result['srouces'][src_name]['columns']:
+                        result['srouces'][src_name]['columns'].append(data_fields.get(fname,fname))
+        
+        for row in result['data']:
+            formated_row = {}
+            src_name = row['_id'].split('/')[0]
+            if src_name.startswith('edge'):
+                src_name = src_name[5:]
+            else:
+                src_name = src_name[4:]
+            formated_row = {(data_fields[k] if k in data_fields else k):v  for (k,v) in row.items() }
+            result['srouces'][src_name]['data'].append(formated_row)
+        
         del result['data']
         return result
 

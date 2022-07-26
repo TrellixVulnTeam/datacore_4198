@@ -27,7 +27,7 @@ class SearchEngineView(master_page_view.MasterPageView):
             
             arango_agent = ArangoAgent(db.english_name)
             result = arango_agent.full_text_search(data['query_fields'].split(','),data['query_string'])
-            result = arango_agent.transform_result_readable(result)
+            result = arango_agent.transform_result_devexpress(result)
             
             return super().parse_response(('0',json.dumps(result)),'json')
         except Exception as e:

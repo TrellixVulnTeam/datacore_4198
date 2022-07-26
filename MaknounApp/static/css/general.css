@@ -4,7 +4,7 @@
 }
 
 body {
-    font-family: cairo;
+    font-family: cairo !important;
 }
 
 *::-webkit-scrollbar {
@@ -341,4 +341,31 @@ td > .form-select-no-validate {
     color: #fff !important;
     background-color: #bb2d3b !important;
     border-color: #b02a37 !important;
+}
+
+.dx-master-detail-cell{
+    text-align: right !important;
+    padding: 10px 17px 10px 15px !important;
+    background-color: #dbfbff !important;
+}
+
+.master-detail-caption{
+    font-family: 'cairo';
+    font-size: 15px;
+    background-color: white;
+    padding: 5px;
+    border: 1px solid #dddddd;
+    border-bottom: none;
+    color: #484848;
+    border-right: 4px solid #5fd5ff;
+}
+
+.dx-header-row{
+    background-color: #f8f9fa !important;
+}
+
+.dx-datagrid-text-content{
+    color: #818181;
+    font-weight: bold;
+    font-family: 'cairo' !important;
 }

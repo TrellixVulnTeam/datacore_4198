@@ -24,10 +24,18 @@
     display: block;
 }
 
-#collapseThree .accordion-body{
-    padding: 0 !important;
-}
-
 .select2-container--default .select2-selection--single {
     border-radius: 4px 0px 0px 4px;
+}
+
+.dx-datagrid-header-panel {
+    padding: 0 10px !important;
+}
+
+.dx-dropdownbutton-action.dx-buttongroup-last-item.dx-button .dx-button-content {
+    padding-right: 8px;
+}
+
+.dx-icon-export{
+    color: gray !important;
 }

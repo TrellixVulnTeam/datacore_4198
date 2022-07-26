@@ -36,12 +36,16 @@ class AdvancedSearchView(master_page_view.MasterPageView):
            source_name = 'col_' + source.english_name
         else:
            source_name = 'edge_' + source.english_name
+        
         data[source_name] = {}
         data[source_name]['data'] = {}
         data[source_name]['data']['filters'] = []
         data[source_name]['data']['filters'].append({'id':'_id','label':'المعرّف','type':'string','input':'text','operators':self.get_operators("String", False),'multiple':False})
         data[source_name]['data']['filters'].append({'id':'_active','label':'مفعّل','type':'boolean','input':'select','operators':self.get_operators("Bool", False),'multiple':False, 'values':{True:'نعم',False:'كلا'}})
-        data[source_name]['data']['filters'].append({'id':'_creation','label':'تاريخ الإنشاء','type':'datetime','input':'text','operators':self.get_operators("Date", False),'multiple':True})
+        data[source_name]['data']['filters'].append({'id':'_creation','label':'تاريخ_الإنشاء','type':'datetime','input':'text','operators':self.get_operators("Date", False),'multiple':True})
+        if type(source) is models.Relation:
+            data[source_name]['data']['filters'].append({'id':'_from','label':'من (معرّف)','type':'string','input':'text','operators':self.get_operators("String", False),'multiple':False})
+            data[source_name]['data']['filters'].append({'id':'_to','label':'إلى (معرّف)','type':'string','input':'text','operators':self.get_operators("String", False),'multiple':False})
         for f in source.data_fields.all().iterator():
             field_data = {}
             field_data['id']= 'f_' + source_name + '_' + f.english_name
@@ -98,21 +102,41 @@ class AdvancedSearchView(master_page_view.MasterPageView):
     
     def post_recieved(self, data, request):
         try:
-            if not data['source'] or len(data['source'])==0 or not data['rules'] or len(data['rules'])==0:
-                return super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'), 'json')
-
             db = models.Database.objects.filter(english_name=request.user.current_database_name).first()
             if not db:
                 return super().parse_response(('1', 'يبدو أن أحدهم قام بحذف قاعدة البيانات الحاليّة'),'json')
             
-            source = data['source']
-            rules = json.loads(data['rules'])
+            if data['action'] == 'search':
+                if not data['source'] or len(data['source'])==0 or not data['rules'] or len(data['rules'])==0:
+                    return super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'), 'json')
 
-            arango_agent = ArangoAgent(db.english_name)
-            result = arango_agent.advanced_qb_search(source,rules)
-            result = arango_agent.transform_result_readable(result)
-            
-            return super().parse_response(('0',json.dumps(result)),'json')
+                source = data['source']
+                rules = json.loads(data['rules'])
+
+                arango_agent = ArangoAgent(db.english_name)
+                result = arango_agent.advanced_qb_search(source,rules)
+                result = arango_agent.transform_result_devexpress(result)
+                
+                return super().parse_response(('0',json.dumps(result)),'json')
+            elif data['action'] == 'get_by_id':
+                if not data['id'] or len(data['id'])==0:
+                    return super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'), 'json')
+
+                arango_agent = ArangoAgent(db.english_name)
+                result = {'data':arango_agent.get_object_by_id(data['id'])}
+                result = arango_agent.transform_result_devexpress(result)
+                return super().parse_response(('0',json.dumps(result)),'json')
+            elif data['action'] == 'get_edge_data':
+                if not data['from_id'] or len(data['from_id'])==0 or not data['to_id'] or len(data['to_id'])==0:
+                    return super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'), 'json')
+
+                arango_agent = ArangoAgent(db.english_name)
+                obj1 = {'data':[arango_agent.get_object_by_id(data['from_id'])]}
+                obj1 = arango_agent.transform_result_devexpress(obj1)
+                obj2 = {'data':[arango_agent.get_object_by_id(data['to_id'])]}
+                obj2 = arango_agent.transform_result_devexpress(obj2)
+
+                return super().parse_response(('0',json.dumps({'from': obj1, 'to': obj2})),'json')
         except Exception as e:
             logging.error(traceback.format_exc())
             return super().parse_response(('1' , str(e)),'json')
