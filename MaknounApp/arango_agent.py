@@ -2,6 +2,8 @@ import datetime
 import random
 import time
 from arango import ArangoClient
+from functools import reduce
+from numpy import number
 
 from MaknounApp import models
 
@@ -313,18 +315,21 @@ class ArangoAgent():
         return col.get(_id)
     
     def transform_result_devexpress(self, result):
+        data_types_map = {'String':'string','Number':'number','Date':'datetime','Bool':'boolean'}
         sources = {}
         data_fields = {}
+        db_data_fields = {}
         for b in models.Bank.objects.all().iterator():
             sources[b.english_name] = {'name':b.arabic_name,'icon':b.icon_class}
         for r in models.Relation.objects.all().iterator():
             sources[r.english_name] = {'name':r.arabic_name,'icon':'bi-diagram-3-fill'}
         for f in models.DataField.objects.all().iterator():
-            data_fields[f'f_{"col" if type(f.owner) is models.Bank else "edge"}_{f.owner.english_name}_{f.english_name}'] = f.arabic_name
+            data_fields[f'f_{"col" if type(f.owner) is models.Bank else "edge"}_{f.owner.english_name}_{f.english_name}'] = f.id
+            db_data_fields[f.id] = f
 
         data_fields['_id'] = 'المعرّف'
         data_fields['_active'] = 'مفعّل'
-        data_fields['_creation'] = 'تاريخ الإنشاء'
+        data_fields['_creation'] = 'تاريخ_الإنشاء'
         data_fields['_from'] = 'من'
         data_fields['_to'] = 'إلى'
 
@@ -343,10 +348,22 @@ class ArangoAgent():
                     source_type = 'collection'
                 if src_name not in result['srouces']:
                     result['srouces'][src_name] = {'icon':sources[src_name]['icon'], 'type': source_type, 'ar_name': sources[src_name]['name'], 'columns': [], 'data': []}
-                if fname not in result['srouces'][src_name]['columns']:
-                    if data_fields.get(fname,fname) not in result['srouces'][src_name]['columns']:
-                        result['srouces'][src_name]['columns'].append(data_fields.get(fname,fname))
+                    result['srouces'][src_name]['columns'].append({'dataField':'_id','caption':'', 'width': 50,'allowFiltering': False,'allowSorting': False,'allowGrouping': False,'cellTemplate':None})
+                if fname not in result['srouces'][src_name]['columns']:          
+                    dfv = data_fields.get(fname,fname)
+                    if dfv and type(dfv) is not int:
+                        if fname not in [d['dataField'] for d in result['srouces'][src_name]['columns']]:
+                            result['srouces'][src_name]['columns'].append({'dataField':fname,'caption':dfv})
+                    else:
+                        df = db_data_fields[dfv]
+                        ename = f'f_{"col" if type(df.owner) is models.Bank else "edge"}_{df.owner.english_name}_{df.english_name}'
+                        if df and ename not in [d['dataField'] for d in result['srouces'][src_name]['columns']]:
+                            result['srouces'][src_name]['columns'].append({'dataField':ename,'caption':df.arabic_name,'datatype': reduce(lambda x, y: x.replace(*y), [df.data_type, *list(data_types_map.items())])})
         
+        for k,v in data_fields.items():
+            if v in db_data_fields:
+                 data_fields[k] = db_data_fields[v].arabic_name
+
         for row in result['data']:
             formated_row = {}
             src_name = row['_id'].split('/')[0]
@@ -354,7 +371,13 @@ class ArangoAgent():
                 src_name = src_name[5:]
             else:
                 src_name = src_name[4:]
-            formated_row = {(data_fields[k] if k in data_fields else k):v  for (k,v) in row.items() }
+            
+            for (k,v) in row.items():
+                if type(v) is list:
+                    formated_row[k]=', '.join(map(str, v))
+                else:
+                    formated_row[k]=v
+            
             result['srouces'][src_name]['data'].append(formated_row)
         
         del result['data']

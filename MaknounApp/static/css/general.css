@@ -369,3 +369,19 @@ td > .form-select-no-validate {
     font-weight: bold;
     font-family: 'cairo' !important;
 }
+
+.dx-datagrid-header-panel {
+    padding: 0 10px !important;
+}
+
+.dx-dropdownbutton-action.dx-buttongroup-last-item.dx-button .dx-button-content {
+    padding-right: 8px !important;
+}
+
+.dx-icon-export{
+    color: gray !important;
+}
+
+.dx-pager .dx-page-sizes {
+    margin-right: 10px !important;
+}

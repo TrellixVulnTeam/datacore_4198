@@ -22,8 +22,8 @@
 <div class="accordion" id="accordionExample">
   <div class="accordion-item">
     <h2 class="accordion-header" id="headingTwo">
-      <button class="accordion-button collapsed" type="button" role="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo"
-        aria-expanded="true" aria-controls="collapseTwo" style="color: #585858;">
+      <button class="accordion-button collapsed" type="button" role="button" data-bs-toggle="collapse"
+        data-bs-target="#collapseTwo" aria-expanded="true" aria-controls="collapseTwo" style="color: #585858;">
         شروط البحث
       </button>
     </h2>
@@ -37,17 +37,17 @@
                   <label class="input-group-text" for="select_source"></span>المصدر</label>
                   <select class="form-select" id="select_source" style="line-height: 1.2;">
                     {% for b in banks|iterator %}
-                      <option value="col_{{b.english_name}}" data-icon="{{b.icon_class}}">{{b.arabic_name}}</option>
+                    <option value="col_{{b.english_name}}" data-icon="{{b.icon_class}}">{{b.arabic_name}}</option>
                     {% endfor %}
                     {% for r in relations|iterator %}
-                        <option value="edge_{{r.english_name}}" data-icon="bi-diagram-3-fill">{{r.arabic_name}}</option>
+                    <option value="edge_{{r.english_name}}" data-icon="bi-diagram-3-fill">{{r.arabic_name}}</option>
                     {% endfor %}
                   </select>
                 </div>
                 <div id="qbuilder1" style="flex-grow: 1;flex-basis: 0;"></div>
               </div>
             </div>
-            </div>
+          </div>
           <div style="margin-top: 15px; display: flex; flex-direction: row-reverse;">
             <button id="btn-submit" class="btn btn-primary"><span class="bi-search pl10"></span>بحث</button>
           </div>
@@ -57,15 +57,16 @@
   </div>
   <div class="accordion-item">
     <h2 class="accordion-header" id="headingThree">
-      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-        data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree" style="color: #585858;">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree"
+        aria-expanded="false" aria-controls="collapseThree" style="color: #585858;">
         نتائج البحث <span id="summary" style="color: #585858;position: absolute;left: 60px;"></span>
       </button>
     </h2>
     <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree">
       <div class="accordion-body" style="padding: 10px 0px 0px 0px;">
-        <div id="div-nothing" style="margin-top: 10vh;margin-bottom: 10vh; display: flex;justify-content: center;align-items: center;flex-direction: column;">
-          <img src="{% static 'images/no_result_found.png' %}" style="margin-right: -100px;width: 300px; "/>
+        <div id="div-nothing"
+          style="margin-top: 10vh;margin-bottom: 10vh; display: flex;justify-content: center;align-items: center;flex-direction: column;">
+          <img src="{% static 'images/no_result_found.png' %}" style="margin-right: -100px;width: 300px; " />
           <div style="font-size: small;margin-right: -100px; color: lightgray;">لا يوجد نتائج</div>
         </div>
         <div id="results-view" style="display: flex; flex-direction: column;">
@@ -97,274 +98,121 @@
   }
 
   function format(value) {
-      if (!value.id) { return value.text; }
-      var icon_class = '';
-      $('#select_source option').each(function(){
-          if($(this).text() == value.text){
-              icon_class = $(this).attr('data-icon')
-              return false;
-          }
-      });
-      return '<i class="' + icon_class + '" style="font-size: 14px; padding-left: 10px; padding-right:5px;"></i>' + value.text;
-  } 
-
-  var data = {}
-
-  var builder_locale = {
-    localization: {
-      today: 'اليوم',
-      clear: 'مسح',
-      close: 'خروج',
-      selectMonth: 'إختر شهر',
-      previousMonth: 'الشهر السابق',
-      nextMonth: 'الشهر التالي',
-      selectYear: 'إختر سنة',
-      previousYear: 'السنة السابقة',
-      nextYear: 'السنة التالية',
-      selectDecade: 'إختر عقد',
-      previousDecade: 'العقد السابق',
-      nextDecade: 'العقد التالي',
-      previousCentury: 'القرن السابق',
-      nextCentury: 'القرن التالي',
-      pickHour: 'إختر ساعة',
-      incrementHour: 'أضف ساعة',
-      decrementHour: 'أنقص ساعة',
-      pickMinute: 'إختر دقيقة',
-      incrementMinute: 'أضف دقيقة',
-      decrementMinute: 'أنقص دقيقة',
-      pickSecond: 'إختر ثانية',
-      incrementSecond: 'أضف ثانية',
-      decrementSecond: 'أنقص ثانية',
-      toggleMeridiem: 'صباحاً/مساءاً',
-      selectTime: 'إختر وقت',
-      selectDate: 'إختر تاريخ',
-      dayViewHeaderFormat: { month: 'long', year: '2-digit' },
-      locale: 'ar-ae',
-      startOfTheWeek: 1
-    }
+    if (!value.id) { return value.text; }
+    var icon_class = '';
+    $('#select_source option').each(function () {
+      if ($(this).text() == value.text) {
+        icon_class = $(this).attr('data-icon')
+        return false;
+      }
+    });
+    return '<i class="' + icon_class + '" style="font-size: 14px; padding-left: 10px; padding-right:5px;"></i>' + value.text;
   }
 
-  $(document).ready(function() {
-      $('#select_source').select2({
-          formatResult: format,
-          formatSelection: format,
-          templateResult: format,
-          templateSelection: format,
-          escapeMarkup: function(m) { return m; }
-      });
-
-      DevExpress.localization.locale('ar');
-
-      data = JSON.parse('{{data}}'.replace(/&quot;/g, '"'));
-
-      Object.entries(data).forEach(([k,v]) => {
-        Object.entries(v.data).forEach(([k1,v1]) => {
-          v.data.filters.forEach((f) => {
-            if (f.input == 'getdtpuifunc'){
-              f.input = getdtpuifunc;
-            }
-          })
-        })
-      })
-
-      $('#select_source').change(function (e){
-        value = $("#select_source").val();
-        qdata = data[value].data
-        $('#qbuilder1').queryBuilder(qdata);
-        $('#qbuilder1').queryBuilder('setFilters',true,qdata.filters);
-        $('#qbuilder1').on('afterCreateRuleInput.queryBuilder', function (e, rule) {
-          update_qbfilter_value_input(rule);
-        });
-        $('#qbuilder1').on('afterUpdateRuleOperator.queryBuilder', function (e, rule) {
-          update_qbfilter_value_input(rule);
-        });
-      });
-      $('#select_source').trigger('change');
-
+  $(document).ready(function () {
+    $('#select_source').select2({
+      formatResult: format,
+      formatSelection: format,
+      templateResult: format,
+      templateSelection: format,
+      escapeMarkup: function (m) { return m; }
     });
 
-    function update_qbfilter_value_input(rule){
-        $('#'+ rule.id).find('.form-control').each(function(el){
-          if(rule.__.operator.type == 'between' || rule.__.operator.type == 'not_between')
-            $(this).css({"width":"47%", "display":"inline-block"});
-          if(rule.__.filter.type == 'datetime'){
-            new tempusDominus.TempusDominus($(this)[0], builder_locale);
-            $(this).attr('readOnly', true)
+    DevExpress.localization.locale('ar');
+
+    data = JSON.parse('{{data}}'.replace(/&quot;/g, '"'));
+
+    Object.entries(data).forEach(([k, v]) => {
+      Object.entries(v.data).forEach(([k1, v1]) => {
+        v.data.filters.forEach((f) => {
+          if (f.input == 'getdtpuifunc') {
+            f.input = getdtpuifunc;
           }
-        });
+        })
+      })
+    })
+
+    $('#select_source').change(function (e) {
+      value = $("#select_source").val();
+      qdata = data[value].data
+      $('#qbuilder1').queryBuilder(qdata);
+      $('#qbuilder1').queryBuilder('setFilters', true, qdata.filters);
+      $('#qbuilder1').on('afterCreateRuleInput.queryBuilder', function (e, rule) {
+        update_qbfilter_value_input(rule);
+      });
+      $('#qbuilder1').on('afterUpdateRuleOperator.queryBuilder', function (e, rule) {
+        update_qbfilter_value_input(rule);
+      });
+    });
+    $('#select_source').trigger('change');
+
+  });
+
+  function update_qbfilter_value_input(rule) {
+    $('#' + rule.id).find('.form-control').each(function (el) {
+      if (rule.__.operator.type == 'between' || rule.__.operator.type == 'not_between')
+        $(this).css({ "width": "47%", "display": "inline-block" });
+      if (rule.__.filter.type == 'datetime') {
+        new tempusDominus.TempusDominus($(this)[0], dtp_locale);
+        $(this).attr('readOnly', true)
+      }
+    });
+  }
+
+  function create_post() {
+    console.log("create post is working!") // sanity check
+    if (!$('#qbuilder1').queryBuilder('validate')) {
+      showError('الرجاء التأكد من جميع الحقول');
+      return;
     }
 
-    function create_post() {
-            console.log("create post is working!") // sanity check
-            if(!$('#qbuilder1').queryBuilder('validate')){
-                showError('الرجاء التأكد من جميع الحقول');
-                return;
-            }
+    rules = $('#qbuilder1').queryBuilder('getRules')
+    $('#btn-submit').prop('disabled', true);
 
-            rules = $('#qbuilder1').queryBuilder('getRules')
-            $('#btn-submit').prop('disabled', true);
-            
-            showOverlay();
+    showOverlay();
 
-            $.ajax({
-                url : "/advanced_search/", // the endpoint
-                type : "POST", // http method
-                data : { 
-                    action: 'search',
-                    csrfmiddlewaretoken: '{{ csrf_token }}',
-                    source : $("#select_source").val(),
-                    rules : JSON.stringify(rules)
-                }, // data sent with the post request
+    $.ajax({
+      url: "/advanced_search/", // the endpoint
+      type: "POST", // http method
+      data: {
+        action: 'search',
+        csrfmiddlewaretoken: '{{ csrf_token }}',
+        source: $("#select_source").val(),
+        rules: JSON.stringify(rules)
+      }, // data sent with the post request
 
-                success : function(response){
-                    hideOverlay();
-                    $('#btn-submit').prop('disabled', false);
-                    $('#results-view').empty();
-                    if(response.constructor == Object && response['code'] == '1')
-                        showError(response['message']);
-                    else{
-                        json_result = JSON.parse(response.message)
-                        if(Object.keys(json_result['srouces']).length>0){
-                            $('#div-nothing').hide();
-                            $('#summary')[0].innerText = json_result['count'].toLocaleString('en-US') + ' نتيجة في أقل من ' + json_result['time'].toFixed(3) + ' ثانية'
-                            $('#summary').show();
-                            Object.entries(json_result['srouces']).forEach(([k,v]) => {
-                              masterDetail_ = {}
-                                if(v.type=='edge'){
-                                  masterDetail_ = {
-                                    enabled: true,
-                                    template(container, options) {
-                                      $.ajax({
-                                        url : "/advanced_search/", // the endpoint
-                                        type : "POST", // http method
-                                        data : { 
-                                            action: 'get_edge_data',
-                                            from_id: options.data['من'],
-                                            to_id: options.data['إلى'],
-                                            csrfmiddlewaretoken: '{{ csrf_token }}',
-                                            rules : JSON.stringify(rules)
-                                        },
-                                      success : function(inner_resp){
-                                        if(inner_resp.constructor == Object && inner_resp['code'] == '1')
-                                            showError(inner_resp['message']);
-                                        else{
-                                            json_result = JSON.parse(inner_resp.message)
-                                            if(Object.keys(json_result).length>1){
-                                              fromobj = Object.values(json_result.from.srouces)[0]
-                                              toobj = Object.values(json_result.to.srouces)[0]
-                                              $(container)
-                                              .append('<div class="master-detail-caption">من:<span class="' + fromobj['icon'] + ' pr10" style="padding-left:5px"></span>' + fromobj['ar_name'] + '</div>')
-                                            
-                                              $('<div>')
-                                                .dxDataGrid({
-                                                  columnAutoWidth: true,
-                                                  rtlEnabled: true,
-                                                  showBorders: false,
-                                                  columns: fromobj.columns,
-                                                  dataSource: fromobj.data,
-                                                }).appendTo(container);
-
-                                              $(container)
-                                              .append('<div class="master-detail-caption" style="margin-top:15px">إلى:<span class="' + toobj['icon'] + ' pr10" style="padding-left:5px"></span>' + toobj['ar_name'] + '</div>')
-                                            
-                                              $('<div>')
-                                                .dxDataGrid({
-                                                  columnAutoWidth: true,
-                                                  rtlEnabled: true,
-                                                  showBorders: false,
-                                                  columns: toobj.columns,
-                                                  dataSource: toobj.data,
-                                                }).appendTo(container);
-                                            }
-                                          }
-                                      },
-                                      error : get_ajax_error_function()});
-
-
-                                    },
-                                  }
-                                }
-                                $('#results-view').append('<div id="div_data_' + k + '"></div>');
-                                $('#div_data_' + k).dxDataGrid({
-                                  dataSource: v['data'],
-                                  keyExpr: 'المعرّف',
-                                  columns: v['columns'],
-                                  showBorders: false, 
-                                  rtlEnabled: true,
-                                  allowColumnReordering: true,
-                                  rowAlternationEnabled: true,
-                                  masterDetail: masterDetail_,
-                                  grouping: {
-                                    autoExpandAll: true,
-                                  },
-                                  selection: {
-                                    mode: 'single',
-                                  },
-                                  sorting: {
-                                    mode: 'multiple',
-                                  },
-                                  filterRow: {
-                                    visible: true,
-                                    applyFilter: 'auto',
-                                  },
-                                  headerFilter: {
-                                    visible: true,
-                                  },
-                                  searchPanel: {
-                                    visible: true,
-                                  },
-                                  groupPanel: {
-                                    visible: true,
-                                  },
-                                  scrolling: {
-                                    rowRenderingMode: 'virtual',
-                                  },
-                                  paging: {
-                                    pageSize: 20,
-                                  },
-                                  pager: {
-                                    visible: true,
-                                    allowedPageSizes: [10, 20, 50, 100],
-                                    showPageSizeSelector: true,
-                                    showInfo: true,
-                                    showNavigationButtons: true,
-                                  },    
-                                  export: {
-                                    enabled: true,
-                                    allowExportSelectedData: true,
-                                  },
-                                  onExporting(e) {
-                                    const workbook = new ExcelJS.Workbook();
-                                    const worksheet = workbook.addWorksheet('data');
-
-                                    DevExpress.excelExporter.exportDataGrid({
-                                      component: e.component,
-                                      worksheet,
-                                      autoFilterEnabled: true,
-                                    }).then(() => {
-                                      workbook.xlsx.writeBuffer().then((buffer) => {
-                                        saveAs(new Blob([buffer], { type: 'application/octet-stream' }), 'data.xlsx');
-                                      });
-                                    });
-                                    e.cancel = true;
-                                  },
-                                });
-                            });
-                        }else{
-                            $('#div-nothing').show();
-                            $('#summary').hide();
-                        }
-                                
-                        $('#collapseThree').collapse('show'); 
-                        $('#collapseThree').delay(400).queue(function() {
-                          $('body').scrollTo($('#collapseThree')[0].offsetTop-150);
-                        });
-                    }
-                },
-
-                error : get_ajax_error_function()
+      success: function (response) {
+        hideOverlay();
+        $('#btn-submit').prop('disabled', false);
+        $('#results-view').empty();
+        if (response.constructor == Object && response['code'] == '1')
+          showError(response['message']);
+        else {
+          json_result = JSON.parse(response.message)
+          if (Object.keys(json_result['srouces']).length > 0) {
+            $('#div-nothing').hide();
+            $('#summary')[0].innerText = json_result['count'].toLocaleString('en-US') + ' نتيجة في أقل من ' + json_result['time'].toFixed(3) + ' ثانية'
+            $('#summary').show();
+            Object.entries(json_result['srouces']).forEach(([k, v]) => {
+              buildDevexpressTables(k, v, '/advanced_search/', '{{ csrf_token }}', 'results-view', 'single', 20);
             });
-        };
+          } else {
+            $('#div-nothing').show();
+            $('#summary').hide();
+          }
+
+          $('#collapseThree').collapse('show');
+          $('#collapseThree').delay(400).queue(function () {
+            $('body').scrollTo($('#collapseThree')[0].offsetTop - 150);
+          });
+        }
+      },
+
+      error: get_ajax_error_function()
+    });
+  };
+
+
 
 </script>
 {% endblock %}

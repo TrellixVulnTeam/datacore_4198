@@ -1,0 +1,49 @@
+.branch {
+    display: flex;
+    flex-direction: row;
+    margin-right: 20px;
+}
+
+.branch>input {
+    margin-left: 10px;
+    cursor: pointer;
+}
+
+.root>input {
+    margin-left: 10px;
+    display: none;
+}
+
+.fa-li {
+    position: static;
+    cursor: pointer;
+}
+
+#jstree_div .fa-ul {
+    margin: 0px;
+    padding: 0px;
+}
+
+.noselect {
+    -webkit-touch-callout: none;
+    /* iOS Safari */
+    -webkit-user-select: none;
+    /* Safari */
+    -khtml-user-select: none;
+    /* Konqueror HTML */
+    -moz-user-select: none;
+    /* Firefox */
+    -ms-user-select: none;
+    /* Internet Explorer/Edge */
+    user-select: none;
+    /* Non-prefixed version, currently
+                                supported by Chrome and Opera */
+}
+
+.accordion {
+    margin-bottom: 25px;
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: white !important;
+}
