@@ -271,6 +271,8 @@ function showSuccess(message) {
 }
 
 function showError(message) {
+  if(message==null || message.trim().length==0)
+    message = "الرجاء التأكد من الشبكة"
   document.getElementsByClassName('toast-header')[0].style = 'background-color: lightcoral'
   document.getElementsByClassName('me-auto')[0].innerHTML = 'خطأ';
   document.getElementsByClassName('toast-body')[0].innerHTML = message
@@ -424,7 +426,7 @@ function printDate(date) {
 function buildDevexpressTables(k, v, api_url, crf_token, container_id, selection_mode, page_size) {
 
   parseDataDates(v['columns'], v['data']);
-  addEditColums(v.columns);
+  addEditDeleteColum(v.columns);
 
   masterDetail_ = {}
   if (v.type == 'edge') {
@@ -432,7 +434,8 @@ function buildDevexpressTables(k, v, api_url, crf_token, container_id, selection
   }
 
   $('#' + container_id).append('<div id="div_data_' + k + '"></div>');
-  $('#div_data_' + k).dxDataGrid({
+  dxDataGrid_id = '#div_data_' + k
+  $(dxDataGrid_id).dxDataGrid({
     dataSource: v['data'],
     columns: v['columns'],
     showBorders: false,
@@ -443,9 +446,6 @@ function buildDevexpressTables(k, v, api_url, crf_token, container_id, selection
     masterDetail: masterDetail_,
     grouping: {
       autoExpandAll: true,
-    },
-    editing: {
-      mode: 'popup',
     },
     selection: {
       mode: selection_mode,
@@ -497,9 +497,10 @@ function buildDevexpressTables(k, v, api_url, crf_token, container_id, selection
         });
       });
       e.cancel = true;
-    },
+    }
   });
 }
+
 
 function buildEdgeMasterDetail(api_url,crf_token) {
   return {
@@ -513,7 +514,6 @@ function buildEdgeMasterDetail(api_url,crf_token) {
           from_id: options.data['_from'],
           to_id: options.data['_to'],
           csrfmiddlewaretoken: crf_token,
-          rules: JSON.stringify(rules)
         },
         success: function (inner_resp) {
           if (inner_resp.constructor == Object && inner_resp['code'] == '1')
@@ -526,8 +526,8 @@ function buildEdgeMasterDetail(api_url,crf_token) {
               $(container)
                 .append('<div class="master-detail-caption">من:<span class="' + fromobj['icon'] + ' pr10" style="padding-left:5px"></span>' + fromobj['ar_name'] + '</div>')
 
-              addEditColums(fromobj.columns)
-              addEditColums(toobj.columns)
+              addEditDeleteColum(fromobj.columns)
+              addEditDeleteColum(toobj.columns)
               parseDataDates(fromobj['columns'], fromobj['data']);
               parseDataDates(toobj['columns'], toobj['data']);
 
@@ -562,11 +562,25 @@ function buildEdgeMasterDetail(api_url,crf_token) {
   }
 }
 
-function addEditColums(columns) {
-  columns[0].cellTemplate = function (container, options) {
-    $('<a>', { href: '#', 'data-id': options.value, class: 'pr10' })
-      .append($('<span>', { class: 'bi-pencil-fill' }))
-      .appendTo(container);
+function addEditDeleteColum(columns) {
+  columns[0]={
+    type: 'buttons',
+    width: 80,
+    buttons: [{
+      hint: 'حذف',
+      icon: 'trash',
+      onClick(e) {
+        e.component.refresh(true);
+        e.event.preventDefault();
+      }},
+      {
+        hint: 'تعديل',
+        icon: 'edit',
+        onClick(e) {
+          e.component.refresh(true);
+          e.event.preventDefault();
+      }
+    }],
   }
 }
 

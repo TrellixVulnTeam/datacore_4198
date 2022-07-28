@@ -10,7 +10,7 @@
 
 {% block content %}
 <div>
-    <div class="row" style="max-width: 600px;">
+    <div class="row" style="max-width: 700px;">
         <div class="form-group col-12" style="margin-top: 10px;">
             <label class="col-12" style="margin-bottom: 3px;">الاسم الأجنبي</label>
             <input type="text" name="english_name" maxlength="70" autocomplete="off" class="form-control en-only" required id="id_english_name" value="{{entity.english_name}}" {{action|if_equals_else:'edit,readonly,'}}>
@@ -71,15 +71,11 @@
                                         <input type="text" name="txtaname" class="form-control ar-only" autocomplete="off" value="{{field.arabic_name}}" required/>
                                     </td>
                                     <td>
-                                        <select name="type" class="form-select narrow-padded-check" >
+                                        <select  style="min-width: 110px;" name="type" class="form-select narrow-padded-check" >
                                             <option value="String" {{ field.data_type|if_equals_else:'String,selected="true",' }}>نص</option>
                                             <option value="Number" {{ field.data_type|if_equals_else:'Number,selected="true",' }}">رقم</option>
                                             <option value="Date" {{ field.data_type|if_equals_else:'Date,selected="true",' }}>تاريخ</option>
                                             <option value="Bool" {{ field.data_type|if_equals_else:'Bool,selected="true",' }}>حقيقة</option>
-                                            <option value="Array_String" {{ field.data_type|if_equals_else:'Array_String,selected="true",' }}>لائحة نصّيّة</option>
-                                            <option value="Array_Number" {{ field.data_type|if_equals_else:'Array_Number,selected="true",' }}>لائحة رقميّة</option>
-                                            <option value="Array_Date" {{ field.data_type|if_equals_else:'Array_Date,selected="true",' }}>لائحة تواريخ</option>
-                                            <option value="Array_Bool" {{ field.data_type|if_equals_else:'Array_Bool,selected="true",' }}>لائحة حقائق</option>
                                         </select>
                                     </td>
                                     <td>
@@ -124,19 +120,18 @@
             $('.icon-picker').val("{{ entity.icon_class|str_or_default:'bi-hdd-stack-fill' }}");
             $('.icon-picker').trigger('change');
 
-            //registerTypeListener();
+            registerTypeListener();
         });
 
-        // function registerTypeListener(){
-        //     $('select[name="type"]').on('change', function() {
-        //         if(this.value == 'String'){
-        //             $(this).parent().next().find('input').prop('checked',false);
-        //             $(this).parent().next().find('input').attr('disabled',true);
-        //         }else{
-        //             $(this).parent().next().find('input').attr('disabled',false);
-        //         }
-        //     });
-        // }
+        function registerTypeListener(){
+            $('select[name="type"]').on('change', function() {
+                if(this.value == 'String'){
+                    $(this).parent().next().find('input').prop('checked',false);
+                }else{
+                    $(this).parent().next().find('input').prop('checked',true);
+                }
+            });
+        }
 
 		function addRow(tableID) {
 
@@ -151,11 +146,11 @@
             var cell3 = row.insertCell(2);
             cell3.innerHTML = '<input type="text" name="txtaname" class="form-control" onkeydown="save_last_key_down(event)" onkeypress="validate_ar(event)" autocomplete="off" required/>';
             var cell4 = row.insertCell(3);
-            cell4.innerHTML = '<select name="type" class="form-select narrow-padded-check"><option value="String">نص</option><option value="Number">رقم</option><option value="Date">تاريخ</option><option value="Bool">حقيقة</option><option value="Array_String">لائحة نصّيّة</option><option value="Array_Number">لائحة رقميّة</option><option value="Array_Date">لائحة تواريخ</option><option value="Array_Bool">لائحة حقائق</option></select>';
+            cell4.innerHTML = '<select style="min-width: 110px;" name="type" class="form-select narrow-padded-check"><option value="String">نص</option><option value="Number">رقم</option><option value="Date">تاريخ</option><option value="Bool">حقيقة</option></select>';
             var cell5 = row.insertCell(4);
-            cell5.innerHTML = '<input type="checkbox" name="chkindexed" class="form-check" style="margin-right: 15px;" disabled/>';
+            cell5.innerHTML = '<input type="checkbox" name="chkindexed" class="form-check" style="margin-right: 15px;"/>';
 
-            //registerTypeListener();
+            registerTypeListener();
 		}
 
 		function deleteRow(tableID) {

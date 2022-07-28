@@ -66,23 +66,29 @@ class ArangoAgent():
         field_name = 'f_col_' + collection_name + '_' + field_name.strip()
         found = False
         index_name = 'index_' + field_name
+        field_name_array = field_name + '[*]'
+        found_array = False
+        index_name_array = index_name  + '_array'
         for index in collection.indexes():
-            if found:
-                break
             if index['type'] == 'persistent':
                 for field in index['fields']:
                     if field == field_name:
                         found = True
-                        break
+                    elif field == field_name_array:
+                        found_array = True
         if not found:
             collection.add_persistent_index(name=index_name, fields=[field_name], in_background = False)
+        if not found_array:
+            collection.add_persistent_index(name=index_name_array, fields=[field_name_array], in_background = False)
+
 
     def delete_persistent_index_for_collection_field(self, collection_name, field_name):
         collection = self.db.collection('col_' + collection_name)
         field_name = 'f_col_' + collection_name + '_' + field_name.strip()
         index_name = 'index_' + field_name
+        index_name_array = index_name  + '_array'
         for index in collection.indexes():
-            if index['name'] == index_name:
+            if index['name'] == index_name or index['name'] == index_name_array:
                 collection.delete_index(index['id'])
 
     def create_persistent_index_for_edge_field(self, edge_name, field_name):
@@ -90,26 +96,31 @@ class ArangoAgent():
         field_name = 'f_col_' + edge_name + '_' + field_name.strip()
         found = False
         index_name = 'index_' + field_name
+        field_name_array = field_name + '[*]'
+        found_array = False
+        index_name_array = index_name  + '_array'
         for index in edge.indexes():
-            if found:
-                break
             if index['type'] == 'persistent':
                 for field in index['fields']:
                     if field == field_name:
                         found = True
-                        break
+                    elif field == field_name_array:
+                        found_array = True
         if not found:
             edge.add_persistent_index(name=index_name, fields=[field_name], in_background = False)
+        if not found_array:
+            edge.add_persistent_index(name=index_name_array, fields=[field_name_array], in_background = False)
 
     def delete_persistent_index_for_edge_field(self, edge_name, field_name):
         edge = self.db.collection('edge_' + edge_name)
         field_name = 'f_col_' + edge_name + '_' + field_name.strip()
         index_name = 'index_' + field_name
-        for index in edge.indexes():
+        index_name_array = index_name  + '_array'
+        for index in edge.indexes() or index['name'] == index_name_array:
             if index['name'] == index_name:
                 edge.delete_index(index['id'])
 
-    def create_arangosearch_view(self, name, use_compression, fields):
+    def create_arangosearch_view(self, name, use_compression, fields, create_if_not_exist = True):
         self.create_arabic_text_analyzer()
         self.create_arabic_collation_analyzer()
         links = self.generate_view_links(fields)
@@ -120,14 +131,17 @@ class ArangoAgent():
                 found = True
                 break
 
-        if not found:
+        if not found and create_if_not_exist:
             compression = 'lz4'
             if not use_compression:
                 compression = 'none'
 
             self.db.create_arangosearch_view(name, properties={'primarySortCompression': compression, 'links': links})
-        else:
+            return True
+        elif found:
             self.db.update_arangosearch_view(name, properties={'links': links})
+            return True
+        return False
 
     def delete_arangosearch_view(self, name):
         name = 'asview_' + name.strip()
@@ -348,8 +362,8 @@ class ArangoAgent():
                     source_type = 'collection'
                 if src_name not in result['srouces']:
                     result['srouces'][src_name] = {'icon':sources[src_name]['icon'], 'type': source_type, 'ar_name': sources[src_name]['name'], 'columns': [], 'data': []}
-                    result['srouces'][src_name]['columns'].append({'dataField':'_id','caption':'', 'width': 50,'allowFiltering': False,'allowSorting': False,'allowGrouping': False,'cellTemplate':None})
-                if fname not in result['srouces'][src_name]['columns']:          
+                    result['srouces'][src_name]['columns'].append({'dataField':None})
+                if '[*]' not in fname and fname not in result['srouces'][src_name]['columns']:          
                     dfv = data_fields.get(fname,fname)
                     if dfv and type(dfv) is not int:
                         if fname not in [d['dataField'] for d in result['srouces'][src_name]['columns']]:
@@ -475,9 +489,9 @@ class ArangoAgent():
                     if self.has_arabic_chars(rvalue):
                         analyzer = 'arabic_text_analyzer'
                 elif rule['value'] and rule['type'] == 'datetime':
-                    rvalue_formatted = f'DATE_ISO8601("{self.format_date_iso(rvalue)}").TIMESTAMP'
+                    rvalue_formatted = f'DATE_TIMESTAMP(DATE_ISO8601("{self.format_date_iso(rvalue)}"))'
                     if rvalue2:
-                        rvalue2_formatted = f'DATE_ISO8601("{self.format_date_iso(rvalue2)}").TIMESTAMP'
+                        rvalue2_formatted = f'DATE_TIMESTAMP(DATE_ISO8601("{self.format_date_iso(rvalue2)}"))'
 
                 if '@' in rule['id']:
                     field_name = rule['id'].split('@')[0]
@@ -548,33 +562,33 @@ class ArangoAgent():
                     field_name = rule['id']
 
                     if rule['operator'] == 'equal':
-                        temp_q += f'doc.{field_name} == {rvalue_formatted}'
+                        temp_q += f'doc.{field_name} == {rvalue_formatted} OR {rvalue_formatted} IN doc.{field_name}[*]'
                     elif rule['operator'] == 'not_equal':
-                            temp_q += f'doc.{field_name} != {rvalue_formatted}'
+                            temp_q += f'doc.{field_name} != {rvalue_formatted} OR {rvalue_formatted} NOT IN doc.{field_name}[*]'
                     elif rule['operator'] == 'in':
-                        temp_q += f'doc.{field_name} IN {rvalue_array}'
+                        temp_q += f'doc.{field_name} IN {rvalue_array} OR doc.{field_name} ANY IN {rvalue_array}'
                     elif rule['operator'] == 'not_in':
-                        temp_q += f'doc.{field_name} NOT IN {rvalue_array}'
+                        temp_q += f'doc.{field_name} NOT IN {rvalue_array} OR doc.{field_name} ALL NOT IN {rvalue_array}'
                     elif rule['operator'] == 'between':
-                        temp_q += f'doc.{field_name} >= {rvalue_formatted} AND doc.{field_name} <= {rvalue2_formatted}'
+                        temp_q += f'(doc.{field_name} >= {rvalue_formatted} AND doc.{field_name} <= {rvalue2_formatted}) OR (COUNT(INTERSECTION((for value in doc.{field_name}[*] filter value >= {rvalue_formatted} return value),(for value in doc.{field_name}[*] filter value <= {rvalue2_formatted} return value))) > 0)'
                     elif rule['operator'] == 'not_between':
-                        temp_q += f'doc.{field_name} < {rvalue_formatted} OR doc.{field_name} > {rvalue2_formatted}'
+                        temp_q += f'doc.{field_name} < {rvalue_formatted} OR doc.{field_name} > {rvalue2_formatted} OR doc.{field_name} ANY < {rvalue_formatted} OR doc.{field_name} ANY > {rvalue2_formatted}'
                     elif rule['operator'] == 'is_empty':
-                        temp_q += f'doc.{field_name} == ""'
+                        temp_q += f'doc.{field_name} == "" OR "" IN doc.{field_name}[*]'
                     elif rule['operator'] == 'is_not_empty':
-                        temp_q += f'doc.{field_name} != ""'
+                        temp_q += f'doc.{field_name} != "" OR "" NOT IN doc.{field_name}[*]'
                     elif rule['operator'] == 'is_null':
-                        temp_q += f'doc.{field_name} != null'
+                        temp_q += f'doc.{field_name} != null OR null NOT IN doc.{field_name}[*]'
                     elif rule['operator'] == 'is_not_null':
-                        temp_q += f'doc.{field_name} == null'
+                        temp_q += f'doc.{field_name} == null OR null IN doc.{field_name}[*]'
                     elif rule['operator'] == 'less':
-                        temp_q += f'doc.{field_name} < {rvalue_formatted}'
+                        temp_q += f'doc.{field_name} < {rvalue_formatted} OR doc.{field_name} ANY < {rvalue_formatted}'
                     elif rule['operator'] == 'less_or_equal':
-                        temp_q += f'doc.{field_name} <= {rvalue_formatted}'
+                        temp_q += f'doc.{field_name} <= {rvalue_formatted} OR doc.{field_name} ANY < {rvalue_formatted}'
                     elif rule['operator'] == 'greater':
-                        temp_q += f'doc.{field_name} > {rvalue_formatted}'
+                        temp_q += f'doc.{field_name} > {rvalue_formatted} OR doc.{field_name} ANY > {rvalue_formatted}'
                     elif rule['operator'] == 'greater_or_equal':
-                        temp_q += f'doc.{field_name} >= {rvalue_formatted}'
+                        temp_q += f'doc.{field_name} >= {rvalue_formatted} OR doc.{field_name} ANY >= {rvalue_formatted}'
                     elif rule['operator'] == 'is_defined':
                         temp_q += f'HAS(doc, "{field_name}")'
                     elif rule['operator'] == 'is_not_defined':

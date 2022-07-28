@@ -314,6 +314,8 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
         var time_now = Date.now();
         var tbodyRef  = document.getElementById('tableimport').getElementsByTagName('tbody')[0];
         var row = tbodyRef.insertRow();
+        var splitInput = '<input name="sep" type="text" maxlength="1" style="width:30%; margin-left:2px;direction: ltr;text-align: end;font-size: 12px;" class="form-control" placeholder="العلامة الفاصلة (مثال: / )"/>'
+
         if(data[0]==0)
             row.style = "background-color: rgb(190 245 255 / 43%);"
         else
@@ -339,10 +341,11 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
         $('#sel_' + time_now).change(on_file_field_select);
 
         var cell4 = row.insertCell(4);
+        cell4.style = "display: flex;border-width: 0px !important;";
         if (data[8] == true){
-            cell4.innerHTML = '<input name="format" type="text" style="direction: ltr;text-align: end;font-size: 14px;" class="form-control" placeholder="%d/%m/%y %H:%M"/>';
+            cell4.innerHTML = splitInput + '<input name="format" type="text" style="direction: ltr;text-align: end;font-size: 14px;" class="form-control" placeholder="%d/%m/%y %H:%M"/>';
         }else if(data[6]=='String'){
-            cell4.innerHTML = '<select id="sel_format' + time_now + '" name="format" type="select" class="form-select"><option value="translate">ترجمة</option><select>';
+            cell4.innerHTML = splitInput + '<select id="sel_format' + time_now + '" name="format" type="select" class="form-select"><option value="translate">ترجمة</option><select>';
             $('#sel_format' + time_now).select2({
                 allowClear: true,
                 width: '200px',
@@ -351,12 +354,8 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
             });
             $('#sel_format' + time_now).val(null);
             $('#sel_format' + time_now).trigger('change');
-        }else if(data[6]=='Array_Date'){
-            cell4.innerHTML = '<input name="format" type="text" style="direction: ltr;text-align: end;font-size: 12px;" class="form-control" placeholder="العلامة الفاصلة (مثال: / )"/><input name="format" type="text" style="direction: ltr;text-align: end;font-size: 14px;" class="form-control" placeholder="%d/%m/%y %H:%M"/>';
-        }else if(data[6].startsWith('Array')){
-            cell4.innerHTML = '<input name="format" type="text" style="direction: ltr;text-align: end;font-size: 12px;" class="form-control" placeholder="العلامة الفاصلة (مثال: / )"/>';
         }else{
-            cell4.innerHTML = '<input name="format" type="text" style="direction: ltr;" class="form-control" disabled/>';
+            cell4.innerHTML = splitInput + '<input name="format" type="text" style="direction: ltr;" class="form-control" disabled/>';
         }
        
         var cell5 = row.insertCell(5);
@@ -543,8 +542,12 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
                     match = tr.find('input[name=identity]').first().is(':checked');
                     type_ = tr.find('i[name=field-data-type]').first().attr('data-type');
                     format_ = tr.find('[name=format]').first().val();
-                    if(type_=='Array_Date')
-                        format_ += tr.find('[name=format]').next().val();
+                    splitter_ = tr.find('[name=sep]').first().val();
+                    if(splitter_!=null && splitter_.trim().length > 0)
+                    {
+                        type_ = "Array_"+ type_;
+                        format_ = splitter_+ format_;
+                    }
                     cfields = {
                         "name": f_name,
                         "name_ar": f_name_ar,

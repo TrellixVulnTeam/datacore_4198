@@ -17,12 +17,12 @@
     <label class="input-group-text" for="inputGroupSelect01">إختر حقول البحث</label>
     <div class="dropdown">
         <button id="btn-select-fields" class="btn form-select" data-bs-auto-close="outside"
-            style="width: 200px;text-align: start; border: 1px solid #d5d5d5; border-radius: 0px;" type="button"
+            style="width: 250px;text-align: start; border: 1px solid #d5d5d5; border-radius: 0px;" type="button"
             id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
             الحقول المُختارة: 0
         </button>
         <div class="dropdown-menu" aria-labelledby="dropdownMenuButton"
-            style="max-height: 260px; overflow: auto;min-width: 200px;">
+            style="max-height: 260px; overflow: auto;width: 249px;">
             <div id="jstree_div" class="noselect">
                 <ul>
                     {% for v in searchviews %}
@@ -31,14 +31,14 @@
                     <hr />
                     {% endif %}
                     <li class="root">
-                        <span onclick="$(this).parent().children('.fa-li').click()"
-                            style="cursor: pointer;">{{v.arabic_name}}</span>
+                        <span onclick="$(this).parent().children('.fa-li').click()" class="ellipsis"
+                            style="cursor: pointer;max-width: 200px;">{{v.arabic_name}}</span>
                         <ul style="padding-right: 12px;margin-top: 5px;">
                             {% for df in v.data_fields|iterator %}
-                            {% if df.data_type|equals:'String' or df.data_type|equals:'Array_String' %}
-                            <li class="branch" data-checked="true"
+                            {% if df.data_type|equals:'String'%}
+                            <li class="branch ellipsis" data-checked="true" style="max-width: 200px;"
                                 data-value="{{v.english_name}}.{{df.owner|get_owner_arango_en_name}}.{{df.english_name}}">
-                                {{df.arabic_name}}</li>
+                                {{df.owner.arabic_name}}.{{df.arabic_name}}</li>
                             {% endif %}
                             {% endfor %}
                         </ul>
