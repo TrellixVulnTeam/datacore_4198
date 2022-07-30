@@ -1,11 +1,12 @@
+import json
+import time
+import sys, os
 import datetime
 import logging
 import traceback
 from turtle import st
-import pandas as pd
-import json
-import time
-import sys, os
+os.environ["MODIN_ENGINE"] = "dask"
+import modin.pandas as pd
 import argostranslate.package, argostranslate.translate
 from arango import ArangoClient
 
@@ -18,6 +19,7 @@ class Importer():
 	session_key = str(round(time.time()))
 	doc_key = 0
 	logs = ''
+	translation_model = None
 	boolean_map = {'1':True,'true':True,'True':True,'TRUE':True,'yes':True,'Yes':True,'YES':True,'ok':True,'Ok':True,'OK':True,'نعم':True,'صح':True,'صحيح':True,'ايجابي':True,'إيجابي':True,
 				'0':False,'false':False,'False':False,'FALSE':False,'no':False,'No':False,'NO':False,'not':False,'Not':False,'NOT':False,'كلا':False,'خطأ':False,'خطا':False,'خاطئ':False,'سلبي':False}
 
@@ -128,11 +130,11 @@ class Importer():
 	def cast_fields(self,source):
 		for field in source['fields']:
 			if field['type'] == 'String':
-				source['data'][field['name']] = source['data'][field['name']].apply(lambda x: self.to_string(x))
+				source['data'][field['name']].astype('str',copy=False)
 			elif field['type'] == 'Number':
-				source['data'][field['name']] = source['data'][field['name']].apply(lambda x: self.to_numeric(x))
+				source['data'][field['name']] = pd.to_numeric(source['data'][field['name']], errors='raise')
 			elif field['type'] == 'Date':
-				source['data'][field['name']] = source['data'][field['name']].apply(lambda x: self.to_date(x,field['format']))
+				source['data'][field['name']] = pd.to_datetime(source['data'][field['name']], format=field['format'], exact=False, errors='raise')
 			elif field['type'] == 'Bool':
 				source['data'][field['name']] = source['data'][field['name']].map(self.boolean_map)
 			elif field['type'].startswith('Array'):
@@ -140,7 +142,7 @@ class Importer():
 		
 		return source['data']
 
-	def translate_fields(self,source):
+	def load_translation_model(self):
 		python_path = sys.executable
 		from_code = "en"
 		to_code = "ar"
@@ -155,22 +157,24 @@ class Importer():
 		to_lang = list(filter(
 			lambda x: x.code == to_code,
 			installed_languages))[0]
-		translation = from_lang.get_translation(to_lang)
+		self.translation_model = from_lang.get_translation(to_lang)
 
+	def translate_fields(self,source):
 		for field in source['fields']:
 			if field['format'] == 'translate':
-				source['data'][field['name']] = source['data'][field['name']].apply(lambda x: self.apply_translation(translation, x))
-
+				if not self.translation_model:
+					self.load_translation_model()
+				source['data'][field['name']] = source['data'][field['name']].apply(lambda x: self.apply_translation(x))
 		return source['data']
 
-	def apply_translation(self, translation, value):
+	def apply_translation(self, value):
 		if value and isinstance(value, list):
 			result = []
 			for v in value:
-				result.append(translation.translate(v))
+				result.append(self.translation_model.translate(v))
 				return result
 		elif value and len(str(value).strip())>0:
-			return translation.translate(value)
+			return self.translation_model.translate(value)
 		return value
 	
 	def populate_collections(self,df):
@@ -179,18 +183,20 @@ class Importer():
 			#select required columns from dataframe
 			col['data'] = df.iloc[:,col['fields_indecies']]
 
+			#add _key column
+			col['data'].reset_index(inplace=True)
+			col['data']['index'] = col['data']['index'].map(f'{self.session_key}.{{}}'.format)
+			
 			#change columns names
+			col['fields_names'].insert(0,'_key')
 			col['data'] = col['data'].set_axis(col['fields_names'], axis='columns')
 
-			#add _key column
-			col['data']['_key'] = col['data'].apply(lambda x: self.generate_key(), axis=1)
+			#cast collection fields to type and format
+			col['data'] = self.cast_fields(col)
 
 			#merge duplicate rows based on identity_fields
 			if(len(col['identity_fields'])>0):
 				col['data'] = self.group_by_identity(col)
-
-			#cast collection fields to type and format
-			col['data'] = self.cast_fields(col)
 
 			#translate collection fields if needed
 			col['data'] = self.translate_fields(col)
@@ -221,7 +227,7 @@ class Importer():
 					edge['data']['_from'] = edge['data']['_from'].fillna(method='ffill')
 
 					#adding collection name as prefix for the _from field
-					edge['data']['_from'] = edge['data']['_from'].apply(lambda x: f"{col['name']}/{x}")
+					edge['data']['_from'] = edge['data']['_from'].map(f'{col["name"]}/{{}}'.format)
 				elif col['index'] == edge['to_col']:
 					#add collection _key column as _to to edge
 					edge['data'] = edge['data'].join(col['data']['_key'])
@@ -231,22 +237,24 @@ class Importer():
 					edge['data']['_to'] = edge['data']['_to'].fillna(method='ffill')
 
 					#adding collection name as prefix for the _to field
-					edge['data']['_to'] = edge['data']['_to'].apply(lambda x: f"{col['name']}/{x}")
+					edge['data']['_to'] = edge['data']['_to'].map(f'{col["name"]}/{{}}'.format)
 			
 			#replacing nan _from and _to fields with the first available key
 			edge['data']['_from'] = edge['data']['_from'].fillna(method='ffill')
 			edge['data']['_to'] = edge['data']['_to'].fillna(method='ffill')
 			
 			#add _key column
-			edge['data']['_key'] = edge['data'].apply(lambda x: self.generate_key(), axis=1)
+			edge['data'].reset_index(inplace=True)
+			edge['data']['index'] = edge['data']['index'].map(f'{self.session_key}.{{}}'.format)
+			edge['data'].rename(columns={'index': '_key'}, inplace = True)
+			
+			#cast edge fields to type and format
+			edge['data'] = self.cast_fields(edge)
 
 			#merge duplicate rows based on identity_fields
 			if(len(edge['identity_fields'])>0):
 				edge['identity_fields'] = edge['identity_fields'].extend(['_from','_to'])
 				edge['data'] = self.group_by_identity(edge)
-
-			#cast edge fields to type and format
-			edge['data'] = self.cast_fields(edge)
 
 			#translate edge fields if needed
 			edge['data'] = self.translate_fields(edge)

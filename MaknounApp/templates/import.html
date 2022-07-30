@@ -314,7 +314,8 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
         var time_now = Date.now();
         var tbodyRef  = document.getElementById('tableimport').getElementsByTagName('tbody')[0];
         var row = tbodyRef.insertRow();
-        var splitInput = '<input name="sep" type="text" maxlength="1" style="width:30%; margin-left:2px;direction: ltr;text-align: end;font-size: 12px;" class="form-control" placeholder="العلامة الفاصلة (مثال: / )"/>'
+        var splitInput =''
+        // var splitInput = '<input name="sep" type="text" maxlength="1" style="width:30%; margin-left:2px;direction: ltr;text-align: end;font-size: 12px;" class="form-control" placeholder="العلامة الفاصلة (مثال: / )"/>'
 
         if(data[0]==0)
             row.style = "background-color: rgb(190 245 255 / 43%);"
@@ -542,12 +543,12 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
                     match = tr.find('input[name=identity]').first().is(':checked');
                     type_ = tr.find('i[name=field-data-type]').first().attr('data-type');
                     format_ = tr.find('[name=format]').first().val();
-                    splitter_ = tr.find('[name=sep]').first().val();
+                    /* splitter_ = tr.find('[name=sep]').first().val();
                     if(splitter_!=null && splitter_.trim().length > 0)
                     {
                         type_ = "Array_"+ type_;
                         format_ = splitter_+ format_;
-                    }
+                    } */
                     cfields = {
                         "name": f_name,
                         "name_ar": f_name_ar,

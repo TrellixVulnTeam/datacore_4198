@@ -86,7 +86,6 @@ class RelationsView(master_entity_view.MasterEntityView):
                 #--------------------#
                 if tempdf.data_type == 'String':
                     view_fields.append(tempdf)
-                    view.data_fields.add(tempdf)
                 tempdf.save()
 
         #add arango bank here#
