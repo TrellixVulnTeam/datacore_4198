@@ -30,18 +30,15 @@ class Importer():
 	arango_username = 'root'
 	arango_password = '123456789'
 	config = {
-    "file_name": "D:/5m Sales Records.csv",
+    "file_name": "D:/5m.csv",
     "has_header": True,
     "import_all_files": False,
     "used_fields": [
         0,
-        8,
+        11,
         5,
         7,
-        10,
-        1,
-        2,
-        12
+        1
     ],
     "collections": [
         {
@@ -50,7 +47,7 @@ class Importer():
             "name_ar": "\u0627\u0641\u0631\u0627\u062f",
             "fields_indecies": [
                 0,
-                8,
+                11,
                 5
             ],
             "fields_names": [
@@ -73,7 +70,7 @@ class Importer():
                     "type": "Number",
                     "format": "",
                     "match": False,
-                    "ff_index": 8
+                    "ff_index": 11
                 },
                 {
                     "name": "f_col_persons_dob",
@@ -93,14 +90,10 @@ class Importer():
             "name": "col_hotel",
             "name_ar": "\u0641\u0646\u062f\u0642",
             "fields_indecies": [
-                1,
-                2,
-                12
+                1
             ],
             "fields_names": [
-                "f_col_hotel_name",
-                "f_col_hotel_location",
-                "f_col_hotel_rooms"
+                "f_col_hotel_name"
             ],
             "fields": [
                 {
@@ -110,22 +103,6 @@ class Importer():
                     "format": "",
                     "match": True,
                     "ff_index": 1
-                },
-                {
-                    "name": "f_col_hotel_location",
-                    "name_ar": "\u0627\u0644\u0639\u0646\u0648\u0627\u0646",
-                    "type": "String",
-                    "format": "",
-                    "match": False,
-                    "ff_index": 2
-                },
-                {
-                    "name": "f_col_hotel_rooms",
-                    "name_ar": "\u0639\u062f\u062f_\u0627\u0644\u063a\u0631\u0641",
-                    "type": "Number",
-                    "format": "",
-                    "match": False,
-                    "ff_index": 12
                 }
             ],
             "identity_fields": [
@@ -140,12 +117,10 @@ class Importer():
             "from_col": 2,
             "to_col": 3,
             "fields_indecies": [
-                7,
-                10
+                7
             ],
             "fields_names": [
-                "f_edge_visit_vdate",
-                "f_edge_visit_room"
+                "f_edge_visit_vdate"
             ],
             "fields": [
                 {
@@ -155,14 +130,6 @@ class Importer():
                     "format": "%m/%d/%y",
                     "match": False,
                     "ff_index": 7
-                },
-                {
-                    "name": "f_edge_visit_room",
-                    "name_ar": "\u0627\u0644\u063a\u0631\u0641\u0629",
-                    "type": "Number",
-                    "format": "",
-                    "match": False,
-                    "ff_index": 10
                 }
             ],
             "identity_fields": []
@@ -348,7 +315,7 @@ class Importer():
 
 			#add _key column
 			col['data'].reset_index(inplace=True)
-			col['data']['index'] = col['data']['index'].map(f'{self.session_key}.{{}}'.format)
+			col['data']['index'] = col['data']['index'].map(f'{self.session_key}.{\{\}}'.format)
 			
 			#change columns names
 			col['fields_names'].insert(0,'_key')
@@ -382,7 +349,7 @@ class Importer():
 			
 			#add _key column
 			edge['data'].reset_index(inplace=True)
-			edge['data']['index'] = edge['data']['index'].map(f'{self.session_key}.{{}}'.format)
+			edge['data']['index'] = edge['data']['index'].map(f'{self.session_key}.{\{\}}'.format)
 			edge['data'].rename(columns={'index': '_key'}, inplace = True)
 			
 			#add _from column
@@ -513,4 +480,3 @@ class Importer():
 
 
 # Start import
-Importer().start_import()

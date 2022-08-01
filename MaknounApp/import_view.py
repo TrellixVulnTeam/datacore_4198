@@ -68,9 +68,10 @@ class ImportView(master_page_view.MasterPageView):
             if data['where'] == 'client':
                  context['is_on_server'] = False   
             pycontent = render(request, 'import_template.py',context).content
+            pycontent = pycontent.decode("utf-8").replace('EMPTY_CURLY_BRACES','{}')
 
             if data['where'] == 'client':
-                context['pycode'] = pycontent.decode("utf-8")
+                context['pycode'] = pycontent
                 batcontent = render(request, 'import_template.bat',context).content
                 fileName = 'importer_' + str(time.time_ns()) + '.bat'
                 downloads_folder = os.path.dirname(os.path.realpath(__file__)) + '\\media\\downloads\\'
@@ -82,7 +83,7 @@ class ImportView(master_page_view.MasterPageView):
                 fileName = 'importer_' + str(time.time_ns())
                 temp_folder = os.path.dirname(os.path.realpath(__file__)) + '\\media\\temp\\'
                 f = open(temp_folder + fileName + '.py', 'x', encoding="utf-8")
-                f.write(pycontent.decode("utf-8"))
+                f.write(pycontent)
                 f.close()
                 sys.path.append(temp_folder)
                 spec = importlib.util.spec_from_file_location(f'{fileName}.Importer', temp_folder + fileName + '.py')
