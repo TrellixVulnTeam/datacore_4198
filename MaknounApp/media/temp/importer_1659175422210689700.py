@@ -5,9 +5,10 @@ import datetime
 import logging
 import traceback
 from turtle import st
-os.environ["MODIN_ENGINE"] = "ray"
-import modin.pandas as pd
-import argostranslate.package, argostranslate.translate
+import ray
+#os.environ["MODIN_ENGINE"] = "ray"
+import pandas as pd
+#import argostranslate.package, argostranslate.translate
 from arango import ArangoClient
 
 class Importer():
@@ -15,9 +16,8 @@ class Importer():
 	arango_database = 'db_Maknoun_' + 'db1'
 	arango_username = 'root'
 	arango_password = '123456789'
-	logfile = r'C:\Users\Gph spc\Source\Repos\Maknoun\MaknounApp\media\temp\df.csv'
 	config = {
-    "file_name": "D:/5m.csv",
+    "file_name": "D:/5m Sales Records.csv",
     "has_header": True,
     "import_all_files": False,
     "used_fields": [
@@ -159,6 +159,8 @@ class Importer():
 	session_key = str(round(time.time()))
 	doc_key = 0
 	logs = ''
+	key_map = {}
+	current_collection = ''
 	translation_model = None
 	boolean_map = {'1':True,'true':True,'True':True,'TRUE':True,'yes':True,'Yes':True,'YES':True,'ok':True,'Ok':True,'OK':True,'نعم':True,'صح':True,'صحيح':True,'ايجابي':True,'إيجابي':True,
 				'0':False,'false':False,'False':False,'FALSE':False,'no':False,'No':False,'NO':False,'not':False,'Not':False,'NOT':False,'كلا':False,'خطأ':False,'خطا':False,'خاطئ':False,'سلبي':False}
@@ -254,7 +256,11 @@ class Importer():
 
 	def map_to_first(self, v):
 		if len(v)>0:
-			return list(v)[0]
+			lst = list(v)
+			firstv = lst[0]
+			for i in lst:
+				self.key_map[i] =  f'{self.current_collection}/{firstv}'
+			return firstv
 		return None
 
 	def group_by_identity(self, source):
@@ -263,9 +269,13 @@ class Importer():
 		if non_identity_fields and len(non_identity_fields)>0:
 			for f in non_identity_fields:
 				non_identity_fields_agg[f] = self.map_to_list_or_single
-
+		
+		self.current_collection = source['name']
 		non_identity_fields_agg['_key'] = self.map_to_first	
-		return source['data'].groupby(source['identity_fields'], as_index = False).agg(non_identity_fields_agg)
+		result = source['data'].groupby(source['identity_fields'], as_index = False).agg(non_identity_fields_agg)
+		source['key_map'] = self.key_map.copy()
+		self.key_map = {}
+		return result
 	
 	def cast_fields(self,source):
 		for field in source['fields']:
@@ -334,12 +344,12 @@ class Importer():
 			#cast collection fields to type and format
 			col['data'] = self.cast_fields(col)
 			
+			#translate collection fields if needed
+			col['data'] = self.translate_fields(col)
+
 			#merge duplicate rows based on identity_fields
 			if(len(col['identity_fields'])>0):
 				col['data'] = self.group_by_identity(col)
-
-			#translate collection fields if needed
-			col['data'] = self.translate_fields(col)
 
 			#add _active & _creation columns
 			col['data']['_active'] = True
@@ -357,48 +367,33 @@ class Importer():
 			#change columns names
 			edge['data'] = edge['data'].set_axis(edge['fields_names'], axis='columns')
 			
-			for col in self.config['collections']:
-				if col['index'] == edge['from_col']:
-					
-					#add collection _key column as _from to edge
-					edge['data'] = edge['data'].join(col['data']['_key'])
-					edge['data'] = edge['data'].rename({'_key':'_from'}, axis='columns')
-
-					#replacing nan _from and _to fields with the first available key
-					edge['data']['_from'] = edge['data']['_from'].fillna(method='ffill')
-
-					#adding collection name as prefix for the _from field
-					edge['data']['_from'] = edge['data']['_from'].map(f'{col["name"]}/{{}}'.format)
-				elif col['index'] == edge['to_col']:
-					#add collection _key column as _to to edge
-					edge['data'] = edge['data'].join(col['data']['_key'])
-					edge['data'] = edge['data'].rename({'_key':'_to'}, axis='columns')
-
-					#replacing nan _from and _to fields with the first available key
-					edge['data']['_to'] = edge['data']['_to'].fillna(method='ffill')
-
-					#adding collection name as prefix for the _to field
-					edge['data']['_to'] = edge['data']['_to'].map(f'{col["name"]}/{{}}'.format)
-			
-			#replacing nan _from and _to fields with the first available key
-			edge['data']['_from'] = edge['data']['_from'].fillna(method='ffill')
-			edge['data']['_to'] = edge['data']['_to'].fillna(method='ffill')
-			
 			#add _key column
 			edge['data'].reset_index(inplace=True)
 			edge['data']['index'] = edge['data']['index'].map(f'{self.session_key}.{{}}'.format)
 			edge['data'].rename(columns={'index': '_key'}, inplace = True)
 			
+			#add _from column
+			edge['data'].eval('_from=_key', inplace=True)
+			
+			#add _to column
+			edge['data'].eval('_to=_key', inplace=True)
+			
+			for col in self.config['collections']:
+				if col['index'] == edge['from_col']:
+					edge['data']['_from'] = edge['data']['_from'].map(col["key_map"])
+				elif col['index'] == edge['to_col']:
+					edge['data']['_to'] = edge['data']['_to'].map(col["key_map"])
+			
 			#cast edge fields to type and format
 			edge['data'] = self.cast_fields(edge)
+			
+			#translate edge fields if needed
+			edge['data'] = self.translate_fields(edge)
 			
 			#merge duplicate rows based on identity_fields
 			if(len(edge['identity_fields'])>0):
 				edge['identity_fields'] = edge['identity_fields'].extend(['_from','_to'])
 				edge['data'] = self.group_by_identity(edge)
-
-			#translate edge fields if needed
-			edge['data'] = self.translate_fields(edge)
 						
 			#add _active & _creation columns
 			edge['data']['_active'] = True
@@ -419,10 +414,13 @@ class Importer():
 		for edge in self.config['edges']:
 			arango_collection = db.collection(edge['name'])
 			jsondata = json.loads(edge['data'].to_json(orient='records'))
-			arango_collection.import_bulk(jsondata)
+			arango_collection.import_bulk(jsondata, batch_size= 50000)
 
 	def start_import(self):
 		try:
+			# self.log('Initializing Ray execution environment...')
+			# ray.init()
+
 			start_time = time.time()
 			files = []
 			self.log('Files to import:')
@@ -444,12 +442,9 @@ class Importer():
 				if not self.config['has_header']:
 					header_conf = None
 
-				df = pd.read_csv(file, header=header_conf)
+				df = pd.read_csv(file, engine='pyarrow', header=header_conf)
 				col_list = ['column_' + str(x) for x in range(1,df.shape[1]+1)]
 				df = df.set_axis(col_list, axis='columns')
-
-				#self.log('\n' + 'All data:\n---------------------------\n')
-				#self.log(df)
 
 				self.populate_collections(df)
 				self.populate_edges(df)

@@ -1,0 +1,20 @@
+Metadata-Version: 2.1
+Name: modin-spreadsheet
+Version: 0.1.2
+Summary: An implementation for the Spreadsheet API of Modin
+Home-page: https://github.com/modin-project/modin-spreadsheet
+Author: Modin Maintainers
+Author-email: dev@modin.org
+License: Apache-2.0
+Keywords: ipython,jupyter,widgets
+Platform: UNKNOWN
+Requires-Dist: jupyter (>=1.0.0)
+Requires-Dist: notebook (>=6.0.3)
+Requires-Dist: ipywidgets (>=7.0.0)
+Provides-Extra: test
+Requires-Dist: pytest (>=2.8.5) ; extra == 'test'
+Requires-Dist: flake8 (>=3.6.0) ; extra == 'test'
+
+An implementation for the Spreadsheet API of Modin
+
+
