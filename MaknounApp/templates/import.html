@@ -549,11 +549,14 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
                         type_ = "Array_"+ type_;
                         format_ = splitter_+ format_;
                     } */
+                    if(format_ ==null)
+                        format_ = '';
+
                     cfields = {
                         "name": f_name,
                         "name_ar": f_name_ar,
                         "type": type_,
-                        "format": format_ ?? '',
+                        "format": format_,
                         "match": match,
                         "ff_index": ff_index
                     }

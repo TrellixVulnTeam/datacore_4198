@@ -55,10 +55,13 @@ class ImportView(master_page_view.MasterPageView):
     def post_recieved(self, data, request):
         if not data['meta'] or len(data['meta'])==0:
             return super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'), 'json')
+        
+        fileName = None
+        temp_folder = os.path.dirname(os.path.realpath(__file__)) + '\\media\\temp\\'
 
         try:
             json_meta = json.loads(data['meta'])
-            context = {'config' : json.dumps(json_meta, indent=4, sort_keys=False).replace('true','True').replace('false','False')}
+            context = {'CONFIG' : json.dumps(json_meta, indent=4, sort_keys=False).replace('true','True').replace('false','False')}
             connectioninfo = arango_agent.ArangoAgent().connection_info
             context['arango_host'] = connectioninfo['host']
             context['arango_username'] = connectioninfo['username']
@@ -81,7 +84,6 @@ class ImportView(master_page_view.MasterPageView):
                 return super().parse_response(f'/downloads/?id={fileName}','plain')
             else:
                 fileName = 'importer_' + str(time.time_ns())
-                temp_folder = os.path.dirname(os.path.realpath(__file__)) + '\\media\\temp\\'
                 f = open(temp_folder + fileName + '.py', 'x', encoding="utf-8")
                 f.write(pycontent)
                 f.close()
@@ -97,5 +99,7 @@ class ImportView(master_page_view.MasterPageView):
                 else:
                     return super().parse_response((status , 'تمت العمليّة بنجاح', logs),'json')
         except Exception as e:
+            if data['where'] != 'client' and fileName!=None:
+                os.remove(temp_folder + fileName + '.py')
             logging.error(traceback.format_exc())
             return super().parse_response(('1' , str(e)),'json')
