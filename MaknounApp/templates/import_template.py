@@ -266,27 +266,34 @@ class Manipulator():
 		self.writeHandler = WriteHandler(logger_)
 
 	def Manipulate_collection(self, col):
+		self.logger.log(f'Manipulating {col["name"]}...')
 
 		#select required columns from dataframe
 		col['data'] = self.df.iloc[:,col['fields_indecies']]
+		self.logger.log_items[col["name"]]['write'] += 1
 
 		#add _key column
 		col['data'].reset_index(inplace=True)
 		col['data']['index'] = col['data']['index'].map(f'{self.session_key}.{EMPTY_CURLY_BRACES}'.format)
+		self.logger.log_items[col["name"]]['write'] += 1
 		
 		#change columns names
 		col['fields_names'].insert(0,'_key')
 		col['data'] = col['data'].set_axis(col['fields_names'], axis='columns')
+		self.logger.log_items[col["name"]]['write'] += 1
 		
 		#cast collection fields to type and format
 		col['data'] = self.dataPrcessor.cast_fields(col)
+		self.logger.log_items[col["name"]]['write'] += 1
 		
 		#translate collection fields if needed
 		col['data'] = self.dataPrcessor.translate_fields(col)
+		self.logger.log_items[col["name"]]['write'] += 1
 
 		#merge duplicate rows based on identity_fields
 		if(len(col['identity_fields'])>0):
 			col['data'] = self.dataPrcessor.group_by_identity(col, self.config)
+		self.logger.log_items[col["name"]]['write'] += 1
 
 		#add _active & _creation columns
 		col['data']['_active'] = True
@@ -299,6 +306,7 @@ class Manipulator():
 		self.writeHandler.write_data(col)
 
 	def Manipulate_edge(self, edge):
+		self.logger.log(f'Manipulating {edge["name"]}...')
 
 		#select required columns from dataframe
 		edge['data'] = self.df.iloc[:,edge['fields_indecies']]
@@ -321,9 +329,11 @@ class Manipulator():
 		toFilled = False
 		while(not fromFilled or not toFilled):
 			if not fromFilled and 'from_key_map' in edge:
+				self.logger.log(f'Populating _from key for edge {edge["name"]}...')
 				edge['data']['_from'] = edge['data']['_from'].map(edge["from_key_map"])
 				fromFilled = True
 			elif not toFilled and 'to_key_map' in edge:
+				self.logger.log(f'Populating _to key for edge {edge["name"]}...')
 				edge['data']['_to'] = edge['data']['_to'].map(edge["to_key_map"])
 				toFilled = True
 			time.sleep(0.5)

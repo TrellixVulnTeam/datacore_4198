@@ -2,16 +2,17 @@ from distutils.command.config import config
 import functools
 import json
 import time
-import sys, os
+import sys, os, platform
 import datetime
 import threading
 import logging
 import traceback
-from turtle import st
+from turtle import st, title
 import gc
 import ray
-os.environ["MODIN_ENGINE"] = "ray"
-import modin.pandas as pd
+from rich.progress import Progress
+#os.environ["MODIN_ENGINE"] = "ray"
+import pandas as pd
 #import argostranslate.package, argostranslate.translate
 from arango import ArangoClient
 from concurrent.futures import ThreadPoolExecutor
@@ -32,11 +33,14 @@ class Writer():
 		colname = args[0]
 		arango_collection = args[1]
 		data = args[2]
-		logger = args[3]
+		total = args[3]
+		logger = args[4]
 		logger.log(f'writing {len(data)} documents into {colname}...')
 		jsondata = json.loads(data.to_json(orient='records'))
 		arango_collection.import_bulk(jsondata)
+		logger.log_items[colname]['write'] += len(data)
 		logger.log(f'Done writing {len(data)} documents into {colname}...')
+		del data
 		del jsondata
 		gc.collect()
 
@@ -48,33 +52,99 @@ class WriteHandler():
 	arango_password = '123456789'
 	db = None
 	threadPoolExecuter = None
-	logger = None
+	batch_size = 50000
 
-	def __init__(self, logger):
-		self.logger = logger
+	def __init__(self):
 		client = ArangoClient(self.arango_host)
 		self.db = client.db(self.arango_database, self.arango_username, self.arango_password)
-		self.threadPoolExecuter = ThreadPoolExecutor(max_workers=20) 
+		self.threadPoolExecuter = ThreadPoolExecutor(max_workers=10) 
 
-	def write_data(self, source):
+	def write_data(self, source, logger):
 		srcname = source["name"]
-		self.logger.log(f'Writing {srcname} records into ArangoDB...')
+		logger.log(f'Writing {srcname} records into ArangoDB...')
 		arango_collection = self.db.collection(srcname)
-		size = 50000
-		list_of_dfs = [source['data'].loc[i:i+size-1,:] for i in range(0, len(source['data']),size)]
+		list_of_dfs = [source['data'].loc[i:i+self.batch_size-1,:] for i in range(0, len(source['data']),self.batch_size)]
+		logger.log_items[srcname]['write_total'] = len(source['data'])
 		for d in list_of_dfs:
-			self.threadPoolExecuter.submit(Writer().write_adata_async, [source['name'],arango_collection,d,self.logger])
+			self.threadPoolExecuter.submit(Writer().write_adata_async, [srcname,arango_collection,d,self.batch_size,logger]).add_done_callback(self.done)
 		self.threadPoolExecuter.shutdown(wait=True)
+		logger.log_items[srcname]['write'] = logger.log_items[srcname]['write_total']
+		logger.log(f'Done writing all documents into {srcname}...')
 		del source['data']
 		gc.collect()
+
+	def done(self, task):
+		if task._exception:
+			print(task._exception)
+			logging.error(traceback.format_exc())
 
 class Logger():
 
 	logs = ''
+	process_logs = ''
+	log_items = {}
+	clear = None
+
+	def __init__(self,):
+		if platform.system() == 'Windows':
+			self.clear = lambda:os.system('cls')
+		else:
+			self.clear = lambda:os.system('clear')
+
 	@synchronized
 	def log(self, msg):
-		print(msg)
 		self.logs+=str(msg) + '\n'
+		if 'progress' in self.log_items:
+			self.log_items['progress'].console.print(msg)
+		else:
+			print(msg)
+		self.process_logs = ''
+		for e in self.log_items.keys():
+			if e != 'progress':
+				item = self.log_items[e]
+				if 'progress' in self.log_items and 'process_progress' in item:
+					self.log_items['progress'].update(item['process_progress'],total=item['process_total'],completed=item['process'],refresh=True)
+					self.log_items['progress'].update(item['write_progress'],total=item['write_total'],completed=item['write'],refresh=True)
+			# self.process_logs+=self.print_progress(item['process'],item['process_total'],title=f'{e} data parse')
+			# self.process_logs+=self.print_progress(item['write'],item['write_total'],title=f'{e} data write') + '\n'
+		# self.clear()
+		# sys.stdout.write(self.process_logs)
+		# sys.stdout.flush()
+
+	def print_progress(self, step, total_steps, bar_width=60, title="", print_perc=True):
+		# UTF-8 left blocks: 1, 1/8, 1/4, 3/8, 1/2, 5/8, 3/4, 7/8
+		utf_8s = ["█", "▏", "▎", "▍", "▌", "▋", "▊", "█"]
+		perc = 100 * float(step) / float(total_steps)
+		max_ticks = bar_width * 8
+		num_ticks = int(round(perc / 100 * max_ticks))
+		full_ticks = num_ticks / 8      # Number of full blocks
+		part_ticks = num_ticks % 8      # Size of partial block (array index)
+		
+		disp = bar = ""                 # Blank out variables
+		bar += utf_8s[0] * int(full_ticks)  # Add full blocks into Progress Bar
+		
+		# If part_ticks is zero, then no partial block, else append part char
+		if part_ticks > 0:
+			bar += utf_8s[part_ticks]
+		
+		# Pad Progress Bar with fill character
+		bar += "▒" * int((max_ticks/8 - float(num_ticks)/8.0))
+		
+		if len(title) > 0:
+			disp = title + ": "         # Optional title to progress display
+		
+		# Print progress bar in green: https://stackoverflow.com/a/21786287/6929343
+		disp += "\x1b[0;32m"            # Color Green
+		disp += bar                     # Progress bar to progress display
+		disp += "\x1b[0m"               # Color Reset
+		if print_perc:
+			# If requested, append percentage complete to progress display
+			if perc > 100.0:
+				perc = 100.0            # Fix "100.04 %" rounding error
+			disp += " {:6.2f}".format(perc) + " %"
+		
+		# Output to terminal repetitively over the same line using '\r'.
+		return disp + '\n'
 
 class DataPrcessor():
 
@@ -264,83 +334,127 @@ class Manipulator():
 		self.logger = logger_
 		self.session_key = session_key_
 		self.dataPrcessor = DataPrcessor()
-		self.writeHandler = WriteHandler(logger_)
+		self.writeHandler = WriteHandler()
 
 	def Manipulate_collection(self, col):
+		self.logger.log(f'Manipulating {col["name"]}...')
+
 		#add _key column
 		col['data'].reset_index(inplace=True)
 		col['data']['index'] = col['data']['index'].map(f'{self.session_key}.{{}}'.format)
-		
+		self.logger.log_items[col["name"]]['process'] += 1
+		self.logger.log(f'Manipulating {col["name"]}, done changing columns names...')
+
 		#change columns names
 		col['fields_names'].insert(0,'_key')
 		col['data'] = col['data'].set_axis(col['fields_names'], axis='columns')
+		self.logger.log_items[col["name"]]['process'] += 1
+		self.logger.log(f'Manipulating {col["name"]}, done adding _key column...')
 		
 		#cast collection fields to type and format
 		col['data'] = self.dataPrcessor.cast_fields(col)
+		self.logger.log_items[col["name"]]['process'] += 1
+		self.logger.log(f'Manipulating {col["name"]}, done casting fileds...')
 		
 		#translate collection fields if needed
 		col['data'] = self.dataPrcessor.translate_fields(col)
+		self.logger.log_items[col["name"]]['process'] += 1
+		self.logger.log(f'Manipulating {col["name"]}, done translating fileds...')
 
 		#merge duplicate rows based on identity_fields
 		if(len(col['identity_fields'])>0):
 			col['data'] = self.dataPrcessor.group_by_identity(col, self.config)
+		self.logger.log_items[col["name"]]['process'] += 1
+		self.logger.log(f'Manipulating {col["name"]}, done merging duplicates by identity...')
 
 		#add _active & _creation columns
 		col['data']['_active'] = True
 		col['data']['_creation'] = pd.Timestamp.now()
+		self.logger.log_items[col["name"]]['process'] += 1
+		self.logger.log(f'Manipulating {col["name"]}, done adding _active and _creation columns...')
 
+
+		self.logger.log_items[col["name"]]['process'] = self.logger.log_items[col["name"]]['process_total']
+		self.logger.log(f'Manipulating {col["name"]}, done processing fileds...')
 		self.logger.log('\n' + col['name'] + ' data:\n---------------------------\n')
 		self.logger.log(col['data'])
 
 		#send data write request
-		self.writeHandler.write_data(col)
+		self.writeHandler.write_data(col,self.logger)
 
 	def Manipulate_edge(self, edge):
+		self.logger.log(f'Manipulating {edge["name"]}...')
+
 		#change columns names
 		edge['data'] = edge['data'].set_axis(edge['fields_names'], axis='columns')
+		self.logger.log_items[edge["name"]]['process'] += 1
+		self.logger.log(f'Manipulating {edge["name"]}, done changing columns names...')
 		
 		#add _key column
 		edge['data'].reset_index(inplace=True)
 		edge['data']['index'] = edge['data']['index'].map(f'{self.session_key}.{{}}'.format)
 		edge['data'].rename(columns={'index': '_key'}, inplace = True)
+		self.logger.log_items[edge["name"]]['process'] += 1
+		self.logger.log(f'Manipulating {edge["name"]}, done adding _key column...')
 		
 		#add _from column
 		edge['data'].eval('_from=_key', inplace=True)
+		self.logger.log_items[edge["name"]]['process'] += 1
+		self.logger.log(f'Manipulating {edge["name"]}, done adding _from column...')
 		
 		#add _to column
 		edge['data'].eval('_to=_key', inplace=True)
+		self.logger.log_items[edge["name"]]['process'] += 1
+		self.logger.log(f'Manipulating {edge["name"]}, done adding _to column...')
 		
+		#filling _from and _to columns
 		fromFilled = False
 		toFilled = False
 		while(not fromFilled or not toFilled):
 			if not fromFilled and 'from_key_map' in edge:
+				self.logger.log(f'Populating _from key for edge {edge["name"]}...')
 				edge['data']['_from'] = edge['data']['_from'].map(edge["from_key_map"])
+				self.logger.log_items[edge["name"]]['process'] += 1
+				self.logger.log(f'Manipulating {edge["name"]}, done filling _from column...')
 				fromFilled = True
 			elif not toFilled and 'to_key_map' in edge:
+				self.logger.log(f'Populating _to key for edge {edge["name"]}...')
 				edge['data']['_to'] = edge['data']['_to'].map(edge["to_key_map"])
+				self.logger.log_items[edge["name"]]['process'] += 1
+				self.logger.log(f'Manipulating {edge["name"]}, done filling _to column...')
 				toFilled = True
 			time.sleep(0.5)
 		
 		#cast edge fields to type and format
 		edge['data'] = self.dataPrcessor.cast_fields(edge)
+		self.logger.log_items[edge["name"]]['process'] += 1
+		self.logger.log(f'Manipulating {edge["name"]}, done casting fileds...')
 		
 		#translate edge fields if needed
 		edge['data'] = self.dataPrcessor.translate_fields(edge)
+		self.logger.log_items[edge["name"]]['process'] += 1
+		self.logger.log(f'Manipulating {edge["name"]}, done translating fileds...')
 		
 		#merge duplicate rows based on identity_fields
 		if(len(edge['identity_fields'])>0):
 			edge['identity_fields'] = edge['identity_fields'].extend(['_from','_to'])
 			edge['data'] = self.dataPrcessor.group_by_identity(edge, None)
+		self.logger.log_items[edge["name"]]['process'] += 1
+		self.logger.log(f'Manipulating {edge["name"]}, done merging duplicates by identity...')
 					
 		#add _active & _creation columns
 		edge['data']['_active'] = True
 		edge['data']['_creation'] = pd.Timestamp.now()
+		self.logger.log_items[edge["name"]]['process'] += 1
+		self.logger.log(f'Manipulating {edge["name"]}, done adding _active and _creation columns...')
 
+		self.logger.log_items[edge["name"]]['process'] = self.logger.log_items[edge["name"]]['process_total']
+		self.logger.log(f'Manipulating {edge["name"]}, done processing fileds...')
 		self.logger.log('\n' + edge['name'] + ' data:\n---------------------------\n')
 		self.logger.log(edge['data'])
 
 		#send data write request
-		self.writeHandler.write_data(edge)
+		self.writeHandler.write_data(edge,self.logger)
 
 class Importer():
 	config = {
@@ -520,8 +634,8 @@ class Importer():
 
 	def start_import(self):
 		try:
-			self.logger.log('Initializing Ray execution environment...')
-			ray.init()
+			# self.logger.log('Initializing Ray execution environment...')
+			# ray.init()
 			session_key = str(round(time.time()))
 			start_time = time.time()
 			files = []
@@ -544,29 +658,33 @@ class Importer():
 				if not self.config['has_header']:
 					header_conf = None
 
-				df = pd.read_csv(file, header=header_conf)
+				df = pd.read_csv(file, engine='pyarrow', header=header_conf)
 				col_list = ['column_' + str(x) for x in range(1,df.shape[1]+1)]
 				df = df.set_axis(col_list, axis='columns')
 
 				threadPoolExecuter = ThreadPoolExecutor(max_workers=5) 
 
-				self.logger.log('Manipulating collections...')
-				for col in self.config['collections']:
-					col['data'] = df.iloc[:,col['fields_indecies']]
-					man = Manipulator(session_key,self.config, self.logger)
-					threadPoolExecuter.submit(man.Manipulate_collection, col)
+				with Progress() as progress:
+					self.logger.log_items['progress'] = progress
+					self.logger.log('Manipulating collections...')
+					for col in self.config['collections']:
+						self.logger.log_items[col['name']] = {'process':0, 'process_total': 6, 'write':0, 'write_total':100, 'process_progress' : progress.add_task(f"[green]{col['name']} data parse...", total=6), 'write_progress' : progress.add_task(f"[green]{col['name']} data write...", total=100)}
+						col['data'] = df.iloc[:,col['fields_indecies']]
+						man = Manipulator(session_key,self.config, self.logger)
+						threadPoolExecuter.submit(man.Manipulate_collection, col)
 
-				self.logger.log('Manipulating edges...')
-				for edge in self.config['edges']:
-					edge['data'] = df.iloc[:,edge['fields_indecies']]
-					man = Manipulator(session_key, self.config, self.logger)
-					threadPoolExecuter.submit(man.Manipulate_edge, edge)
+					self.logger.log('Manipulating edges...')
+					for edge in self.config['edges']:
+						self.logger.log_items[edge['name']] = {'process':0, 'process_total': 10, 'write':0, 'write_total':100, 'process_progress' : progress.add_task(f"[green]{edge['name']} data parse...", total=10), 'write_progress' : progress.add_task(f"[green]{edge['name']} data write...", total=100)}
+						edge['data'] = df.iloc[:,edge['fields_indecies']]
+						man = Manipulator(session_key, self.config, self.logger)
+						threadPoolExecuter.submit(man.Manipulate_edge, edge)
 
-				self.logger.log('Clearing initial dataframe...')
-				del df
-				gc.collect()
+					self.logger.log('Clearing initial dataframe...')
+					del df
+					gc.collect()
 
-				threadPoolExecuter.shutdown(wait=True)
+					threadPoolExecuter.shutdown(wait=True)
 
 				self.config = None
 				gc.collect()
