@@ -168,9 +168,13 @@
     </div>
 
     <div id="overlay">
-        <div class="w-100 d-flex justify-content-center align-items-center">
-            <div class="spinner"></div>
-            <span id="overlay-message" style="margin-top: 110px; background-color:#00beff;padding: 0px 10px;border-radius: 5px;color: white;">الرجاء الإنتظار...</span>
+        <div class="w-100 d-flex justify-content-center align-items-center" style="flex-direction: column;position: fixed;top: 300px;">
+            <div id="overlay-spinner" style="display: contents;">
+                <div class="spinner" style="margin-bottom: 40px;"></div>
+                <span id="overlay-message" style="margin-top: 110px; background-color:#00beff;padding: 0px 10px;border-radius: 5px;color: white;">الرجاء الإنتظار...</span>
+            </div>
+            <div id="overlay-content" style="border: 1px solid gainsboro;padding: 10px;border-radius: 15px;background: #10101061;"></div>
+            <div id="overlay-timer" style="margin-top: 10px;color: whitesmoke;"></div>
         </div>
     </div>
 

@@ -52,7 +52,33 @@ class ImportView(master_page_view.MasterPageView):
         return fields
 
 
+    importers = {}
+    @classmethod
+    def add_importer(cls, id, imp):
+        cls.importers[id] = imp
+
+    @classmethod
+    def del_importer(cls, id):
+        if id in cls.importers:
+            del cls.importers[id]
+
+    @classmethod
+    def get_importer(cls, id):
+        if id in cls.importers:
+            return cls.importers[id]
+        return None
+
     def post_recieved(self, data, request):
+        if data['action'] and data['action'] == 'check_progress':
+            currentImp = self.get_importer(data['csrfmiddlewaretoken'])
+            if currentImp:
+                log_items = currentImp.logger.log_items.copy()
+                if 'progress' in log_items:
+                    del log_items['progress']
+                return super().parse_response((0 , log_items),'json')
+            else:
+                return super().parse_response(('1', 'لا يوجد عمليات إستيراد جارية للمستخدم الحالي'), 'json')
+
         if not data['meta'] or len(data['meta'])==0:
             return super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'), 'json')
         
@@ -92,7 +118,10 @@ class ImportView(master_page_view.MasterPageView):
                 module = importlib.util.module_from_spec(spec)
                 sys.modules[f'{fileName}.Importer'] = module
                 spec.loader.exec_module(module)
-                status, logs = module.Importer().start_import()
+                importer = module.Importer()
+                self.add_importer(data['csrfmiddlewaretoken'], importer)
+                status, logs = importer.start_import()
+                self.del_importer(data['csrfmiddlewaretoken'])
                 os.remove(temp_folder + fileName + '.py')
                 if status == '1':
                     return super().parse_response((status , 'فشلت عملية الاستيراد', logs),'json')

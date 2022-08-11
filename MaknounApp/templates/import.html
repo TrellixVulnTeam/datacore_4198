@@ -164,7 +164,7 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
     var current_file_name='';
     var fields = [];
     var usedfields = [];
-
+    var import_done = true;
 
     $('input[name=fileinput]').change(file_changed)
     $('#select-hasheader').change(on_read)
@@ -608,6 +608,7 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
 
             meta_ = JSON.stringify(data);
             console.log(meta_);
+            import_done = false;
 
             $.ajax({
                 url : "/import/", // the endpoint
@@ -621,10 +622,14 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
 
                 success : function(response) {
                     hideOverlay();
+                    import_done = true;
+                    stop_process_timer();
                     $('#btn-submit').prop('disabled', false);
                     if($('#select-import-type').val()=='client'){
-                        if(response.constructor == Object && response['code'] == '1')
+                        if(response.constructor == Object && response['code'] == '1'){
                             showError(response['message']);
+                            stop_process_timer();
+                        }
                         showSuccess('جاري تحميل الملف')
                         const link = document.createElement("a");
                         link.href = response;
@@ -644,12 +649,74 @@ td > .select2-container > .selection > .select2-selection > .select2-selection__
 
                 error : get_ajax_error_function()
             });
+
+            $('#overlay-spinner').show();
+            $('#overlay-content').hide();
+            $('#overlay-content').empty();
+            start_process_timer();
+            
+            if($('#select-import-type').val()=='server'){
+                var interval = setInterval(function () {
+                    if(import_done){
+                        clearInterval(interval)
+                        $('#overlay-spinner').show()
+                        $('#overlay-content').empty()
+                        $('#overlay-content').hide()
+                    }
+                    $.ajax({
+                        url : "/import/",
+                        type : "POST",
+                        data : { 
+                            action: 'check_progress',
+                            csrfmiddlewaretoken: '{{ csrf_token }}'
+                        }, 
+                        success : function(response) {
+                            if(response.constructor == Object && response['code'] == '1'){
+                                console.log(response['message']);
+                                clearInterval(interval)
+                            }else{
+                                console.log(response['message'])
+                                result = response['message'];
+                                if ($('#overlay-content').children().length==0) {
+                                    for (const [key, value] of Object.entries(result)) {
+                                        temp1 = '<div><span class="pl10 ellipsis" style="color:white;min-width: 160px;max-width: 160px;display: inline-block;">معالجة بيانات ' + value['name_ar'] + '...</span><div class="progress" style="margin-top:10px;background-color: whitesmoke;display:inline-block;width:300px"><div id="process_progress_' + key + '" class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar" aria-label="Animated striped example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 1px"></div></div></div>'
+                                        temp2 = '<div><span class="pl10 ellipsis" style="color:white;min-width: 160px;max-width: 160px;display: inline-block;">كتابة بيانات ' + value['name_ar'] + '...</span><div class="progress" style="margin-top:10px;background-color: whitesmoke;display:inline-block;width:300px"><div id="write_progress_' + key + '" class="progress-bar progress-bar-striped progress-bar-animated bg-warning" role="progressbar" aria-label="Animated striped example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 1px"></div></div></div>'
+                                        $('#overlay-content').append(temp1)
+                                        $('#overlay-content').append(temp2)
+                                        $('#overlay-spinner').hide()
+                                        $('#overlay-content').show()
+                                    }
+                                }
+                                for (const [key, value] of Object.entries(result)) {
+                                    $('#process_progress_' + key).attr('aria-valuemax', value['process_total'])
+                                    $('#process_progress_' + key).attr('aria-valuenow', value['process'])
+                                    progress1 = (value['process']/value['process_total']*100).toFixed(2) + '%'
+                                    $('#process_progress_' + key).html(progress1)
+                                    $('#process_progress_' + key).css('width', progress1)
+                                    $('#write_progress_' + key).attr('aria-valuemax', value['write_total'])
+                                    $('#write_progress_' + key).attr('aria-valuenow', value['write'])
+                                    progress2 = (value['write']/value['write_total']*100).toFixed(2) + '%'
+                                    $('#write_progress_' + key).html(progress2)
+                                    $('#write_progress_' + key).css('width', progress2)
+                                }
+                            }
+                        },
+                        error : function (xhr, errmsg, err) {
+                            console.log(xhr.status + ": " + xhr.responseText);
+                            clearInterval(interval);
+                        }
+                    });
+                },1000)
+            }
         } catch (e) {
+            stop_process_timer()
             showError(e.message);
             console.error(e);
             $('#btn-submit').prop('disabled', false);
             hideOverlay();
         }
     }
+
+    
 </script>
 {% endblock %}
