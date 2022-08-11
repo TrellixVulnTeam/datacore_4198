@@ -29,12 +29,15 @@
     <span>
         <nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow"
             style="z-index: 6;background-color: #009de1 !important;">
-            <a class="navbar-brand col-sm-3 col-md-2 mr-0" style="font-family: cairo;padding-right: 16px;"
+            <a class="navbar-brand col-sm-3 col-md-2 mr-0" style="font-family: cairo;padding-right: 25px;width: 8%;"
                 href="{% url 'home'%}">
-                <img src="{% static 'icons/favicon.ico' %}" style="margin-left: 16px; width: 24px; height: 24px;">
+                <img src="{% static 'images/logo.png' %}" style="margin-left: 10px; width: 24px; height: 24px;">
     </span>مكنون<span style="font-size: 10px;padding-right: 10px;"> {{version}}</span>
     </a>
-    <ul class="navbar-nav px-3">
+    <div class="navbar-nav px-3" style="flex-direction: row;color: #fff;align-items: center;font-family: qalam;font-size: 20px;" >
+        <p style="font-family: besmellah;margin: 0px;font-size: 25px;padding-top: 11px;" class="pl10">k</p>﴿إنَّه لقرآن كريم فِي كِتَابٍ مَكْنُون﴾
+    </div>
+    <div class="navbar-nav px-3" style="flex-direction: row;">
         <li class="nav-item text-nowrap">
             <div class="dropdown">
                 <a class="nav-link dropdown-toggle" href="#" role="button" id="dropdownMenuLink"
@@ -51,7 +54,11 @@
             </div>
 
         </li>
-    </ul>
+        <li class="nav-item text-nowrap">
+            <a role="button" class="nav-link bi-arrows-fullscreen" style="margin-right: 20px;" onclick="toggleFullScreen()"></a>
+        </li>
+    </div>
+    
     </nav>
 
     <div class="container-fluid">
