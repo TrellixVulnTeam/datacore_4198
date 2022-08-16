@@ -6,6 +6,17 @@
 {% block additional_styles %}
     <link href="{% static 'select2/select2.min.css' %}" rel="stylesheet">
     <link href="{% static 'select2/select2-bootstrap4.min.css' %}" rel="stylesheet">
+    <style>
+        .en_input{
+            direction: ltr;
+            text-align: end;
+        }
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+        -webkit-appearance: none; 
+        margin: 0; 
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
@@ -14,7 +25,23 @@
         <span class="bi-exclamation-triangle-fill pl10" style="color: orange;"></span>يجب إختيار قاعدة بيانات للإستفادة من خدمات البرنامج.
     </div>
 
-    <div class="row" style="max-width: 600px;">
+    <div id="div_settings" class="row" style="max-width: 600px;">
+        <div class="form-group col-12" style="margin-top: 10px;">
+            <label class="col-12" style="margin-bottom: 3px;">عنوان الخادم</label>
+            <input type="text" class="form-control en_input" name="arango_host" value="{{arango_host}}" autocomplete="off" placeholder="http://127.0.0.1:8529/" required/>
+        </div>
+        <div class="form-group col-12" style="margin-top: 10px;">
+            <label class="col-12" style="margin-bottom: 3px;">اسم المستخدم</label>
+            <input type="text" class="form-control en_input" name="arango_username" value="{{arango_username}}" autocomplete="new-password" placeholder="username" required/>
+        </div>
+        <div class="form-group col-12" style="margin-top: 10px;">
+            <label class="col-12" style="margin-bottom: 3px;">كلمة المرور</label>
+            <input type="password" class="form-control en_input" name="arango_password" value="{{arango_password}}" autocomplete="new-password" placeholder="password" required/>
+        </div>
+        <div class="form-group col-12" style="margin-top: 10px;">
+            <label class="col-12" style="margin-bottom: 3px;">سقف نتائج البحث</label>
+            <input type="number" class="form-control en_input" name="arango_query_limit" min="1" value="{{arango_query_limit}}" autocomplete="off" required/>
+        </div>
         <div class="form-group col-12" style="margin-top: 10px;">
             <label class="col-12" style="margin-bottom: 3px;">قاعدة البيانات</label>
             <select class="form-control icon-picker" id="icon-picker-database" name="database" required>
@@ -71,14 +98,19 @@
             $('#btn-submit').prop('disabled', true);
             
             showOverlay();
-
+            config_dic = {}
+            $('#div_settings').find('input').each(function parse(i,input){
+                config_dic[input.name]=input.value
+            })
+            
             $.ajax({
                 url : "/settings/", // the endpoint
                 type : "POST", // http method
                 data : { 
                     action: 'save',
                     csrfmiddlewaretoken: '{{ csrf_token }}',
-                    database : $('#icon-picker-database').val()
+                    database : $('#icon-picker-database').val(),
+                    config_dic: JSON.stringify(config_dic)
                 }, // data sent with the post request
 
                 success : get_ajax_success_function('edit', "/settings"),

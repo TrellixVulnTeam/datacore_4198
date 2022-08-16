@@ -4,6 +4,10 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
+class Setting(models.Model):
+    key = models.CharField(primary_key=True,unique=True,max_length=200)
+    value = models.CharField(max_length=200, blank=True, null=True)
+
 class User(AbstractUser):
     english_name = models.CharField(max_length=70)
     arabic_name = models.CharField(max_length=70)

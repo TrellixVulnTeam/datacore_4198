@@ -22,9 +22,6 @@
     <style>
         .login-wrap {
             position: relative;
-            background: url("{% static 'images/loginbg.png' %}");
-            border-radius: 30px;
-            box-shadow: 12px 17px 44px -15px rgb(190 190 190) !important;
         }
         .align-items-center {
             -webkit-box-align: center !important;
@@ -33,15 +30,14 @@
         }
 
         h3{
-            color: #ffffff;
-            border-bottom: solid 1px #ebe9e9;
+            color: #7ca6b3;
+            border-bottom: solid 1px #ebebeb;
             padding-bottom: 20px;
             font-weight: bold;
-            text-shadow: 2px 2px 3px #4e4e4e;
-            background-color: #009de1 !important;
-            border-radius: 30px 30px 0 0;
             padding-top: 20px;
             margin-bottom: 0rem;
+            margin-right: 20px;
+            text-shadow: -3px 2px 4px #d1e7ef;
         }
 
         label{
@@ -52,12 +48,6 @@
         .btn-primary {
             background-color: #4993ff;
         }
-        .col-lg-5 {
-            -webkit-box-flex: 0;
-            -ms-flex: 0 0 41.66667%;
-            flex: 0 0 41.66667%;
-            max-width: 41.66667%;
-        }
         .login-wrap .icon {
             width: 80px;
             height: 80px;
@@ -67,20 +57,28 @@
             margin: 0 auto;
             margin-bottom: 10px;
         }
+
+        body{
+            overflow: hidden;
+            height: 100vh;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size:100% 100%;
+        }
     </style>
     {% block additional_styles %}
     {% endblock %}
 </head>
 
-<body>
+<body style="background-image:  url(/static/images/bg.jpg)">
     <section class="ftco-section">
         <div class="container">
             <div class="row justify-content-center" style="margin: 150px;">
-                <div class="col-md-7 col-lg-5">
+                <div style="width: 425px;">
                     <div class="login-wrap">
                         <h3 class="text-center" >مكنون</h3>
                         <!-- <img src="{% static 'images/flower.gif' %}"  style="position: absolute;width: 50px;top: 10px;left: 103px;"/> -->
-                        <img src="{% static 'images/logo.png' %}"  style="position: absolute;width: 50px;top: 10px;right: 103px;"/>
+                        <img src="{% static 'images/logo.png' %}"  style="position: absolute;width: 37px;top: 19px;right: 117px;"/>
                         <form method="post" style="padding: 5rem!important;padding-top: 45px !important;">
                             {% csrf_token %}
                             <!-- {{ form.as_p }} -->

@@ -1,3 +1,4 @@
+import json
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.views import View
@@ -22,6 +23,9 @@ class SettingsView(master_page_view.MasterPageView):
                     if u.id == request.user.id:
                         context['databases'].append(db)
                         break
+        
+        for sett in models.Setting.objects.all().iterator():
+            context[sett.key] = sett.value
     
     def post_recieved(self, data, request):
         if not data['database'] or len(data['database'])==0:
@@ -35,5 +39,14 @@ class SettingsView(master_page_view.MasterPageView):
         currentuser.current_database_name = db.english_name
         currentuser.save()
         request.user.current_database_name = db.english_name
+
+        if data['config_dic']:
+            for k,v in json.loads(data['config_dic']).items():
+                sett = models.Setting.objects.filter(key=k).first()
+                if not sett:
+                    sett = models.Setting()
+                sett.key = k
+                sett.value = v
+                sett.save()
 
         return super().parse_response(('0','تمّت العمليّة بنجاح'),'json')

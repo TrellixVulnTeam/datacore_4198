@@ -51,6 +51,20 @@ def onStartup():
 		user.first_name = 'المدير'
 		user.arabic_name = 'المدير'
 		user.save()
+
+	default_config = {
+		'arango_host': 'http://127.0.0.1:8529/',
+		'arango_username': 'root',
+		'arango_password': '123456789',
+		'arango_query_limit': '1000'
+		}
+
+	for k,v in default_config.items():
+		if not models.Setting.objects.filter(key=k).first():
+			temps = models.Setting()
+			temps.key = k
+			temps.value = v
+			temps.save()
 	
 	project_path = str(settings.BASE_DIR)
 	python_path = os.path.join(project_path, 'python')

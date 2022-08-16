@@ -9,10 +9,11 @@ from MaknounApp import models
 
 class ArangoAgent():
     connection_info = {
-		'host': 'http://127.0.0.1:8529/',
+		'host': models.Setting.objects.filter(key='arango_host').first().value,
 		'system_database':'_system',
-		'username':'root',
-		'password':'123456789'
+		'username': models.Setting.objects.filter(key='arango_username').first().value,
+		'password': models.Setting.objects.filter(key='arango_password').first().value,
+        'query_limit':  int(models.Setting.objects.filter(key='arango_query_limit').first().value)
 	}
 
     db = None
@@ -431,7 +432,7 @@ class ArangoAgent():
             Levenshtein_query+=f',"{analyzer}")'
             query_string+= like_query + ' OR\n' + Levenshtein_query + ' OR\n\t'
             query_string+= f'ANALYZER(\n\t\tPHRASE(doc_{view}.{field}, "{query.strip()}"), "{analyzer}")'
-            query_string+= f'\n\tLIMIT 10000'
+            query_string+= f'\n\tLIMIT {self.connection_info["query_limit"]}'
             query_string+= f'\n\tSORT BM25(doc_{view}) DESC'
             query_string+= f'\n\tRETURN doc_{view})'
 
@@ -455,7 +456,7 @@ class ArangoAgent():
         query= []
         final_query = f'FOR doc IN {source} FILTER'
         self.build_qb_query(rules['condition'], 0, rules['rules'], asquery, query)
-        final_query = '\n'.join(asquery).strip() +  '\n\n' + final_query + '\n' + '\n'.join(query).strip() + '\nLIMIT 10000\nRETURN doc'
+        final_query = '\n'.join(asquery).strip() +  '\n\n' + final_query + '\n' + '\n'.join(query).strip() + f'\nLIMIT {self.connection_info["query_limit"]}\nRETURN doc'
         print('Executing Query:\n' + final_query)
         cursor = self.db.aql.execute(final_query)
         data = [doc for doc in cursor]
