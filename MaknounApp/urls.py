@@ -28,6 +28,7 @@ urlpatterns = [
 
 	path('home/', home_view.HomeView.as_view(), name='home'),
 	path('advanced_search/', advanced_search_view.AdvancedSearchView.as_view(), name='advanced_search'),
+	path('graph_search/', graph_search_view.GraphSearchView.as_view(), name='graph_search'),
 	path('databases/', databases_view.DatabasesView.as_view(), name='databases'),
 	path('banks/', banks_view.BanksView.as_view(), name='banks'),
 	path('import/', import_view.ImportView.as_view(), name='import'),

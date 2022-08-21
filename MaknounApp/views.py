@@ -44,6 +44,7 @@ def build_dom(request):
 	views_page = Page('Views', 'ملفّات محرّك البحث', 'bi-book-half', False, 'views', [])
 	search_engine_page = Page('SearchEngine', 'محرّك البحث', 'bi-search', False, 'search_engine', None)
 	advanced_search_page = Page('AdvancedSearch', 'بحث متقدّم', 'bi-binoculars-fill', False, 'advanced_search', None)
+	graph_search_page = Page('GraphSearch', 'بحث في العلاقات', 'fa fa-circle-nodes', False, 'graph_search', None)
 	users_page = Page('Users', 'المستخدمين', 'bi-people-fill', False, 'users', [])
 	settings_page = Page('Settings', 'الإعدادات', 'bi-gear-fill', False, 'settings', None)
 
@@ -91,9 +92,10 @@ def build_dom(request):
 	import_page.disabled = disable_edit
 	search_engine_page.disabled = disable_edit
 	advanced_search_page.disabled = disable_edit
+	graph_search_page.disabled = disable_edit
 	settings_page.disabled = (len(databases) == 0)
 
-	context['pages'] = [home_page, databases_page, banks_page, relations_page, import_page, views_page, search_engine_page, advanced_search_page, users_page, settings_page]
+	context['pages'] = [home_page, databases_page, banks_page, relations_page, import_page, views_page, search_engine_page, advanced_search_page, graph_search_page, users_page, settings_page]
 
 	return context
 
@@ -117,6 +119,7 @@ def get_permissions_list():
 	permissions.append(Permission('views', 'ملفّات محرّك البحث'))
 	permissions.append(Permission('searchEngine', 'محرّك البحث'))
 	permissions.append(Permission('advancedSearch', 'بحث متقدّم'))
+	permissions.append(Permission('graphSearch', 'بحث في العلاقات'))
 	permissions.append(Permission('users', 'المستخدمين'))
 	permissions.append(Permission('settings', 'الإعدادات'))
 
