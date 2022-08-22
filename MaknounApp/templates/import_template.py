@@ -224,11 +224,12 @@ class DataPrcessor():
 		
 		if config:
 			for edge in config['edges']:
-				for col in config['collections']:
-					if col['index'] == edge['from_col']:
-						edge['from_key_map'] = self.key_map.copy()
-					elif col['index'] == edge['to_col']:
-						edge['to_key_map'] = self.key_map.copy()
+				if source['index'] == edge['from_col']:
+					edge['from_key_map'] = self.key_map.copy()
+					break
+				elif source['index'] == edge['to_col']:
+					edge['to_key_map'] = self.key_map.copy()
+					break
 			self.key_map = {}
 			gc.collect()
 

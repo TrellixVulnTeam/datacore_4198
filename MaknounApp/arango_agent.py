@@ -19,6 +19,11 @@ class ArangoAgent():
     db = None
 
     def __init__(self, database=None):
+        self.connection_info['host'] = models.Setting.objects.filter(key='arango_host').first().value
+        self.connection_info['username'] = models.Setting.objects.filter(key='arango_username').first().value
+        self.connection_info['password'] = models.Setting.objects.filter(key='arango_password').first().value
+        self.connection_info['query_limit'] =  int(models.Setting.objects.filter(key='arango_query_limit').first().value)
+
         client = ArangoClient(self.connection_info['host'])
         if not database:
             self.db = client.db(self.connection_info['system_database'], self.connection_info['username'], self.connection_info['password'])
