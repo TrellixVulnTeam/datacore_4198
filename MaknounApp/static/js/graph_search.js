@@ -170,7 +170,8 @@ function ForceGraph({
             .attr("fill", "white")
 
     if(!(nodeMenu === undefined))
-        node.on('contextmenu', d3.contextMenu(nodeMenu));
+        //node.on('contextmenu', d3.contextMenu(nodeMenu));
+        node.on('click', d => createDonut(d));
 
     node.call(drag(simulation));
 
@@ -179,34 +180,74 @@ function ForceGraph({
 
     // Handle invalidation.
     if (invalidation != null) invalidation.then(() => simulation.stop());
+    
+    const pie = d3.pie()
+        .value(d => d.value)
+        .padAngle(0.0349066) // 2 degrees in radian
+        .sort(null)
+        .value(d => d.value)
+    
+    const arcGenerator = d3.arc()
+        .innerRadius(nodeRadius * 1.35)
+        .outerRadius(nodeRadius * 2.5)
+
+    function createDonut(pointer) {
+        node.selectAll('.menu-arc').remove()
+        return d3.select(node.selectAll('*').nodes()[0])
+            .data(pie(nodeMenu))
+            .enter()
+            .append('path')
+            .attr("transform", "translate(" + pointer.currentTarget.__data__['x'] + "," + pointer.currentTarget.__data__['y'] + ")")
+            .attr('class', 'menu-arc')
+            .attr('d', arcGenerator)
+            .attr('fill', '#1177b5e8')
+            .style('opacity', 0.6)
+            .on('click', function (event, chosenArc) {
+                
+                // Remove other context menu
+                //d3.select(`.${contextMenuClass }`).remove();
+    
+                // Further processing...
+    
+            }).append('text')
+            .attr('font-family', ({ index: i }) => icon_font_family(NODES_ICONS[i]))
+            .attr('font-size', ({ index: i }) => alter_icon_font_size(NODES_ICONS[i], nodeIconSize) + 'em')
+            .attr('fill', function (d) { return nodeIconColor })
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'central')
+            .attr('class', 'node-icon')
+            .attr("style","cursor: pointer;")
+            .text(({ index: i }) => icon_to_unicode(NODES_ICONS[i]));
+    }
 
     function intern(value) {
         return value !== null && typeof value === "object" ? value.valueOf() : value;
     }
 
     function ticked() {
-        link 
-            .select(".link-line")
+        link.select(".link-line")
             .attr("x1", d => d.source.x)
             .attr("y1", d => d.source.y)
             .attr("x2", d => d.target.x)
             .attr("y2", d => d.target.y);
 
         if (addLinkLabel){
-            link
-                .select(".link-label")
+            link.select(".link-label")
                 .attr("x", d => Math.min(d.source.x,d.target.x) + ((Math.max(d.source.x,d.target.x) - Math.min(d.source.x,d.target.x)) / 2))
                 .attr("y", d => Math.min(d.source.y,d.target.y) + ((Math.max(d.source.y,d.target.y) - Math.min(d.source.y,d.target.y)) / 2));
         }
             
-        node
-            .attr("cx", d => d.x)
+        node.attr("cx", d => d.x)
             .attr("cy", d => d.y);
 
-        node
-            .select("circle")
+        node.select("circle")
             .attr("cx", d => d.x)
             .attr("cy", d => d.y);
+        
+        // node.selectAll('.menu-arc') 
+        //     .each(function(s) {
+        //         d3.select(this).attr("transform", d => "translate(".concat(d.x,",",d.y,")"))
+        //     });
 
         if (addNodeIcon)
             node

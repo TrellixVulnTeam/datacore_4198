@@ -142,24 +142,25 @@
     $('#edges_filter_canvas').empty()
 
     var menu = [
-	{
-		title: 'Remove Node',
-		action: function(elm, d, i) {
-			
-			// if (d.parent) {
-			  
-			//   // find child and remove it
-			//   for (var ii = 0; ii < d.parent.children.length; ii++) {
-			//     if (d.parent.children[ii].name === d.name) {
-			//       d.parent.children.splice(ii, 1);
-			//       break;
-			//     }
-			//   }
-			// }
-			
-			update(d);
-		}
-	}];
+      {
+        title: 'add Node',
+        value: 1,
+        type: 'lock',
+        text: 'Unlock the node to re-layout the graph',
+        // action: function(elm, d, i) {
+        //   update(d);
+        // }
+      },
+      {
+        title: 'Remove Node',
+        value: 1,
+        type: 'unlock',
+        text: 'Unlock the node to re-layout the graph',
+        // action: function(elm, d, i) {
+        //   update(d);
+        // }
+      }
+  ];
 
     chart = ForceGraph(graph, {
         nodeId: d => d.id,
