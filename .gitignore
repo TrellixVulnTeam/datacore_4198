@@ -3,6 +3,5 @@
 ################################################################################
 
 python.zip
-/.vs/slnx.sqlite-journal
-/.vs/slnx.sqlite
+.vs/
 __pycache__/
