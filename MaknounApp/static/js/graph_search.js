@@ -19,7 +19,14 @@ function ForceGraph({
     nodeStrokeOpacity = 1, // node stroke opacity
     nodeRadius = 30, // node radius, in pixels
     nodeStrength,
+    addNodeMenu = false,
     nodeMenu,
+    nodeMenuColor = "#545454",
+    nodeMenuOpacity = 0.8,
+    nodeMenuValue = d => d.value,
+    nodeMenuIcon = d => d.icon,
+    nodeMenuIconSize = 2, // given d in nodes, a size int
+    nodeMenuTitle = d => "",
     linkId = d => d.id, // given d in links, returns a unique identifier (string)
     linkSource = ({ source }) => source, // given d in links, returns a node identifier string
     linkTarget = ({ target }) => target, // given d in links, returns a node identifier string
@@ -121,13 +128,29 @@ function ForceGraph({
         .attr("stroke-linecap", linkStrokeLinecap)
 
     if (addLinkLabel){
+        link.append("circle")
+            .attr('fill', "#545454")
+            .attr('opacity', 0.8)
+            .attr("r", nodeRadius/2)
+
+        link.append('text')
+            .attr('font-family', () => icon_font_family("bi-link-45deg"))
+            .attr('font-size', () => alter_icon_font_size("bi-link-45deg", nodeIconSize/1.5) + 'em')
+            .attr('font-weight','bold')
+            .attr('fill', "white")
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'central')
+            .attr('class', 'link-icon')
+            .attr("style","cursor: pointer;")
+            .text(() => icon_to_unicode("bi-link-45deg"));
+
         link.append("text")
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'central')
             .text(({ index: i }) => LINKS_LABELS[i])
             .attr('class', 'link-label')
-            .attr("fill", "#08f")
-            .attr("style","text-decoration: underline;text-underline-offset: 7px;cursor: pointer;")
+            .attr("fill", "#545454")
+            .attr("transform", "translate(0," + nodeRadius/1.2 + ")")
     }
 
     if(!(linkMenu === undefined))
@@ -139,20 +162,23 @@ function ForceGraph({
     const node = svg.append("g")
         .selectAll("g")
         .attr("fill", nodeFill)
+        .attr("style","cursor: pointer;")
         .attr("stroke", nodeStroke)
         .attr("stroke-opacity", nodeStrokeOpacity)
         .attr("stroke-width", nodeStrokeWidth)
         .data(nodes)
-        .join("g");
+        .join("g")
+        .attr("id",({ index: i }) =>  "node_" + NODES[i]);
 
     node.append("circle")
+        .attr("fill", ({ index: i }) => color(NODES_GROUPS[i]))
         .attr("r", nodeRadius)
 
     if (addNodeIcon)
         node.append('text')
             .attr('font-family', ({ index: i }) => icon_font_family(NODES_ICONS[i]))
             .attr('font-size', ({ index: i }) => alter_icon_font_size(NODES_ICONS[i], nodeIconSize) + 'em')
-            .attr('fill', function (d) { return nodeIconColor })
+            .attr('fill', d => nodeIconColor)
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'central')
             .attr('class', 'node-icon')
@@ -163,13 +189,12 @@ function ForceGraph({
         node.append("text")
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'hanging')
-            .attr('filter', 'drop-shadow( 1px 1px 2px rgba(0, 0, 0, .7))')
             .text(({ index: i }) => NODES_LABELS[i])
             .attr('class', 'node-label')
-            .attr("style","cursor: pointer;")
-            .attr("fill", "white")
+            .attr("fill", ({ index: i }) => color(NODES_GROUPS[i]))
+            .attr("transform", "translate(0," + nodeRadius + ")")
 
-    if(!(nodeMenu === undefined))
+    if(addNodeMenu)
         //node.on('contextmenu', d3.contextMenu(nodeMenu));
         node.on('click', d => createDonut(d));
 
@@ -182,42 +207,61 @@ function ForceGraph({
     if (invalidation != null) invalidation.then(() => simulation.stop());
     
     const pie = d3.pie()
-        .value(d => d.value)
+        .value(nodeMenuValue)
         .padAngle(0.0349066) // 2 degrees in radian
         .sort(null)
-        .value(d => d.value)
+        .value(nodeMenuValue)
     
     const arcGenerator = d3.arc()
         .innerRadius(nodeRadius * 1.35)
         .outerRadius(nodeRadius * 2.5)
 
     function createDonut(pointer) {
-        node.selectAll('.menu-arc').remove()
-        return d3.select(node.selectAll('*').nodes()[0])
+        nd = d3.select("#node_" + pointer.currentTarget.__data__['id'])
+        d3.selectAll('.menu-arc').remove()
+        d3.selectAll('.menu-arc-icon').remove()
+        var nd = nd.selectAll('g')
             .data(pie(nodeMenu))
-            .enter()
-            .append('path')
-            .attr("transform", "translate(" + pointer.currentTarget.__data__['x'] + "," + pointer.currentTarget.__data__['y'] + ")")
+            .enter();
+
+        g_p = nd.append('g')
+            .attr("style","cursor: pointer;")
             .attr('class', 'menu-arc')
+
+        path = g_p.append('path')
+            .attr("id", ({ index: i }) => "menu-arc-path_" + i)
             .attr('d', arcGenerator)
-            .attr('fill', '#1177b5e8')
-            .style('opacity', 0.6)
+            .attr("style","cursor: pointer;")
+            .attr('fill', nodeMenuColor)
+            .attr("opacity", nodeMenuOpacity)
             .on('click', function (event, chosenArc) {
                 
                 // Remove other context menu
                 //d3.select(`.${contextMenuClass }`).remove();
-    
+
                 // Further processing...
-    
-            }).append('text')
-            .attr('font-family', ({ index: i }) => icon_font_family(NODES_ICONS[i]))
-            .attr('font-size', ({ index: i }) => alter_icon_font_size(NODES_ICONS[i], nodeIconSize) + 'em')
+
+            })
+
+        path.append("title").text(({ index: i }) => nodeMenuTitle(nodeMenu[i]))
+
+        path.on("mouseover", function (d) {
+            d3.select(this).style("opacity", nodeMenuOpacity - 0.1);
+        }).on("mouseout", function (d) {
+            d3.select(this).style("opacity", nodeMenuOpacity);
+        })
+        
+        g_p.append('text')
+            .attr("transform", d => `translate(${arcGenerator.centroid(d)})`)
+            .attr("id", ({ index: i }) => "menu-arc-icon_" + i)
+            .attr('font-family', ({ index: i }) => icon_font_family(nodeMenuIcon(nodeMenu[i])))
+            .attr('font-size', ({ index: i }) => alter_icon_font_size(nodeMenuIcon(nodeMenu[i]), nodeMenuIconSize) + 'em')
             .attr('fill', function (d) { return nodeIconColor })
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'central')
-            .attr('class', 'node-icon')
+            .attr('class', 'menu-arc-icon')
             .attr("style","cursor: pointer;")
-            .text(({ index: i }) => icon_to_unicode(NODES_ICONS[i]));
+            .text(({ index: i }) => icon_to_unicode(nodeMenuIcon(nodeMenu[i])));
     }
 
     function intern(value) {
@@ -235,6 +279,14 @@ function ForceGraph({
             link.select(".link-label")
                 .attr("x", d => Math.min(d.source.x,d.target.x) + ((Math.max(d.source.x,d.target.x) - Math.min(d.source.x,d.target.x)) / 2))
                 .attr("y", d => Math.min(d.source.y,d.target.y) + ((Math.max(d.source.y,d.target.y) - Math.min(d.source.y,d.target.y)) / 2));
+            
+            link.select("circle")
+                .attr("cx", d => Math.min(d.source.x,d.target.x) + ((Math.max(d.source.x,d.target.x) - Math.min(d.source.x,d.target.x)) / 2))
+                .attr("cy", d => Math.min(d.source.y,d.target.y) + ((Math.max(d.source.y,d.target.y) - Math.min(d.source.y,d.target.y)) / 2));
+
+            link.select(".link-icon")
+                .attr("x", d => Math.min(d.source.x,d.target.x) + ((Math.max(d.source.x,d.target.x) - Math.min(d.source.x,d.target.x)) / 2))
+                .attr("y", d => Math.min(d.source.y,d.target.y) + ((Math.max(d.source.y,d.target.y) - Math.min(d.source.y,d.target.y)) / 2));
         }
             
         node.attr("cx", d => d.x)
@@ -243,23 +295,24 @@ function ForceGraph({
         node.select("circle")
             .attr("cx", d => d.x)
             .attr("cy", d => d.y);
-        
-        // node.selectAll('.menu-arc') 
-        //     .each(function(s) {
-        //         d3.select(this).attr("transform", d => "translate(".concat(d.x,",",d.y,")"))
-        //     });
+
+        if (addNodeMenu)
+            node.each(function it(d){ 
+                d3.select("#node_" + d['id']).selectAll('.menu-arc')
+                .attr('transform', () => 'translate('+ d.x +', '+ d.y +')')
+            })
 
         if (addNodeIcon)
             node
                 .select(".node-icon")
                 .attr("x", d => d.x)
-                .attr("y", d => d.y - (nodeRadius * 19 / 100));
+                .attr("y", d => d.y);
 
         if (addNodeLabel)
             node
                 .select(".node-label")
                 .attr("x", d => d.x)
-                .attr("y", d => d.y + (nodeRadius * 13 / 100));
+                .attr("y", d => d.y);
     }
 
     function drag(simulation) {

@@ -143,19 +143,25 @@
 
     var menu = [
       {
-        title: 'add Node',
+        title: 'Relations',
         value: 1,
-        type: 'lock',
-        text: 'Unlock the node to re-layout the graph',
+        icon: 'fa fa-circle-nodes'
         // action: function(elm, d, i) {
         //   update(d);
         // }
       },
       {
-        title: 'Remove Node',
+        title: 'Settings',
         value: 1,
-        type: 'unlock',
-        text: 'Unlock the node to re-layout the graph',
+        icon: 'bi-gear-fill'
+        // action: function(elm, d, i) {
+        //   update(d);
+        // }
+      },
+      {
+        title: 'Find',
+        value: 1,
+        icon: 'bi-binoculars-fill'
         // action: function(elm, d, i) {
         //   update(d);
         // }
@@ -170,7 +176,12 @@
         nodeLabel: d => `${d.arabic_name}`,
         addNodeIcon: true,
         nodeIcon: d => `${d.icon}`,
+        addNodeMenu: true,
         nodeMenu: menu,
+        nodeMenuValue: d => d.value,
+        nodeMenuIcon: d => d.icon,
+        nodeMenuIconSize: 1.5,
+        nodeMenuTitle: d => d.title,
         linkId: d => d.id,
         addLinkLabel : true,
         linkTitle: d => `${d.arabic_name}`,
