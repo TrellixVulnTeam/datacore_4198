@@ -21,12 +21,13 @@ function ForceGraph({
     nodeStrength,
     addNodeMenu = false,
     nodeMenu,
-    nodeMenuColor = "#545454",
+    nodeMenuColor = d => d.color,
     nodeMenuOpacity = 0.8,
-    nodeMenuValue = d => d.value,
+    nodeMenuWidth = d => d.width,
     nodeMenuIcon = d => d.icon,
+    nodeMenuIconColor = 'white',
     nodeMenuIconSize = 2, // given d in nodes, a size int
-    nodeMenuTitle = d => "",
+    nodeMenuTitle = () => "",
     linkId = d => d.id, // given d in links, returns a unique identifier (string)
     linkSource = ({ source }) => source, // given d in links, returns a node identifier string
     linkTarget = ({ target }) => target, // given d in links, returns a node identifier string
@@ -39,12 +40,23 @@ function ForceGraph({
     linkStrokeWidth = 10, // given d in links, returns a stroke width in pixels
     linkStrokeLinecap = "round", // link stroke linecap
     linkStrength,
+    addLinkMenu = false,
+    addLinkArrow = true,
+    useCurvedLinks = true,
     linkMenu,
+    linkMenuColor = d => d.color,
+    linkMenuOpacity = 0.8,
+    linkMenuWidth = d => d.width,
+    linkMenuIcon = d => d.icon,
+    linkMenuIconColor = 'white',
+    linkMenuIconSize = 2, // given d in nodes, a size int
+    linkMenuTitle = () => "",
     colors = d3.schemeTableau10, // an array of color strings, for the node groups
     width, // outer width, in pixels
     height, // outer height, in pixels
     invalidation, // when this promise resolves, stop the simulation
-    containerId
+    containerId,
+    onMenuItemClick = ()=>{}
 } = {}) {
 
     if (width === undefined)
@@ -73,7 +85,7 @@ function ForceGraph({
 
     // Replace the input nodes and links with mutable objects for the simulation.
     nodes = d3.map(nodes, (_, i) => ({ id: NODES[i] }));
-    links = d3.map(links, (_, i) => ({ source: LINKS_SOURCES[i], target: LINKS_TARGETS[i] }));
+    links = d3.map(links, (_, i) => ({ id: LINKS[i], source: LINKS_SOURCES[i], target: LINKS_TARGETS[i] }));
 
     // Compute default domains.
     if (NODES_GROUPS && nodeGroups === undefined) nodeGroups = d3.sort(NODES_GROUPS);
@@ -100,15 +112,28 @@ function ForceGraph({
         .attr("height", height)
         .attr("viewBox", [-width / 2, -height / 2, width, height])
         .attr("style", "max-width: 100%; height: auto; height: intrinsic;");
+    
+    if(addLinkArrow)
+        svg.append("svg:defs").selectAll("marker")
+            .data(["end"])      // Different link/path types can be defined here
+        .enter().append("svg:marker")    // This section adds in the arrows
+            .attr("id", String)
+            .attr("viewBox", "0 -5 10 10")
+            .attr("refX", 0)
+            .attr("refY", 0)
+            .attr("markerWidth", 2)
+            .attr("markerHeight", 2)
+            .attr("orient", "auto")
+            .attr('fill', "#545454")
+            .attr('opacity', 0.8)
+        .append("svg:path")
+            .attr("d", "M0,-5L10,0L0,5");
 
-    // const link = svg.append("g")
-    //     .attr("stroke", linkStroke)
-    //     .attr("stroke-opacity", linkStrokeOpacity)
-    //     .attr("stroke-width", typeof linkStrokeWidth !== "function" ? linkStrokeWidth : null)
-    //     .attr("stroke-linecap", linkStrokeLinecap)
-    //     .selectAll("line")
-    //     .data(links)
-    //     .join("line");
+    if(addNodeMenu || addLinkMenu)
+        svg.on('click', (e)=>{
+            d3.selectAll('.menu-arc').remove()
+            d3.selectAll('.menu-arc-icon').remove()
+        });
 
     const link = svg.append("g")
         .selectAll("g")
@@ -117,15 +142,26 @@ function ForceGraph({
         .attr("stroke-width", typeof linkStrokeWidth !== "function" ? linkStrokeWidth : null)
         .attr("stroke-linecap", linkStrokeLinecap)
         .data(links)
-        .join("g");
+        .join("g")
+        .attr("id",({ index: i }) =>  "link_" + LINKS[i])
+        .attr("class","gobject glink")
+        .attr("marker-end", "url(#end)");
 
-
-    link.append("line")
-        .attr('class', 'link-line')
-        .attr("stroke", linkStroke)
-        .attr("stroke-opacity", linkStrokeOpacity)
-        .attr("stroke-width", typeof linkStrokeWidth !== "function" ? linkStrokeWidth : null)
-        .attr("stroke-linecap", linkStrokeLinecap)
+    if(useCurvedLinks)
+        link.append("path")
+            .attr('class', 'link-line')
+            .attr('fill', 'transparent')
+            .attr("stroke-width", typeof linkStrokeWidth !== "function" ? linkStrokeWidth : null)
+            .attr("stroke-linecap", linkStrokeLinecap)
+            .attr("stroke", linkStroke)
+    else
+        link.append("line")
+            .attr('class', 'link-line')
+            .attr("stroke", linkStroke)
+            .attr("fill", 'none')
+            .attr("stroke-opacity", linkStrokeOpacity)
+            .attr("stroke-width", typeof linkStrokeWidth !== "function" ? linkStrokeWidth : null)
+            .attr("stroke-linecap", linkStrokeLinecap)
 
     if (addLinkLabel){
         link.append("circle")
@@ -153,8 +189,8 @@ function ForceGraph({
             .attr("transform", "translate(0," + nodeRadius/1.2 + ")")
     }
 
-    if(!(linkMenu === undefined))
-        link.on('contextmenu', d3.contextMenu(linkMenu));
+    if(addLinkMenu)
+        link.on('click', d => createDonut(d, forLink=true));
 
     if (LINKS_STROKE_WIDTH) link.attr("stroke-width", ({ index: i }) => LINKS_STROKE_WIDTH[i]);
     if (LINKS_TITLES) link.append("title").text(({ index: i }) => LINKS_TITLES[i]);
@@ -168,9 +204,11 @@ function ForceGraph({
         .attr("stroke-width", nodeStrokeWidth)
         .data(nodes)
         .join("g")
-        .attr("id",({ index: i }) =>  "node_" + NODES[i]);
+        .attr("id",({ index: i }) =>  "node_" + NODES[i])
+        .attr("class","gobject gnode");
 
     node.append("circle")
+        .attr("style","cursor: pointer;")
         .attr("fill", ({ index: i }) => color(NODES_GROUPS[i]))
         .attr("r", nodeRadius)
 
@@ -195,7 +233,6 @@ function ForceGraph({
             .attr("transform", "translate(0," + nodeRadius + ")")
 
     if(addNodeMenu)
-        //node.on('contextmenu', d3.contextMenu(nodeMenu));
         node.on('click', d => createDonut(d));
 
     node.call(drag(simulation));
@@ -206,22 +243,58 @@ function ForceGraph({
     // Handle invalidation.
     if (invalidation != null) invalidation.then(() => simulation.stop());
     
-    const pie = d3.pie()
-        .value(nodeMenuValue)
-        .padAngle(0.0349066) // 2 degrees in radian
-        .sort(null)
-        .value(nodeMenuValue)
-    
-    const arcGenerator = d3.arc()
-        .innerRadius(nodeRadius * 1.35)
-        .outerRadius(nodeRadius * 2.5)
 
-    function createDonut(pointer) {
-        nd = d3.select("#node_" + pointer.currentTarget.__data__['id'])
+    function createDonut(pointer, forLink = false) {
+        nodePie = d3.pie()
+            .value(nodeMenuWidth)
+            .padAngle(0.0349066) // 2 degrees in radian
+            .sort(null)
+            .value(nodeMenuWidth)
+
+        linkPie = d3.pie()
+            .value(linkMenuWidth)
+            .padAngle(0.0649066) // 2 degrees in radian
+            .sort(null)
+            .value(linkMenuWidth)
+
+        nodeArcGenerator = d3.arc()
+            .innerRadius(nodeRadius * 1.35)
+            .outerRadius(nodeRadius * 2.5)
+
+        linkArcGenerator = d3.arc()
+            .innerRadius(nodeRadius/2 * 1.35)
+            .outerRadius(nodeRadius * 1.5)
+
+        if(forLink){
+            gId = "#link_" +  pointer.currentTarget.__data__['id']
+            pie = linkPie
+            arcGenerator = linkArcGenerator
+            menu = linkMenu
+            menuColor = linkMenuColor
+            menuOpacity = linkMenuOpacity
+            menuIcon = linkMenuIcon
+            menuIconColor = linkMenuIconColor
+            menuIconSize = linkMenuIconSize
+            menuTitle = linkMenuTitle
+        }else{        
+            gId = "#node_" + pointer.currentTarget.__data__['id']
+            pie = nodePie
+            arcGenerator = nodeArcGenerator
+            menu = nodeMenu
+            menuColor = nodeMenuColor
+            menuOpacity = nodeMenuOpacity
+            menuIcon = nodeMenuIcon
+            menuIconColor = nodeMenuIconColor
+            menuIconSize = nodeMenuIconSize
+            menuTitle = nodeMenuTitle
+        }
+
+
+        nd = d3.select(gId)
         d3.selectAll('.menu-arc').remove()
         d3.selectAll('.menu-arc-icon').remove()
         var nd = nd.selectAll('g')
-            .data(pie(nodeMenu))
+            .data(pie(menu))
             .enter();
 
         g_p = nd.append('g')
@@ -232,36 +305,49 @@ function ForceGraph({
             .attr("id", ({ index: i }) => "menu-arc-path_" + i)
             .attr('d', arcGenerator)
             .attr("style","cursor: pointer;")
-            .attr('fill', nodeMenuColor)
-            .attr("opacity", nodeMenuOpacity)
-            .on('click', function (event, chosenArc) {
-                
-                // Remove other context menu
-                //d3.select(`.${contextMenuClass }`).remove();
-
-                // Further processing...
-
+            .attr('fill', menuColor)
+            .attr("opacity", menuOpacity)
+            .attr("class", 'mi')
+            .on('click', (event, chosenArc) => {
+                gobj = event.currentTarget.closest('.gobject')
+                d3.selectAll('.menu-arc').remove()
+                d3.selectAll('.menu-arc-icon').remove()
+                onMenuItemClick(gobj.id, chosenArc.data.id,$(gobj).hasClass('gnode'));
+                event.stopPropagation();
             })
 
-        path.append("title").text(({ index: i }) => nodeMenuTitle(nodeMenu[i]))
+        path.append("title").text(({ index: i }) => menuTitle(menu[i]))
 
         path.on("mouseover", function (d) {
-            d3.select(this).style("opacity", nodeMenuOpacity - 0.1);
+            d3.select(this).style("opacity", menuOpacity - 0.1);
         }).on("mouseout", function (d) {
-            d3.select(this).style("opacity", nodeMenuOpacity);
+            d3.select(this).style("opacity", menuOpacity);
         })
         
         g_p.append('text')
             .attr("transform", d => `translate(${arcGenerator.centroid(d)})`)
             .attr("id", ({ index: i }) => "menu-arc-icon_" + i)
-            .attr('font-family', ({ index: i }) => icon_font_family(nodeMenuIcon(nodeMenu[i])))
-            .attr('font-size', ({ index: i }) => alter_icon_font_size(nodeMenuIcon(nodeMenu[i]), nodeMenuIconSize) + 'em')
-            .attr('fill', function (d) { return nodeIconColor })
+            .attr('font-family', ({ index: i }) => icon_font_family(menuIcon(menu[i])))
+            .attr('font-size', ({ index: i }) => alter_icon_font_size(menuIcon(menu[i]), menuIconSize) + 'em')
+            .attr('fill', menuIconColor)
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'central')
             .attr('class', 'menu-arc-icon')
             .attr("style","cursor: pointer;")
-            .text(({ index: i }) => icon_to_unicode(nodeMenuIcon(nodeMenu[i])));
+            .on('click', (event)=> {
+                d3.select('#' + $(event.currentTarget).siblings('.mi').attr('id')).dispatch('click')
+                event.stopPropagation()
+            })
+            .text(({ index: i }) => icon_to_unicode(menuIcon(menu[i])))
+            .append("title").text(({ index: i }) => menuTitle(menu[i]));
+
+        if (addLinkMenu)
+            link.each(function it(d){ 
+                d3.select("#link_" + d['id']).selectAll('.menu-arc')
+                .attr('transform', () => 'translate(' + calcLinkCenterX(d) 
+                + ', ' + calcLinkCenterY(d) +')')})
+
+        pointer.stopPropagation();
     }
 
     function intern(value) {
@@ -269,26 +355,64 @@ function ForceGraph({
     }
 
     function ticked() {
-        link.select(".link-line")
-            .attr("x1", d => d.source.x)
-            .attr("y1", d => d.source.y)
-            .attr("x2", d => d.target.x)
-            .attr("y2", d => d.target.y);
+
+        if(useCurvedLinks)
+            link.each(function it(d){ 
+                d3.select(".link-line")
+                .attr("d", function(d) {
+                    var dx = calcLinkWithArrowX2(d) - calcLinkWithArrowX1(d),
+                        dy = calcLinkWithArrowY2(d) - calcLinkWithArrowY1(d),
+                        dr = Math.sqrt(dx * dx + dy * dy);
+                    return "M" + calcLinkWithArrowX1(d) + "," + calcLinkWithArrowY1(d) + "A" + dr + "," + dr + " 0 0,1 " + calcLinkWithArrowX2(d) + "," + calcLinkWithArrowY2(d);
+                    })
+                })
+        else
+            link.select(".link-line")
+                .attr("x1", d => calcLinkWithArrowX1(d))
+                .attr("y1", d => calcLinkWithArrowY1(d))
+                .attr("x2", d => calcLinkWithArrowX2(d))
+                .attr("y2", d => calcLinkWithArrowY2(d));
 
         if (addLinkLabel){
-            link.select(".link-label")
-                .attr("x", d => Math.min(d.source.x,d.target.x) + ((Math.max(d.source.x,d.target.x) - Math.min(d.source.x,d.target.x)) / 2))
-                .attr("y", d => Math.min(d.source.y,d.target.y) + ((Math.max(d.source.y,d.target.y) - Math.min(d.source.y,d.target.y)) / 2));
-            
-            link.select("circle")
-                .attr("cx", d => Math.min(d.source.x,d.target.x) + ((Math.max(d.source.x,d.target.x) - Math.min(d.source.x,d.target.x)) / 2))
-                .attr("cy", d => Math.min(d.source.y,d.target.y) + ((Math.max(d.source.y,d.target.y) - Math.min(d.source.y,d.target.y)) / 2));
-
-            link.select(".link-icon")
-                .attr("x", d => Math.min(d.source.x,d.target.x) + ((Math.max(d.source.x,d.target.x) - Math.min(d.source.x,d.target.x)) / 2))
-                .attr("y", d => Math.min(d.source.y,d.target.y) + ((Math.max(d.source.y,d.target.y) - Math.min(d.source.y,d.target.y)) / 2));
+            if(useCurvedLinks){
+                link.select(".link-label")
+                    .attr("x", d => calcLinkPathCenterX(d))
+                    .attr("y", d => calcLinkPathCenterY(d));
+                
+                link.select("circle")
+                    .attr("cx", d => calcLinkPathCenterX(d))
+                    .attr("cy", d => calcLinkPathCenterY(d));
+    
+                link.select(".link-icon")
+                    .attr("x", d => calcLinkPathCenterX(d))
+                    .attr("y", d => calcLinkPathCenterY(d));
+            }else{
+                link.select(".link-label")
+                    .attr("x", d => calcLinkCenterX(d))
+                    .attr("y", d => calcLinkCenterY(d));
+                
+                link.select("circle")
+                    .attr("cx", d => calcLinkCenterX(d))
+                    .attr("cy", d => calcLinkCenterY(d));
+    
+                link.select(".link-icon")
+                    .attr("x", d => calcLinkCenterX(d))
+                    .attr("y", d => calcLinkCenterY(d));
+            }
         }
             
+        if (addLinkMenu)
+            if(useCurvedLinks)
+                link.each(function it(d){ 
+                    d3.select("#link_" + d['id']).selectAll('.menu-arc')
+                    .attr('transform', () => 'translate(' + calcLinkPathCenterX(d) 
+                    + ', ' + calcLinkPathCenterY(d) +')')})
+            else
+                link.each(function it(d){ 
+                    d3.select("#link_" + d['id']).selectAll('.menu-arc')
+                    .attr('transform', () => 'translate(' + calcLinkCenterX(d) 
+                    + ', ' + calcLinkCenterY(d) +')')})
+
         node.attr("cx", d => d.x)
             .attr("cy", d => d.y);
 
@@ -313,6 +437,56 @@ function ForceGraph({
                 .select(".node-label")
                 .attr("x", d => d.x)
                 .attr("y", d => d.y);
+    }
+
+    function calcLinkWithArrowX1(d){
+        if(!addLinkArrow) return d.source.x
+        ll = Math.sqrt(Math.pow(d.target.x-d.source.x,2) + Math.pow(d.target.y-d.source.y,2))
+        minifyFactor = useCurvedLinks ? 0 : (nodeRadius*0.66)
+        return  Math.abs(((minifyFactor/ll)))*(d.target.x-d.source.x)+d.source.x;
+    }
+
+    function calcLinkWithArrowX2(d){
+        if(!addLinkArrow) return d.target.x
+        ll = Math.sqrt(Math.pow(d.target.x-d.source.x,2) + Math.pow(d.target.y-d.source.y,2))
+        minifyFactor = useCurvedLinks ? 0 : (nodeRadius*1.66)
+        return  Math.abs((1-(minifyFactor/ll)))*(d.target.x-d.source.x)+d.source.x;
+    }
+
+    function calcLinkWithArrowY1(d){
+        if(!addLinkArrow) return d.source.y
+        ll = Math.sqrt(Math.pow(d.target.x-d.source.x,2) + Math.pow(d.target.y-d.source.y,2))
+        minifyFactor = useCurvedLinks ? 0 : (nodeRadius*0.66)
+        return  Math.abs(((minifyFactor/ll)))*(d.target.y-d.source.y)+d.source.y;
+    }
+
+    function calcLinkWithArrowY2(d){
+        if(!addLinkArrow) return d.target.y
+        ll = Math.sqrt(Math.pow(d.target.x-d.source.x,2) + Math.pow(d.target.y-d.source.y,2))
+        minifyFactor = useCurvedLinks ? 0 : (nodeRadius*1.66)
+        return  Math.abs((1-(minifyFactor/ll)))*(d.target.y-d.source.y)+d.source.y;
+    }
+
+    function calcLinkCenterX(d){
+        x1 = calcLinkWithArrowX1(d)
+        x2 = calcLinkWithArrowX2(d)
+        return  Math.min(x1,x2) + ((Math.max(x1,x2) - Math.min(x1,x2)) / 2)
+    }
+
+    function calcLinkCenterY(d){
+        y1 = calcLinkWithArrowY1(d)
+        y2 = calcLinkWithArrowY2(d)
+        return Math.min(y1,y2) + ((Math.max(y1,y2) - Math.min(y1,y2)) / 2)
+    }
+
+    function calcLinkPathCenterX(d){
+        var pathEl = d3.select("#link_" + d['id']).select('.link-line').node()
+        return pathEl.getPointAtLength(pathEl.getTotalLength()/2).x;
+    }
+
+    function calcLinkPathCenterY(d){
+        var pathEl = d3.select("#link_" + d['id']).select('.link-line').node()
+        return pathEl.getPointAtLength(pathEl.getTotalLength()/2).y;
     }
 
     function drag(simulation) {

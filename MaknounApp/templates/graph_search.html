@@ -135,38 +135,53 @@
         if(!addedIds.includes(v.id)){
             v['source'] = v.from
             v['target'] = v.to
+            v['id'] = v.id
             graph.links.push(v)
             addedIds.push(v.id)
         }
     })
     $('#edges_filter_canvas').empty()
 
-    var menu = [
+    var node_menu = [
       {
+        id: 'node_relations_mi',
         title: 'Relations',
-        value: 1,
-        icon: 'fa fa-circle-nodes'
-        // action: function(elm, d, i) {
-        //   update(d);
-        // }
+        width: 1,
+        icon_color: 'white',
+        icon: 'fa fa-circle-nodes',
       },
       {
+        id: 'node_settings_mi',
         title: 'Settings',
-        value: 1,
-        icon: 'bi-gear-fill'
-        // action: function(elm, d, i) {
-        //   update(d);
-        // }
+        width: 1,
+        icon_color: 'white',
+        icon: 'bi-gear-fill',
       },
       {
+        id: 'node_find_mi',
         title: 'Find',
-        value: 1,
-        icon: 'bi-binoculars-fill'
-        // action: function(elm, d, i) {
-        //   update(d);
-        // }
+        width: 1,
+        icon_color: 'white',
+        icon: 'bi-binoculars-fill',
       }
-  ];
+    ];
+
+    var link_menu = [
+        {
+          id: 'link_remove_mi',
+          title: 'Remove',
+          width: 1,
+          icon: 'bi-gear-fill',
+          icon_color: 'white'
+        },
+        {
+          id: 'filter_remove_mi',
+          title: 'Filter',
+          width: 1,
+          icon: 'fas fa-filter',
+          icon_color: 'white'
+        }
+    ];
 
     chart = ForceGraph(graph, {
         nodeId: d => d.id,
@@ -177,18 +192,31 @@
         addNodeIcon: true,
         nodeIcon: d => `${d.icon}`,
         addNodeMenu: true,
-        nodeMenu: menu,
-        nodeMenuValue: d => d.value,
+        nodeMenu: node_menu,
+        nodeMenuWidth: d => d.width,
         nodeMenuIcon: d => d.icon,
         nodeMenuIconSize: 1.5,
         nodeMenuTitle: d => d.title,
-        linkId: d => d.id,
         addLinkLabel : true,
         linkTitle: d => `${d.arabic_name}`,
         linkLabel: d => `${d.arabic_name}`,
+        addLinkMenu: true,
+        linkMenu: link_menu,
+        linkMenuWidth: d => d.width,
+        linkMenuIcon: d => d.icon,
+        linkMenuIconSize: 1.2,
+        linkMenuTitle: d => d.title,
+        linkMenuOpacity: 0.5,
+        linkId: d => d.id,
+
+        onMenuItemClick: onQBuilderChartMenuClick,
         containerId: 'edges_filter_canvas',
         invalidation: null // a promise to stop the simulation when the cell is re-run
     })
+  }
+
+  function onQBuilderChartMenuClick(objecId, itemId, isNode){
+    console.log(itemId);
   }
 
   function update_selected_edges(){
