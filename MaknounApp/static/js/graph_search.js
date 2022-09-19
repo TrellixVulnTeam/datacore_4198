@@ -113,6 +113,9 @@ function ForceGraph({
         .attr("viewBox", [-width / 2, -height / 2, width, height])
         .attr("style", "max-width: 100%; height: auto; height: intrinsic;");
     
+    let zoom = d3.zoom().on('zoom', handleZoom);
+    d3.select('svg').call(zoom);
+
     if(addLinkArrow)
         svg.append("svg:defs").selectAll("marker")
             .data(["end"])      // Different link/path types can be defined here
@@ -149,6 +152,7 @@ function ForceGraph({
 
     if(useCurvedLinks)
         link.append("path")
+            .attr("id",({ index: i }) =>  "link_path_" + LINKS[i])
             .attr('class', 'link-line')
             .attr('fill', 'transparent')
             .attr("stroke-width", typeof linkStrokeWidth !== "function" ? linkStrokeWidth : null)
@@ -194,6 +198,7 @@ function ForceGraph({
 
     if (LINKS_STROKE_WIDTH) link.attr("stroke-width", ({ index: i }) => LINKS_STROKE_WIDTH[i]);
     if (LINKS_TITLES) link.append("title").text(({ index: i }) => LINKS_TITLES[i]);
+
 
     const node = svg.append("g")
         .selectAll("g")
@@ -243,6 +248,15 @@ function ForceGraph({
     // Handle invalidation.
     if (invalidation != null) invalidation.then(() => simulation.stop());
     
+    if(true){
+        svg.append("circle")
+           .data(NODES_GROUPS)
+           .join("circle")
+           .attr("fill", ({ index: i }) => color(NODES_GROUPS[i]))
+           .attr("cx", () => (svg.attr("width")/2) -20)
+           .attr("cy", ({ index: i }) => { return (-1 * (svg.attr("height")/2) - 20 + (i*20))})
+           .attr("r", 10)
+    }
 
     function createDonut(pointer, forLink = false) {
         nodePie = d3.pie()
@@ -341,13 +355,23 @@ function ForceGraph({
             .text(({ index: i }) => icon_to_unicode(menuIcon(menu[i])))
             .append("title").text(({ index: i }) => menuTitle(menu[i]));
 
-        if (addLinkMenu)
-            link.each(function it(d){ 
-                d3.select("#link_" + d['id']).selectAll('.menu-arc')
-                .attr('transform', () => 'translate(' + calcLinkCenterX(d) 
-                + ', ' + calcLinkCenterY(d) +')')})
+            if (addLinkMenu)
+                if(useCurvedLinks)
+                    link.each(function it(d){ 
+                        d3.select("#link_" + d['id']).selectAll('.menu-arc')
+                        .attr('transform', () => 'translate(' + calcLinkPathCenterX(d) 
+                        + ', ' + calcLinkPathCenterY(d) +')')})
+                else
+                    link.each(function it(d){ 
+                        d3.select("#link_" + d['id']).selectAll('.menu-arc')
+                        .attr('transform', () => 'translate(' + calcLinkCenterX(d) 
+                        + ', ' + calcLinkCenterY(d) +')')})
 
         pointer.stopPropagation();
+    }
+
+    function handleZoom(e) {
+        d3.selectAll('svg g').attr('transform', e.transform);
     }
 
     function intern(value) {
@@ -358,7 +382,7 @@ function ForceGraph({
 
         if(useCurvedLinks)
             link.each(function it(d){ 
-                d3.select(".link-line")
+                d3.selectAll(".link-line")
                 .attr("d", function(d) {
                     var dx = calcLinkWithArrowX2(d) - calcLinkWithArrowX1(d),
                         dy = calcLinkWithArrowY2(d) - calcLinkWithArrowY1(d),
@@ -480,13 +504,21 @@ function ForceGraph({
     }
 
     function calcLinkPathCenterX(d){
-        var pathEl = d3.select("#link_" + d['id']).select('.link-line').node()
-        return pathEl.getPointAtLength(pathEl.getTotalLength()/2).x;
+        var pathEl = d3.select("#link_path_" + d['id']).node()
+        try {
+            return pathEl.getPointAtLength(pathEl.getTotalLength()/2).x;
+        } catch (error) {
+            return pathEl.getTotalLength()/2;
+        }
     }
 
     function calcLinkPathCenterY(d){
-        var pathEl = d3.select("#link_" + d['id']).select('.link-line').node()
-        return pathEl.getPointAtLength(pathEl.getTotalLength()/2).y;
+        var pathEl = d3.select("#link_path_" + d['id']).node()
+        try {
+            return pathEl.getPointAtLength(pathEl.getTotalLength()/2).y;
+        } catch (error) {
+            return pathEl.getTotalLength()/2;
+        }
     }
 
     function drag(simulation) {
