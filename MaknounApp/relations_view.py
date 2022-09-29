@@ -35,10 +35,10 @@ class RelationsView(master_entity_view.MasterEntityView):
         if not data['from_bank'] or not data['to_bank']:
             return super().parse_response(('1', 'الرجاء التأكد من تعبئة كل الخانات المطلوبة'),'json')
 
-        oldEntity = self.model.objects.filter(from_bank = data['from_bank'], to_bank = data['to_bank']).first()
+        # oldEntity = self.model.objects.filter(from_bank = data['from_bank'], to_bank = data['to_bank']).first()
 
-        if oldEntity:
-            return super().parse_response(('1', 'يوجد علاقة بين هذين البنكين، الرجاء تغيير اتجاه العلاقة'),'json')
+        # if oldEntity:
+        #     return super().parse_response(('1', 'يوجد علاقة بين هذين البنكين، الرجاء تغيير اتجاه العلاقة'),'json')
 
         if data['data_fields']:
             jsonarray = json.loads(data['data_fields'])

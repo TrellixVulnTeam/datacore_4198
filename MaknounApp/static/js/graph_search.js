@@ -1,3 +1,19 @@
+ORIGINAL_LINKS = []
+ORIGINAL_NODES = []
+
+d3.selection.prototype.bringElementAsTopLayer = function() {
+    return this.each(function(){
+        this.parentNode.appendChild(this);
+    });
+};
+
+d3.selection.prototype.pushElementAsBackLayer = function() { 
+    return this.each(function() { 
+        var firstChild = this.parentNode.firstChild; 
+        if (firstChild) { 
+            this.parentNode.insertBefore(this, firstChild); 
+    } 
+})};
 
 function ForceGraph({
     nodes, // an iterable of node objects (typically [{id}, …])
@@ -37,7 +53,7 @@ function ForceGraph({
     linkLineLength = 250, // link line length
     linkStroke = "#999", // link stroke color
     linkStrokeOpacity = 0.6, // link stroke opacity
-    linkStrokeWidth = 10, // given d in links, returns a stroke width in pixels
+    linkStrokeWidth = 5, // given d in links, returns a stroke width in pixels
     linkStrokeLinecap = "round", // link stroke linecap
     linkStrength,
     addLinkMenu = false,
@@ -63,6 +79,9 @@ function ForceGraph({
         width = $('#'+containerId).width()
     if (height === undefined)
         height = $('#'+containerId).height()
+
+    ORIGINAL_LINKS = links;
+    ORIGINAL_NODES = nodes;
 
     // Compute values.
     const NODES = d3.map(nodes, nodeId).map(intern);
@@ -150,6 +169,10 @@ function ForceGraph({
         .attr("class","gobject glink")
         .attr("marker-end", "url(#end)");
 
+    pathPointerEvents = 'auto'
+    if(addLinkMenu)
+        pathPointerEvents = 'none'
+
     if(useCurvedLinks)
         link.append("path")
             .attr("id",({ index: i }) =>  "link_path_" + LINKS[i])
@@ -158,6 +181,7 @@ function ForceGraph({
             .attr("stroke-width", typeof linkStrokeWidth !== "function" ? linkStrokeWidth : null)
             .attr("stroke-linecap", linkStrokeLinecap)
             .attr("stroke", linkStroke)
+            .attr("style","pointer-events:"+pathPointerEvents)
     else
         link.append("line")
             .attr('class', 'link-line')
@@ -172,6 +196,7 @@ function ForceGraph({
             .attr('fill', "#545454")
             .attr('opacity', 0.8)
             .attr("r", nodeRadius/2)
+            .on('click', d => createMenu(d, forLink=true));
 
         link.append('text')
             .attr('font-family', () => icon_font_family("bi-link-45deg"))
@@ -182,7 +207,8 @@ function ForceGraph({
             .attr('dominant-baseline', 'central')
             .attr('class', 'link-icon')
             .attr("style","cursor: pointer;")
-            .text(() => icon_to_unicode("bi-link-45deg"));
+            .text(() => icon_to_unicode("bi-link-45deg"))
+            .on('click', d => createMenu(d, forLink=true));
 
         link.append("text")
             .attr('text-anchor', 'middle')
@@ -193,8 +219,9 @@ function ForceGraph({
             .attr("transform", "translate(0," + nodeRadius/1.2 + ")")
     }
 
-    if(addLinkMenu)
-        link.on('click', d => createDonut(d, forLink=true));
+    link.on("mouseover",function(){
+        d3.select(this).bringElementAsTopLayer();
+    });
 
     if (LINKS_STROKE_WIDTH) link.attr("stroke-width", ({ index: i }) => LINKS_STROKE_WIDTH[i]);
     if (LINKS_TITLES) link.append("title").text(({ index: i }) => LINKS_TITLES[i]);
@@ -216,6 +243,7 @@ function ForceGraph({
         .attr("style","cursor: pointer;")
         .attr("fill", ({ index: i }) => color(NODES_GROUPS[i]))
         .attr("r", nodeRadius)
+        .on('click', d => createMenu(d));
 
     if (addNodeIcon)
         node.append('text')
@@ -226,7 +254,8 @@ function ForceGraph({
             .attr('dominant-baseline', 'central')
             .attr('class', 'node-icon')
             .attr("style","cursor: pointer;")
-            .text(({ index: i }) => icon_to_unicode(NODES_ICONS[i]));
+            .text(({ index: i }) => icon_to_unicode(NODES_ICONS[i]))
+            .on('click', d => createMenu(d));
 
     if (addNodeLabel)
         node.append("text")
@@ -237,8 +266,33 @@ function ForceGraph({
             .attr("fill", ({ index: i }) => color(NODES_GROUPS[i]))
             .attr("transform", "translate(0," + nodeRadius + ")")
 
-    if(addNodeMenu)
-        node.on('click', d => createDonut(d));
+    // if(addNodeMenu)
+    //     node.on('click', d => createMenu(d));
+    node.on("mouseover",function(){
+        d3.select(this).bringElementAsTopLayer();
+    });
+
+    if(true){
+        const key = svg.append("g")
+            .attr("class", "keysg")
+            .selectAll("g")
+            .data(NODES_GROUPS)
+            .join("g")
+            .attr("class", "keysg")
+
+        key.append("circle")
+            .attr("fill", (i,j) => color(NODES_GROUPS[j]))
+            .attr("cx", (i,j) => (svg.attr("width")/2) -20)
+            .attr("cy", (i,j) => (-1 * (svg.attr("height")/2) + 20 + (j*30)))
+            .attr("r", 10)
+
+        key.append("text")
+            .text((i,j) => NODES_GROUPS[j])
+            .attr("fill", (i,j) => color(NODES_GROUPS[j]))
+            .attr("x", (i,j) => (svg.attr("width")/2) -40)
+            .attr("y", (i,j) => (-1 * (svg.attr("height")/2) + 25 + (j*30)))
+
+    }
 
     node.call(drag(simulation));
 
@@ -247,18 +301,14 @@ function ForceGraph({
 
     // Handle invalidation.
     if (invalidation != null) invalidation.then(() => simulation.stop());
-    
-    if(true){
-        svg.append("circle")
-           .data(NODES_GROUPS)
-           .join("circle")
-           .attr("fill", ({ index: i }) => color(NODES_GROUPS[i]))
-           .attr("cx", () => (svg.attr("width")/2) -20)
-           .attr("cy", ({ index: i }) => { return (-1 * (svg.attr("height")/2) - 20 + (i*20))})
-           .attr("r", 10)
-    }
 
-    function createDonut(pointer, forLink = false) {
+    function createMenu(pointer, forLink = false) {
+        if(!forLink && !addNodeMenu)
+            return
+
+        if(forLink && !addLinkMenu)
+            return
+
         nodePie = d3.pie()
             .value(nodeMenuWidth)
             .padAngle(0.0349066) // 2 degrees in radian
@@ -303,10 +353,10 @@ function ForceGraph({
             menuTitle = nodeMenuTitle
         }
 
-
-        nd = d3.select(gId)
         d3.selectAll('.menu-arc').remove()
         d3.selectAll('.menu-arc-icon').remove()
+
+        nd = d3.select(gId)
         var nd = nd.selectAll('g')
             .data(pie(menu))
             .enter();
@@ -371,7 +421,13 @@ function ForceGraph({
     }
 
     function handleZoom(e) {
-        d3.selectAll('svg g').attr('transform', e.transform);
+        d3.selectAll('.menu-arc').remove()
+        d3.selectAll('.menu-arc-icon').remove()
+        d3.selectAll('svg g')
+          .filter(function() {
+            return !this.classList.contains('keysg')
+           })
+          .attr('transform', e.transform);
     }
 
     function intern(value) {
@@ -379,15 +435,57 @@ function ForceGraph({
     }
 
     function ticked() {
-
         if(useCurvedLinks)
             link.each(function it(d){ 
                 d3.selectAll(".link-line")
                 .attr("d", function(d) {
-                    var dx = calcLinkWithArrowX2(d) - calcLinkWithArrowX1(d),
-                        dy = calcLinkWithArrowY2(d) - calcLinkWithArrowY1(d),
-                        dr = Math.sqrt(dx * dx + dy * dy);
-                    return "M" + calcLinkWithArrowX1(d) + "," + calcLinkWithArrowY1(d) + "A" + dr + "," + dr + " 0 0,1 " + calcLinkWithArrowX2(d) + "," + calcLinkWithArrowY2(d);
+                        if(d.source.id == d.target.id){
+                            var x1 = d.source.x,
+                            y1 = d.source.y,
+                            x2 = d.target.x,
+                            y2 = d.target.y,
+                            dx = x2 - x1,
+                            dy = y2 - y1,
+                            dr = Math.sqrt(dx * dx + dy * dy),
+                      
+                            // Defaults for normal edge.
+                            drx = dr,
+                            dry = dr,
+                            xRotation = 0, // degrees
+                            largeArc = 0, // 1 or 0
+                            sweep = 1; // 1 or 0
+                      
+                            // Self edge.
+                            if ( x1 === x2 && y1 === y2 ) {
+                              // Fiddle with this angle to get loop oriented.
+                              xRotation = -45;
+                      
+                              // Needs to be 1.
+                              largeArc = 1;
+                      
+                              // Change sweep to change orientation of loop. 
+                              //sweep = 0;
+                      
+                              // Make drx and dry different to get an ellipse
+                              // instead of a circle.
+                              drx = 30;
+                              dry = 20;
+                      
+                              // For whatever reason the arc collapses to a point if the beginning
+                              // and ending points of the arc are the same, so kludge it.
+                              x2 = x2 + 1;
+                              y2 = y2 + 1;
+                            } 
+                      
+                            return "M" + x1 + "," + y1 + "A" + drx + "," + dry + " " + xRotation + "," + largeArc + "," + sweep + " " + x2 + "," + y2;
+                        }else{
+                            var dx = calcLinkWithArrowX2(d) - calcLinkWithArrowX1(d),
+                            dy = calcLinkWithArrowY2(d) - calcLinkWithArrowY1(d),
+                            dr = Math.sqrt(dx * dx + dy * dy);
+                            repeatedLinkIndex = ORIGINAL_LINKS.filter(x=> x.source==d.source.id && x.target==d.target.id).map(x=> x.id).indexOf(d.id)
+                            dr = dr - (repeatedLinkIndex * 120);
+                            return "M" + calcLinkWithArrowX1(d) + "," + calcLinkWithArrowY1(d) + "A" + dr + "," + dr + " 0 0,1 " + calcLinkWithArrowX2(d) + "," + calcLinkWithArrowY2(d);
+                        }
                     })
                 })
         else
@@ -464,31 +562,21 @@ function ForceGraph({
     }
 
     function calcLinkWithArrowX1(d){
-        if(!addLinkArrow) return d.source.x
-        ll = Math.sqrt(Math.pow(d.target.x-d.source.x,2) + Math.pow(d.target.y-d.source.y,2))
-        minifyFactor = useCurvedLinks ? 0 : (nodeRadius*0.66)
-        return  Math.abs(((minifyFactor/ll)))*(d.target.x-d.source.x)+d.source.x;
+        return d.source.x
     }
 
     function calcLinkWithArrowX2(d){
         if(!addLinkArrow) return d.target.x
-        ll = Math.sqrt(Math.pow(d.target.x-d.source.x,2) + Math.pow(d.target.y-d.source.y,2))
-        minifyFactor = useCurvedLinks ? 0 : (nodeRadius*1.66)
-        return  Math.abs((1-(minifyFactor/ll)))*(d.target.x-d.source.x)+d.source.x;
+        return findIntersect(new Vector(d.target.x,d.target.y),nodeRadius*1.3,new Vector(d.source.x,d.source.y)).x;
     }
 
     function calcLinkWithArrowY1(d){
-        if(!addLinkArrow) return d.source.y
-        ll = Math.sqrt(Math.pow(d.target.x-d.source.x,2) + Math.pow(d.target.y-d.source.y,2))
-        minifyFactor = useCurvedLinks ? 0 : (nodeRadius*0.66)
-        return  Math.abs(((minifyFactor/ll)))*(d.target.y-d.source.y)+d.source.y;
+        return d.source.y
     }
 
     function calcLinkWithArrowY2(d){
         if(!addLinkArrow) return d.target.y
-        ll = Math.sqrt(Math.pow(d.target.x-d.source.x,2) + Math.pow(d.target.y-d.source.y,2))
-        minifyFactor = useCurvedLinks ? 0 : (nodeRadius*1.66)
-        return  Math.abs((1-(minifyFactor/ll)))*(d.target.y-d.source.y)+d.source.y;
+        return findIntersect(new Vector(d.target.x,d.target.y),nodeRadius*1.3,new Vector(d.source.x,d.source.y)).y;
     }
 
     function calcLinkCenterX(d){
@@ -548,6 +636,50 @@ function ForceGraph({
     return Object.assign(svg.node(), { scales: { color } });
 }
 
+function findIntersect (origin, radius, otherLineEndPoint) {
+    var v = otherLineEndPoint.subtract(origin);
+    var lineLength = v.length();    
+    if (lineLength === 0) throw new Error("Length has to be positive");
+    v = v.normalize();
+    return origin.add(v.multiplyScalar(radius)); 
+}
+
+function Vector (x, y) {
+    this.x = x || 0;
+    this.y = y || 0;
+}
+
+Vector.prototype.add = function (vector) {
+    return new Vector(this.x + vector.x, this.y + vector.y);
+};
+
+Vector.prototype.subtract = function (vector) {
+    return new Vector(this.x - vector.x, this.y - vector.y);
+};
+
+Vector.prototype.multiply = function (vector) {
+    return new Vector(this.x * vector.x, this.y * vector.y);
+};
+
+Vector.prototype.multiplyScalar = function (scalar) {
+    return new Vector(this.x * scalar, this.y * scalar);
+};
+
+Vector.prototype.divide = function (vector) {
+    return new Vector(this.x / vector.x, this.y / vector.y);
+};
+
+Vector.prototype.divideScalar = function (scalar) {
+    return new Vector(this.x / scalar, this.y / scalar);
+};
+
+Vector.prototype.length = function () {
+    return Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2));
+};
+
+Vector.prototype.normalize = function () {
+    return this.divideScalar(this.length());
+};
 
 var fa_unicode_map = {
     "0": "\\u30",

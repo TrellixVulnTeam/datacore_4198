@@ -32,7 +32,7 @@
       <div class="accordion-body">
         <div>
           <div style="display: flex;flex-direction: row; gap: 5px;height: 500px;">
-            <div id="edges_list" style="width: 300px;background-color: #f8f9fa;padding: 10px;border: 1px solid #dfdfdf;border-radius: 5px;overflow: auto;">
+            <div id="edges_list" style="width: 400px;background-color: #f8f9fa;padding: 10px;border: 1px solid #dfdfdf;border-radius: 5px;overflow: auto;">
 
             </div>
             <!-- <svg id="edges_filter_canvas"width="960" height="600"></svg> -->
@@ -208,6 +208,8 @@
         linkMenuTitle: d => d.title,
         linkMenuOpacity: 0.5,
         linkId: d => d.id,
+        linkStrength: 1,
+        linkLineLength: 350,
 
         onMenuItemClick: onQBuilderChartMenuClick,
         containerId: 'edges_filter_canvas',
