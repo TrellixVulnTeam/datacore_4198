@@ -291,7 +291,6 @@ function ForceGraph({
             .attr("fill", (i,j) => color(NODES_GROUPS[j]))
             .attr("x", (i,j) => (svg.attr("width")/2) -40)
             .attr("y", (i,j) => (-1 * (svg.attr("height")/2) + 25 + (j*30)))
-
     }
 
     node.call(drag(simulation));
@@ -534,9 +533,6 @@ function ForceGraph({
                     d3.select("#link_" + d['id']).selectAll('.menu-arc')
                     .attr('transform', () => 'translate(' + calcLinkCenterX(d) 
                     + ', ' + calcLinkCenterY(d) +')')})
-
-        node.attr("cx", d => d.x)
-            .attr("cy", d => d.y);
 
         node.select("circle")
             .attr("cx", d => d.x)

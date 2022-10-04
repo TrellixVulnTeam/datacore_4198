@@ -32,11 +32,11 @@
       <div class="accordion-body">
         <div>
           <div style="display: flex;flex-direction: row; gap: 5px;height: 500px;">
-            <div id="edges_list" style="width: 400px;background-color: #f8f9fa;padding: 10px;border: 1px solid #dfdfdf;border-radius: 5px;overflow: auto;">
+            <div id="items_list" style="width: 400px;background-color: #f8f9fa;padding: 10px;border: 1px solid #dfdfdf;border-radius: 5px;overflow: auto;">
 
             </div>
-            <!-- <svg id="edges_filter_canvas"width="960" height="600"></svg> -->
-            <div id="edges_filter_canvas" style="flex-grow: 1;flex-basis: 0;background-image: url({% static 'images/grid.png' %});padding: 10px;border: 1px solid #dfdfdf;border-radius: 5px;overflow: auto;"></div>
+            <!-- <svg id="filter_canvas"width="960" height="600"></svg> -->
+            <div id="filter_canvas" style="flex-grow: 1;flex-basis: 0;background-image: url({% static 'images/grid.png' %});padding: 10px;border: 1px solid #dfdfdf;border-radius: 5px;overflow: auto;"></div>
           </div>
           <div style="margin-top: 15px; display: flex; flex-direction: row-reverse;">
             <button id="btn-submit" class="btn btn-primary"><span class="bi-search pl10"></span>بحث</button>
@@ -67,6 +67,25 @@
   </div>
 </div>
 
+<!-- Modal -->
+<div class="modal fade" id="filterModal" data-object-id="" tabindex="-1" role="dialog"
+    aria-labelledby="filterModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 700px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="filterModalTitle"><span id="filterModalTitleIcon" style="padding-left: 10px;" class="bi-key-fill"></span><span id="filterModalTitleText"></span></h5>
+            </div>
+            <div class="modal-body" style="max-height: 300px;overflow: auto;">
+              <div id="qbuilder1" style="flex-grow: 1;flex-basis: 0;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="cancelItemFilterState()">الغاء</button>
+                <button id="button-confirm-delete" type="button" class="btn btn-primary"
+                    onclick="saveItemFilterState()">موافق</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% endblock %}
 
@@ -88,14 +107,32 @@
 <script>
 
   data = JSON.parse('{{data}}'.replace(/&quot;/g, '"'));
-  selected_edges_list = {}
+  dataInList = {};
+  dataInGraph = {}
 
   $(document).ready(function () {
     DevExpress.localization.locale('ar');
-    update_selected_edges()
+
+    Object.assign(dataInList, data);
+    Object.entries(data).forEach(([k, v]) => {
+      Object.entries(v.data).forEach(([k1, v1]) => {
+        v.data.filters.forEach((f) => {
+          if (f.input == 'getdtpuifunc') {
+            f.input = getdtpuifunc;
+          }
+        })
+      })
+    })
+
+    update_items_list();
+    $('#filterModal').modal({backdrop: 'static', keyboard: false}, 'show');
   });
 
-  function get_edges_list_template(key, edge,from,to){
+  var getdtpuifunc = function (rule, input_name) {
+    return '<input type="text" class="form-control" id="dtp_' + input_name + '" name="' + input_name + '" />'
+  }
+
+  function get_edge_list_template(key, edge,from,to){
     return '<div id="card-' + edge.english_name + '" name="' + key + '" class="card selectable-card" style="margin-top: 3px;">' +
                 '<div class="card-body" style="padding: 3px;display: flex; flex-direction: row;">' +
                     '<span style="background-color: #f8f9fa;color: black;border-radius: 5px;align-content: center;vertical-align: middle;align-items: center;display: inline-flex;height: 26px;padding-right: 9px;padding-left: 9px;margin-top: 3px;margin-left: 10px;margin-right: 5px;">' +
@@ -108,79 +145,106 @@
                     '<span style="margin-left: 5px;align-items: center;display: inline-flex;" class="' + to.icon+ '"></span>' +
                     '<span class="card-title ellipsis" style="max-width: 150px;padding-top: 3px;">' +to.arabic_name + '</span>' +
                     '<span role="button" style="background-color: #f8f9fa;color: #262626;border-radius: 30px;height: 22px;padding-right: 5px;margin-top: 5px;left: 6px;position: absolute;">' +
-                        '<span style="margin-left: 5px;align-items: center;display: inline-flex;" class="fa fa-plus" onclick="select_edge(event)"></span>' +
+                        '<span style="margin-left: 5px;align-items: center;display: inline-flex;" class="fa fa-plus" onclick="on_item_add_click(event)"></span>' +
                     '</span>' +
                 '</div>' +
             '</div>'
   }
 
-  function select_edge(event){
-    edge_key = $(event.target).closest('.card').attr('name');
-    selected_edges_list[edge_key] = data[edge_key];
-    delete data[edge_key];
-    update_selected_edges();
+  function get_node_list_template(key, node){
+    return '<div id="card-' + node.english_name + '" name="' + key + '" class="card selectable-card selectable-card-accent" style="margin-top: 3px;">' +
+                '<div class="card-body" style="padding: 3px;display: flex; flex-direction: row;">' +
+                    '<span style="background-color: #f8f9fa;color: black;border-radius: 5px;align-content: center;vertical-align: middle;align-items: center;display: inline-flex;height: 26px;padding-right: 9px;padding-left: 9px;margin-top: 3px;margin-left: 10px;margin-right: 5px;">' +
+                        '<span style="margin-left: 5px;align-items: center;display: inline-flex;" class="' + node.icon+ '"></span>' +
+                    '</span>' +
+                    '<span style="margin-left: 5px;align-items: center;display: inline-flex;" class="card-title ellipsis">' + node.arabic_name+ '</span>' +
+                    '<span role="button" style="background-color: #f8f9fa;color: #262626;border-radius: 30px;height: 22px;padding-right: 5px;margin-top: 5px;left: 6px;position: absolute;">' +
+                        '<span style="margin-left: 5px;align-items: center;display: inline-flex;" class="fa fa-plus" onclick="on_item_add_click(event)"></span>' +
+                    '</span>' +
+                '</div>' +
+            '</div>'
+  }
+
+  function on_item_add_click(event){
+    ikey = $(event.target).closest('.card').attr('name');
+    dataInGraph[ikey] = dataInList[ikey];
+    if(ikey.startsWith('edge_')){
+      dataInGraph[dataInList[ikey].from] = data[dataInList[ikey].from]
+      dataInGraph[dataInList[ikey].to] = data[dataInList[ikey].to]
+      delete dataInList[dataInList[ikey].from];
+      delete dataInList[dataInList[ikey].to];
+    }
+    delete dataInList[ikey];
+    update_items_list();
+    drawGraph();
+  }
+
+  function drawGraph(){
     graph = {nodes:[], links:[]}
-    addedIds=[]
-    Object.entries(selected_edges_list).forEach(([k, v]) => {
-        from_node = data[v.from]
-        to_node = data[v.to]
-        if(!addedIds.includes(v.from)){
-            graph.nodes.push(from_node)
-            addedIds.push(v.from)
+    Object.entries(dataInGraph).forEach(([k, v]) => {
+        if(k.startsWith('edge_')){
+          from_node = data[v.from]
+          to_node = data[v.to]
+          if(!graph.nodes.some(x=> x.id == v.from)){
+              graph.nodes.push(from_node)
+          }
+          if(!graph.nodes.some(x=> x.id == v.to)){
+              graph.nodes.push(to_node)
+          }
+          if(!graph.links.some(x=> x.id == v.id)){
+              v['source'] = v.from
+              v['target'] = v.to
+              graph.links.push(v)
+          }
+        }else{
+          if(!graph.nodes.some(x=> x.id == v.id)){
+              graph.nodes.push(v)
+          }
         }
-        if(!addedIds.includes(v.to)){
-            graph.nodes.push(to_node)
-            addedIds.push(v.to)
-        }
-        if(!addedIds.includes(v.id)){
-            v['source'] = v.from
-            v['target'] = v.to
-            v['id'] = v.id
-            graph.links.push(v)
-            addedIds.push(v.id)
-        }
+        
     })
-    $('#edges_filter_canvas').empty()
+
+    $('#filter_canvas').empty()
 
     var node_menu = [
       {
-        id: 'node_relations_mi',
-        title: 'Relations',
-        width: 1,
-        icon_color: 'white',
-        icon: 'fa fa-circle-nodes',
-      },
-      {
-        id: 'node_settings_mi',
-        title: 'Settings',
-        width: 1,
-        icon_color: 'white',
-        icon: 'bi-gear-fill',
-      },
-      {
-        id: 'node_find_mi',
-        title: 'Find',
+        id: 'node_filter_mi',
+        title: 'فلتر',
         width: 1,
         icon_color: 'white',
         icon: 'bi-binoculars-fill',
+      },
+      {
+        id: 'node_remove_mi',
+        title: 'حذف',
+        width: 1,
+        icon_color: 'white',
+        icon: 'bi-x-lg',
+      },
+      {
+        id: 'node_flag_mi',
+        title: 'تعيين كنقطة بداية',
+        width: 1,
+        icon_color: 'white',
+        icon: 'bi-flag',
       }
     ];
 
     var link_menu = [
         {
           id: 'link_remove_mi',
-          title: 'Remove',
+          title: 'حذف',
           width: 1,
-          icon: 'bi-gear-fill',
+          icon: 'bi-x-lg',
           icon_color: 'white'
         },
         {
-          id: 'filter_remove_mi',
-          title: 'Filter',
-          width: 1,
-          icon: 'fas fa-filter',
-          icon_color: 'white'
-        }
+          id: 'link_filter_mi',
+          title: 'فلتر',
+          width: 2,
+          icon_color: 'white',
+          icon: 'bi-binoculars-fill',
+        },
     ];
 
     chart = ForceGraph(graph, {
@@ -212,20 +276,86 @@
         linkLineLength: 350,
 
         onMenuItemClick: onQBuilderChartMenuClick,
-        containerId: 'edges_filter_canvas',
+        containerId: 'filter_canvas',
         invalidation: null // a promise to stop the simulation when the cell is re-run
     })
   }
 
   function onQBuilderChartMenuClick(objecId, itemId, isNode){
-    console.log(itemId);
+    if(itemId=='node_filter_mi'){
+      objecId = objecId.replace('node_','')
+      showQBDialog(data[objecId])
+    }else if(itemId=='node_remove_mi'){
+      objecId = objecId.replace('node_','')
+      dataInGraphLastIndex = Object.entries(dataInGraph).length-1;
+      for(var i = dataInGraphLastIndex; i>=0; i--){
+        tmp = Object.entries(dataInGraph)[i][1]
+        if(Object.entries(dataInGraph)[i][0].startsWith('edge_') && (tmp.from==objecId || tmp.to == objecId)){
+          tmpid = Object.entries(dataInGraph)[i][0]
+          delete dataInGraph[tmpid]
+          dataInList[tmpid] = data[tmpid];
+        }
+      }
+      delete dataInGraph[objecId]
+      dataInList[objecId] = data[objecId];
+      update_items_list();
+      drawGraph();
+    }else if(itemId=='node_flag_mi'){
+
+    }else if(itemId=='link_remove_mi'){
+      objecId = objecId.replace('link_','')
+      delete dataInGraph[objecId]
+      dataInList[objecId] = data[objecId];
+      update_items_list();
+      drawGraph();
+    }else if(itemId=='link_filter_mi'){
+      objecId = objecId.replace('link_','')
+      showQBDialog(data[objecId])
+    }
+    console.log(objecId + ',' + itemId + ',' + isNode);
   }
 
-  function update_selected_edges(){
-    $('#edges_list').empty()
-    Object.entries(data).forEach(([k, v]) => {
+  function saveItemFilterState(){
+    itid = $('#filterModal').attr('data-object-id');
+    if (!$('#qbuilder1').queryBuilder('validate') && $('#qbuilder1').queryBuilder('getRules', {allow_invalid:true}).rules.length>0) {
+      showError('الرجاء التأكد من جميع الحقول');
+      return;
+    }else{
+      data[itid].rules =  $('#qbuilder1').queryBuilder('getRules');
+      $('#filterModal').modal('hide');
+      $('#qbuilder1').queryBuilder('destroy');
+    }
+  }
+
+  function cancelItemFilterState(){
+    $('#qbuilder1').queryBuilder('destroy');
+  }
+
+  function showQBDialog(item){
+      qdata = item.data;
+      $('#filterModal').attr('data-object-id',item.id);
+      $('#filterModalTitleIcon').attr('class', item.icon);
+      $('#filterModalTitleText').text(item.arabic_name);
+      $('#qbuilder1').queryBuilder(qdata);
+      if(item.rules!=null)
+        $('#qbuilder1').queryBuilder('setRules', item.rules)
+      $('#qbuilder1').queryBuilder('setFilters', true, qdata.filters);
+      $('#qbuilder1').on('afterCreateRuleInput.queryBuilder', function (e, rule) {
+        update_qbfilter_value_input(rule);
+      });
+      $('#qbuilder1').on('afterUpdateRuleOperator.queryBuilder', function (e, rule) {
+        update_qbfilter_value_input(rule);
+      });
+      $('#filterModal').modal('show')
+  }
+
+  function update_items_list(){
+    $('#items_list').empty()
+    Object.entries(dataInList).forEach(([k, v]) => {
         if (k.startsWith('edge_')){
-            $('#edges_list').append(get_edges_list_template(k, v,data[v['from']],data[v['to']]))
+            $('#items_list').append(get_edge_list_template(k, v,data[v['from']],data[v['to']]))
+        }else{
+            $('#items_list').append(get_node_list_template(k, v))
         }
     })
   }

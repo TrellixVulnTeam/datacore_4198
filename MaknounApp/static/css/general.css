@@ -168,6 +168,14 @@ ul .flex-column{
     box-shadow: none !important;
 }
 
+.selectable-card-accent:hover{
+    background-color: #ff8155 !important;
+}
+
+.selectable-card-accent{
+    background-color: #ff936d !important;
+}
+
 .selectable-card:hover{
     background-color: #0099ebb5;
 }

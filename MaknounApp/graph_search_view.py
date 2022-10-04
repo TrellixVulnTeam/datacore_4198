@@ -38,6 +38,7 @@ class GraphSearchView(master_page_view.MasterPageView):
 
         data[source_name]['english_name'] = source.english_name
         data[source_name]['arabic_name'] = source.arabic_name
+        data[source_name]['rules'] = None
         data[source_name]['data'] = {}
         data[source_name]['data']['filters'] = []
         data[source_name]['data']['filters'].append({'id':'_id','label':'المعرّف','type':'string','input':'text','operators':self.get_operators("String", False),'multiple':False})
