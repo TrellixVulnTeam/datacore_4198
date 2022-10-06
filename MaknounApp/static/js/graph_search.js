@@ -1,5 +1,4 @@
-ORIGINAL_LINKS = []
-ORIGINAL_NODES = []
+DATA_DIC = {}
 
 d3.selection.prototype.bringElementAsTopLayer = function() {
     return this.each(function(){
@@ -75,13 +74,21 @@ function ForceGraph({
     onMenuItemClick = ()=>{}
 } = {}) {
 
+    var containerId = containerId;
     if (width === undefined)
         width = $('#'+containerId).width()
     if (height === undefined)
         height = $('#'+containerId).height()
 
-    ORIGINAL_LINKS = links;
-    ORIGINAL_NODES = nodes;
+    DATA_DIC[containerId] = {};
+    d3.select('#'+containerId).selectAll("g > *").remove();
+    $('#'+containerId).empty()
+    let sim_ = DATA_DIC[containerId]['SIMULATION'];
+    if(sim_ !== undefined)
+        sim_.stop();
+
+    DATA_DIC[containerId]['ORIGINAL_LINKS'] = links;
+    DATA_DIC[containerId]['ORIGINAL_NODES'] = nodes;
 
     // Compute values.
     const NODES = d3.map(nodes, nodeId).map(intern);
@@ -125,6 +132,8 @@ function ForceGraph({
         .force("y", d3.forceY())
         .on("tick", ticked);
 
+    DATA_DIC[containerId]['SIMULATION'] = simulation;
+
     const svg = d3.select("#" + containerId)
         .append('svg')
         .attr("width", width)
@@ -157,6 +166,7 @@ function ForceGraph({
             d3.selectAll('.menu-arc-icon').remove()
         });
 
+
     const link = svg.append("g")
         .selectAll("g")
         .attr("stroke", linkStroke)
@@ -169,64 +179,66 @@ function ForceGraph({
         .attr("class","gobject glink")
         .attr("marker-end", "url(#end)");
 
-    pathPointerEvents = 'auto'
-    if(addLinkMenu)
-        pathPointerEvents = 'none'
+    if(LINKS!=null && LINKS.length >0){
 
-    if(useCurvedLinks)
-        link.append("path")
-            .attr("id",({ index: i }) =>  "link_path_" + LINKS[i])
-            .attr('class', 'link-line')
-            .attr('fill', 'transparent')
-            .attr("stroke-width", typeof linkStrokeWidth !== "function" ? linkStrokeWidth : null)
-            .attr("stroke-linecap", linkStrokeLinecap)
-            .attr("stroke", linkStroke)
-            .attr("style","pointer-events:"+pathPointerEvents)
-    else
-        link.append("line")
-            .attr('class', 'link-line')
-            .attr("stroke", linkStroke)
-            .attr("fill", 'none')
-            .attr("stroke-opacity", linkStrokeOpacity)
-            .attr("stroke-width", typeof linkStrokeWidth !== "function" ? linkStrokeWidth : null)
-            .attr("stroke-linecap", linkStrokeLinecap)
+        pathPointerEvents = 'auto'
+        if(addLinkMenu)
+            pathPointerEvents = 'none'
 
-    if (addLinkLabel){
-        link.append("circle")
-            .attr('fill', "#545454")
-            .attr('opacity', 0.8)
-            .attr("r", nodeRadius/2)
-            .on('click', d => createMenu(d, forLink=true));
+        if(useCurvedLinks)
+            link.append("path")
+                .attr("id",({ index: i }) =>  "link_path_" + LINKS[i])
+                .attr('class', 'link-line')
+                .attr('fill', 'transparent')
+                .attr("stroke-width", typeof linkStrokeWidth !== "function" ? linkStrokeWidth : null)
+                .attr("stroke-linecap", linkStrokeLinecap)
+                .attr("stroke", linkStroke)
+                .attr("style","pointer-events:"+pathPointerEvents)
+        else
+            link.append("line")
+                .attr('class', 'link-line')
+                .attr("stroke", linkStroke)
+                .attr("fill", 'none')
+                .attr("stroke-opacity", linkStrokeOpacity)
+                .attr("stroke-width", typeof linkStrokeWidth !== "function" ? linkStrokeWidth : null)
+                .attr("stroke-linecap", linkStrokeLinecap)
 
-        link.append('text')
-            .attr('font-family', () => icon_font_family("bi-link-45deg"))
-            .attr('font-size', () => alter_icon_font_size("bi-link-45deg", nodeIconSize/1.5) + 'em')
-            .attr('font-weight','bold')
-            .attr('fill', "white")
-            .attr('text-anchor', 'middle')
-            .attr('dominant-baseline', 'central')
-            .attr('class', 'link-icon')
-            .attr("style","cursor: pointer;")
-            .text(() => icon_to_unicode("bi-link-45deg"))
-            .on('click', d => createMenu(d, forLink=true));
+        if (addLinkLabel){
+            link.append("circle")
+                .attr('fill', "#545454")
+                .attr('opacity', 0.8)
+                .attr("r", nodeRadius/2)
+                .on('click', d => createMenu(d, forLink=true));
 
-        link.append("text")
-            .attr('text-anchor', 'middle')
-            .attr('dominant-baseline', 'central')
-            .text(({ index: i }) => LINKS_LABELS[i])
-            .attr('class', 'link-label')
-            .attr("fill", "#545454")
-            .attr("transform", "translate(0," + nodeRadius/1.2 + ")")
+            link.append('text')
+                .attr('font-family', () => icon_font_family("bi-link-45deg"))
+                .attr('font-size', () => alter_icon_font_size("bi-link-45deg", nodeIconSize/1.5) + 'em')
+                .attr('font-weight','bold')
+                .attr('fill', "white")
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'central')
+                .attr('class', 'link-icon')
+                .attr("style","cursor: pointer;")
+                .text(() => icon_to_unicode("bi-link-45deg"))
+                .on('click', d => createMenu(d, forLink=true));
+
+            link.append("text")
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'central')
+                .text(({ index: i }) => LINKS_LABELS[i])
+                .attr('class', 'link-label')
+                .attr("fill", "#545454")
+                .attr("transform", "translate(0," + nodeRadius/1.2 + ")")
+        }
+
+        link.on("mouseover",function(){
+            d3.select(this).bringElementAsTopLayer();
+        });
+
+        if (LINKS_STROKE_WIDTH) link.attr("stroke-width", ({ index: i }) => LINKS_STROKE_WIDTH[i]);
+        if (LINKS_TITLES) link.append("title").text(({ index: i }) => LINKS_TITLES[i]);
     }
-
-    link.on("mouseover",function(){
-        d3.select(this).bringElementAsTopLayer();
-    });
-
-    if (LINKS_STROKE_WIDTH) link.attr("stroke-width", ({ index: i }) => LINKS_STROKE_WIDTH[i]);
-    if (LINKS_TITLES) link.append("title").text(({ index: i }) => LINKS_TITLES[i]);
-
-
+    
     const node = svg.append("g")
         .selectAll("g")
         .attr("fill", nodeFill)
@@ -481,7 +493,7 @@ function ForceGraph({
                             var dx = calcLinkWithArrowX2(d) - calcLinkWithArrowX1(d),
                             dy = calcLinkWithArrowY2(d) - calcLinkWithArrowY1(d),
                             dr = Math.sqrt(dx * dx + dy * dy);
-                            repeatedLinkIndex = ORIGINAL_LINKS.filter(x=> x.source==d.source.id && x.target==d.target.id).map(x=> x.id).indexOf(d.id)
+                            repeatedLinkIndex = DATA_DIC[getContainerId(d.id)]['ORIGINAL_LINKS'].filter(x=> x.source==d.source.id && x.target==d.target.id).map(x=> x.id).indexOf(d.id)
                             dr = dr - (repeatedLinkIndex * 120);
                             return "M" + calcLinkWithArrowX1(d) + "," + calcLinkWithArrowY1(d) + "A" + dr + "," + dr + " 0 0,1 " + calcLinkWithArrowX2(d) + "," + calcLinkWithArrowY2(d);
                         }
@@ -556,6 +568,14 @@ function ForceGraph({
                 .attr("x", d => d.x)
                 .attr("y", d => d.y);
     }
+
+    // function getContainerId(id){
+    //     iid = id;
+    //     if(id.startsWith('edge_'))
+    //         iid = "link_"+iid;
+    //     else if (id.startsWith('node_'))
+
+    // }
 
     function calcLinkWithArrowX1(d){
         return d.source.x
