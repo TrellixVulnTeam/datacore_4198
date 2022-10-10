@@ -77,7 +77,7 @@
                         </li>
                         {% else %}
                         <li class="nav-item">
-                            <div style="display:flex; flex-direction: row;">
+                            <div style="display:flex; flex-direction: row;gap:7px;">
                                 <a class="nav-link dropdown-toggle {{ p.selected|if_else:',collapsed' }} {{ p.selected|if_else:'selected,' }} {{ p.disabled|if_else:'disabled,' }}"
                                     style="flex-grow: 1" data-bs-toggle="collapse"
                                     data-bs-target="#nav{{p.english_name}}" role="button"

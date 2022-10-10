@@ -1,4 +1,39 @@
-DATA_DIC = {}
+function Vector (x, y) {
+    this.x = x || 0;
+    this.y = y || 0;
+}
+
+Vector.prototype.add = function (vector) {
+    return new Vector(this.x + vector.x, this.y + vector.y);
+};
+
+Vector.prototype.subtract = function (vector) {
+    return new Vector(this.x - vector.x, this.y - vector.y);
+};
+
+Vector.prototype.multiply = function (vector) {
+    return new Vector(this.x * vector.x, this.y * vector.y);
+};
+
+Vector.prototype.multiplyScalar = function (scalar) {
+    return new Vector(this.x * scalar, this.y * scalar);
+};
+
+Vector.prototype.divide = function (vector) {
+    return new Vector(this.x / vector.x, this.y / vector.y);
+};
+
+Vector.prototype.divideScalar = function (scalar) {
+    return new Vector(this.x / scalar, this.y / scalar);
+};
+
+Vector.prototype.length = function () {
+    return Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2));
+};
+
+Vector.prototype.normalize = function () {
+    return this.divideScalar(this.length());
+};
 
 d3.selection.prototype.bringElementAsTopLayer = function() {
     return this.each(function(){
@@ -14,384 +49,441 @@ d3.selection.prototype.pushElementAsBackLayer = function() {
     } 
 })};
 
-function ForceGraph({
-    nodes, // an iterable of node objects (typically [{id}, …])
-    links // an iterable of link objects (typically [{source, target}, …])
-}, {
-    nodeId = d => d.id, // given d in nodes, returns a unique identifier (string)
-    nodeGroup, // given d in nodes, returns an (ordinal) value for color
-    nodeGroups, // an array of ordinal values representing the node groups
-    addNodeLabel = false,
-    nodeTitle, // given d in nodes, a title string
-    nodeLabel, // given d in nodes, a label string
-    addNodeIcon = false,
-    nodeIcon, // given d in nodes, a icon string
-    nodeIconSize = 2, // given d in nodes, a size int
-    nodeIconColor = "white", // given d in nodes, a color string
-    nodeFill = "currentColor", // node stroke fill (if not using a group color encoding)
-    nodeStroke = "#fff", // node stroke color
-    nodeStrokeWidth = 1.5, // node stroke width, in pixels
-    nodeStrokeOpacity = 1, // node stroke opacity
-    nodeRadius = 30, // node radius, in pixels
-    nodeStrength,
-    addNodeMenu = false,
-    nodeMenu,
-    nodeMenuColor = d => d.color,
-    nodeMenuOpacity = 0.8,
-    nodeMenuWidth = d => d.width,
-    nodeMenuIcon = d => d.icon,
-    nodeMenuIconColor = 'white',
-    nodeMenuIconSize = 2, // given d in nodes, a size int
-    nodeMenuTitle = () => "",
-    linkId = d => d.id, // given d in links, returns a unique identifier (string)
-    linkSource = ({ source }) => source, // given d in links, returns a node identifier string
-    linkTarget = ({ target }) => target, // given d in links, returns a node identifier string
-    addLinkLabel = false,
-    linkLabel, // given d in links, a label string
-    linkTitle, // given d in links, a title string
-    linkLineLength = 250, // link line length
-    linkStroke = "#999", // link stroke color
-    linkStrokeOpacity = 0.6, // link stroke opacity
-    linkStrokeWidth = 5, // given d in links, returns a stroke width in pixels
-    linkStrokeLinecap = "round", // link stroke linecap
-    linkStrength,
-    addLinkMenu = false,
-    addLinkArrow = true,
-    useCurvedLinks = true,
-    linkMenu,
-    linkMenuColor = d => d.color,
-    linkMenuOpacity = 0.8,
-    linkMenuWidth = d => d.width,
-    linkMenuIcon = d => d.icon,
-    linkMenuIconColor = 'white',
-    linkMenuIconSize = 2, // given d in nodes, a size int
-    linkMenuTitle = () => "",
-    colors = d3.schemeTableau10, // an array of color strings, for the node groups
-    width, // outer width, in pixels
-    height, // outer height, in pixels
-    invalidation, // when this promise resolves, stop the simulation
-    containerId,
-    onMenuItemClick = ()=>{}
-} = {}) {
+class ForceGraph{
 
-    var containerId = containerId;
-    if (width === undefined)
-        width = $('#'+containerId).width()
-    if (height === undefined)
-        height = $('#'+containerId).height()
+    constructor({
+        nodesParam, // an iterable of node objects (typically [{id}, …])
+        linksParam // an iterable of link objects (typically [{source, target}, …])
+    }, {
+        nodeIdFunc = d => d.id, // given d in nodes, returns a unique identifier (string)
+        nodeGroupFunc, // given d in nodes, returns an (ordinal) value for color
+        nodeGroupsParam, // an array of ordinal values representing the node groups
+        addNodeLabelParam = false,
+        nodeTitleFunc, // given d in nodes, a title string
+        nodeLabelFunc, // given d in nodes, a label string
+        addNodeIconParam = false,
+        nodeIconFunc, // given d in nodes, a icon string
+        nodeIconSizeParam = 2, // given d in nodes, a size int
+        nodeIconColorParam = "white", // given d in nodes, a color string
+        nodeFillParam = "currentColor", // node stroke fill (if not using a group color encoding)
+        nodeStrokeParam = "#fff", // node stroke color
+        nodeStrokeWidthParam = 1.5, // node stroke width, in pixels
+        nodeStrokeOpacityParam = 1, // node stroke opacity
+        nodeRadiusParam = 30, // node radius, in pixels
+        nodeStrengthParam,
+        addNodeMenuParam = false,
+        nodeMenuParam,
+        nodeMenuColorFunc = d => d.color,
+        nodeMenuOpacityParam = 0.8,
+        nodeMenuWidthFunc = d => d.width,
+        nodeMenuIconFunc = d => d.icon,
+        nodeMenuIconColorParam = 'white',
+        nodeMenuIconSizeParam = 2, // given d in nodes, a size int
+        nodeMenuTitleFunc = () => "",
+        linkIdFunc = d => d.id, // given d in links, returns a unique identifier (string)
+        linkSourceFunc = ({ source }) => source, // given d in links, returns a node identifier string
+        linkTargetFunc = ({ target }) => target, // given d in links, returns a node identifier string
+        addLinkLabelParam = false,
+        linkLabelFunc, // given d in links, a label string
+        linkTitleFunc, // given d in links, a title string
+        linkLineLengthParam = 250, // link line length
+        linkStrokeParam = "#999", // link stroke color
+        linkStrokeOpacityParam = 0.6, // link stroke opacity
+        linkStrokeWidthParam = 5, // given d in links, returns a stroke width in pixels
+        linkStrokeLinecapParam = "round", // link stroke linecap
+        linkStrengthParam,
+        addLinkMenuParam = false,
+        addLinkArrowParam = true,
+        useCurvedLinksParam = true,
+        linkMenuParam,
+        linkMenuColorFunc = d => d.color,
+        linkMenuOpacityParam = 0.8,
+        linkMenuWidthFunc = d => d.width,
+        linkMenuIconFunc = d => d.icon,
+        linkMenuIconColorParam = 'white',
+        linkMenuIconSizeParam = 2, // given d in nodes, a size int
+        linkMenuTitleFunc = () => "",
+        colorsParam = d3.schemeTableau10, // an array of color strings, for the node groups
+        widthParam, // outer width, in pixels
+        heightParam, // outer height, in pixels
+        invalidationParam, // when this promise resolves, stop the simulation
+        containerIdParam,
+        onMenuItemClickFunc = ()=>{}
+    } = {}){
+        this.nodes = nodesParam;
+        this.links = linksParam;
+        this.nodeId = nodeIdFunc;
+        this.nodeGroup = nodeGroupFunc;
+        this.nodeGroups = nodeGroupsParam;
+        this.addNodeLabel = addNodeLabelParam;
+        this.nodeTitle = nodeTitleFunc;
+        this.nodeLabel = nodeLabelFunc;
+        this.addNodeIcon = addNodeIconParam;
+        this.nodeIcon = nodeIconFunc;
+        this.nodeIconSize = nodeIconSizeParam;
+        this.nodeIconColor = nodeIconColorParam;
+        this.nodeFill = nodeFillParam;
+        this.nodeStroke = nodeStrokeParam;
+        this.nodeStrokeWidth = nodeStrokeWidthParam;
+        this.nodeStrokeOpacity = nodeStrokeOpacityParam;
+        this.nodeRadius = nodeRadiusParam;
+        this.nodeStrength = nodeStrengthParam;
+        this.addNodeMenu = addNodeMenuParam;
+        this.nodeMenu = nodeMenuParam;
+        this.nodeMenuColor = nodeMenuColorFunc;
+        this.nodeMenuOpacity = nodeMenuOpacityParam;
+        this.nodeMenuWidth = nodeMenuWidthFunc;
+        this.nodeMenuIcon = nodeMenuIconFunc;
+        this.nodeMenuIconColor = nodeMenuIconColorParam;
+        this.nodeMenuIconSize = nodeMenuIconSizeParam;
+        this.nodeMenuTitle = nodeMenuTitleFunc;
+        this.linkId = linkIdFunc;
+        this.linkSource = linkSourceFunc;
+        this.linkTarget = linkTargetFunc;
+        this.addLinkLabel = addLinkLabelParam;
+        this.linkLabel = linkLabelFunc;
+        this.linkTitle = linkTitleFunc;
+        this.linkLineLength = linkLineLengthParam;
+        this.linkStroke = linkStrokeParam;
+        this.linkStrokeOpacity = linkStrokeOpacityParam;
+        this.linkStrokeWidth = linkStrokeWidthParam;
+        this.linkStrokeLinecap = linkStrokeLinecapParam;
+        this.linkStrength = linkStrengthParam;
+        this.addLinkMenu = addLinkMenuParam;
+        this.addLinkArrow = addLinkArrowParam;
+        this.useCurvedLinks = useCurvedLinksParam;
+        this.linkMenu = linkMenuParam;
+        this.linkMenuColor = linkMenuColorFunc;
+        this.linkMenuOpacity = linkMenuOpacityParam;
+        this.linkMenuWidth = linkMenuWidthFunc;
+        this.linkMenuIcon = linkMenuIconFunc;
+        this.linkMenuIconColor = linkMenuIconColorParam;
+        this.linkMenuIconSize = linkMenuIconSizeParam;
+        this.linkMenuTitle = linkMenuTitleFunc;
+        this.colors = colorsParam;
+        this.width = widthParam;
+        this.height = heightParam;
+        this.invalidation = invalidationParam;
+        this.containerId = containerIdParam;
+        this.onMenuItemClick = onMenuItemClickFunc;
 
-    DATA_DIC[containerId] = {};
-    d3.select('#'+containerId).selectAll("g > *").remove();
-    $('#'+containerId).empty()
-    let sim_ = DATA_DIC[containerId]['SIMULATION'];
-    if(sim_ !== undefined)
-        sim_.stop();
+        if (this.width === undefined)
+            this.width = $('#'+this.containerId).width()
+        if (this.height === undefined)
+            this.height = $('#'+this.containerId).height()
 
-    DATA_DIC[containerId]['ORIGINAL_LINKS'] = links;
-    DATA_DIC[containerId]['ORIGINAL_NODES'] = nodes;
+        // Compute values.
+        this.NODES = d3.map(this.nodes, this.nodeId).map(this.intern);
+        if (this.nodeTitle === undefined) this.nodeTitle = (_, i) => this.NODES[i];
+            this.NODES_TITLES = this.nodeTitle == null ? null : d3.map(this.nodes, this.nodeTitle);
+        if (this.nodeLabel === undefined) this.nodeLabel = (_, i) => this.NODES[i];
+            this.NODES_LABELS = this.nodeLabel == null ? null : d3.map(this.nodes, this.nodeLabel);
+        if (this.nodeIcon === undefined) this.nodeIcon = (_, i) => "";
+            this.NODES_ICONS = this.nodeIcon == null ? null : d3.map(this.nodes, this.nodeIcon);
+        this.NODES_GROUPS = this.nodeGroup == null ? null : d3.map(this.nodes, this.nodeGroup).map(this.intern);
 
-    // Compute values.
-    const NODES = d3.map(nodes, nodeId).map(intern);
-    if (nodeTitle === undefined) nodeTitle = (_, i) => NODES[i];
-        const NODES_TITLES = nodeTitle == null ? null : d3.map(nodes, nodeTitle);
-    if (nodeLabel === undefined) nodeLabel = (_, i) => NODES[i];
-        const NODES_LABELS = nodeLabel == null ? null : d3.map(nodes, nodeLabel);
-    if (nodeIcon === undefined) nodeIcon = (_, i) => "";
-        const NODES_ICONS = nodeIcon == null ? null : d3.map(nodes, nodeIcon);
-    const NODES_GROUPS = nodeGroup == null ? null : d3.map(nodes, nodeGroup).map(intern);
+        this.LINKS = d3.map(this.links, this.linkId).map(this.intern);
+        this.LINKS_SOURCES = d3.map(this.links, this.linkSource).map(this.intern);
+        this.LINKS_TARGETS = d3.map(this.links, this.linkTarget).map(this.intern);
+        this.LINKS_STROKE_WIDTH = typeof this.linkStrokeWidth !== "function" ? null : d3.map(this.links, this.linkStrokeWidth);
+        if (this.linkTitle === undefined) this.linkTitle = (_, i) => this.LINKS[i];
+            this.LINKS_TITLES = this.linkTitle == null ? null : d3.map(this.links, this.linkTitle);
+        if (this.linkLabel === undefined) this.linkLabel = (_, i) => this.LINKS[i];
+            this.LINKS_LABELS = this.linkLabel == null ? null : d3.map(this.links, this.linkLabel);
 
-    const LINKS = d3.map(links, linkId).map(intern);
-    const LINKS_SOURCES = d3.map(links, linkSource).map(intern);
-    const LINKS_TARGETS = d3.map(links, linkTarget).map(intern);
-    const LINKS_STROKE_WIDTH = typeof linkStrokeWidth !== "function" ? null : d3.map(links, linkStrokeWidth);
-    if (linkTitle === undefined) linkTitle = (_, i) => LINKS[i];
-        const LINKS_TITLES = linkTitle == null ? null : d3.map(links, linkTitle);
-    if (linkLabel === undefined) linkLabel = (_, i) => LINKS[i];
-        const LINKS_LABELS = linkLabel == null ? null : d3.map(links, linkLabel);
+        // Replace the input nodes and links with mutable objects for the simulation.
+        this.nodes = d3.map(this.nodes, (_, i) => ({ id: this.NODES[i] }));
+        this.links = d3.map(this.links, (_, i) => ({ id: this.LINKS[i], source: this.LINKS_SOURCES[i], target: this.LINKS_TARGETS[i] }));
 
-    // Replace the input nodes and links with mutable objects for the simulation.
-    nodes = d3.map(nodes, (_, i) => ({ id: NODES[i] }));
-    links = d3.map(links, (_, i) => ({ id: LINKS[i], source: LINKS_SOURCES[i], target: LINKS_TARGETS[i] }));
+        // Compute default domains.
+        if (this.NODES_GROUPS && this.nodeGroups === undefined) this.nodeGroups = d3.sort(this.NODES_GROUPS);
 
-    // Compute default domains.
-    if (NODES_GROUPS && nodeGroups === undefined) nodeGroups = d3.sort(NODES_GROUPS);
+        // Construct the scales.
+        let color = this.nodeGroup == null ? null : d3.scaleOrdinal(this.nodeGroups, this.colors);
 
-    // Construct the scales.
-    const color = nodeGroup == null ? null : d3.scaleOrdinal(nodeGroups, colors);
+        // Construct the forces.
+        this.forceNode = d3.forceManyBody();
+        this.forceLink = d3.forceLink(this.links).distance(d => this.linkLineLength).id((e,i) => this.NODES[i]);
+        if (this.nodeStrength !== undefined) this.forceNode.strength(this.nodeStrength);
+        if (this.linkStrength !== undefined) this.forceLink.strength(this.linkStrength);
 
-    // Construct the forces.
-    const forceNode = d3.forceManyBody();
-    const forceLink = d3.forceLink(links).distance(d => linkLineLength).id(({ index: i }) => NODES[i]);
-    if (nodeStrength !== undefined) forceNode.strength(nodeStrength);
-    if (linkStrength !== undefined) forceLink.strength(linkStrength);
+        let _this = this;
 
-    const simulation = d3.forceSimulation(nodes)
-        .force("link", forceLink)
-        .force("charge", forceNode)
-        .force("x", d3.forceX())
-        .force("y", d3.forceY())
-        .on("tick", ticked);
+        this.svg = d3.select("#" + this.containerId)
+            .append('svg')
+            .attr("width", this.width)
+            .attr("height", this.height)
+            .attr("viewBox", [-this.width / 2, -this.height / 2, this.width, this.height])
+            .attr("style", "max-width: 100%; height: auto; height: intrinsic;");
+        
+        let zoom = d3.zoom().on('zoom', this.handleZoom);
+        d3.select('#'+_this.containerId).select('svg').call(zoom);
 
-    DATA_DIC[containerId]['SIMULATION'] = simulation;
-
-    const svg = d3.select("#" + containerId)
-        .append('svg')
-        .attr("width", width)
-        .attr("height", height)
-        .attr("viewBox", [-width / 2, -height / 2, width, height])
-        .attr("style", "max-width: 100%; height: auto; height: intrinsic;");
-    
-    let zoom = d3.zoom().on('zoom', handleZoom);
-    d3.select('svg').call(zoom);
-
-    if(addLinkArrow)
-        svg.append("svg:defs").selectAll("marker")
-            .data(["end"])      // Different link/path types can be defined here
-        .enter().append("svg:marker")    // This section adds in the arrows
-            .attr("id", String)
-            .attr("viewBox", "0 -5 10 10")
-            .attr("refX", 0)
-            .attr("refY", 0)
-            .attr("markerWidth", 2)
-            .attr("markerHeight", 2)
-            .attr("orient", "auto")
-            .attr('fill', "#545454")
-            .attr('opacity', 0.8)
-        .append("svg:path")
-            .attr("d", "M0,-5L10,0L0,5");
-
-    if(addNodeMenu || addLinkMenu)
-        svg.on('click', (e)=>{
-            d3.selectAll('.menu-arc').remove()
-            d3.selectAll('.menu-arc-icon').remove()
-        });
-
-
-    const link = svg.append("g")
-        .selectAll("g")
-        .attr("stroke", linkStroke)
-        .attr("stroke-opacity", linkStrokeOpacity)
-        .attr("stroke-width", typeof linkStrokeWidth !== "function" ? linkStrokeWidth : null)
-        .attr("stroke-linecap", linkStrokeLinecap)
-        .data(links)
-        .join("g")
-        .attr("id",({ index: i }) =>  "link_" + LINKS[i])
-        .attr("class","gobject glink")
-        .attr("marker-end", "url(#end)");
-
-    if(LINKS!=null && LINKS.length >0){
-
-        pathPointerEvents = 'auto'
-        if(addLinkMenu)
-            pathPointerEvents = 'none'
-
-        if(useCurvedLinks)
-            link.append("path")
-                .attr("id",({ index: i }) =>  "link_path_" + LINKS[i])
-                .attr('class', 'link-line')
-                .attr('fill', 'transparent')
-                .attr("stroke-width", typeof linkStrokeWidth !== "function" ? linkStrokeWidth : null)
-                .attr("stroke-linecap", linkStrokeLinecap)
-                .attr("stroke", linkStroke)
-                .attr("style","pointer-events:"+pathPointerEvents)
-        else
-            link.append("line")
-                .attr('class', 'link-line')
-                .attr("stroke", linkStroke)
-                .attr("fill", 'none')
-                .attr("stroke-opacity", linkStrokeOpacity)
-                .attr("stroke-width", typeof linkStrokeWidth !== "function" ? linkStrokeWidth : null)
-                .attr("stroke-linecap", linkStrokeLinecap)
-
-        if (addLinkLabel){
-            link.append("circle")
+        if(this.addLinkArrow)
+            this.svg.append("svg:defs").selectAll("marker")
+                .data(["end"])      // Different link/path types can be defined here
+            .enter().append("svg:marker")    // This section adds in the arrows
+                .attr("id", String)
+                .attr("viewBox", "0 -5 10 10")
+                .attr("refX", 0)
+                .attr("refY", 0)
+                .attr("markerWidth", 2)
+                .attr("markerHeight", 2)
+                .attr("orient", "auto")
                 .attr('fill', "#545454")
                 .attr('opacity', 0.8)
-                .attr("r", nodeRadius/2)
-                .on('click', d => createMenu(d, forLink=true));
+            .append("svg:path")
+                .attr("d", "M0,-5L10,0L0,5");
 
-            link.append('text')
-                .attr('font-family', () => icon_font_family("bi-link-45deg"))
-                .attr('font-size', () => alter_icon_font_size("bi-link-45deg", nodeIconSize/1.5) + 'em')
-                .attr('font-weight','bold')
-                .attr('fill', "white")
-                .attr('text-anchor', 'middle')
-                .attr('dominant-baseline', 'central')
-                .attr('class', 'link-icon')
-                .attr("style","cursor: pointer;")
-                .text(() => icon_to_unicode("bi-link-45deg"))
-                .on('click', d => createMenu(d, forLink=true));
+        if(this.addNodeMenu || this.addLinkMenu)
+            this.svg.on('click', (e)=>{
+                d3.select('#'+_this.containerId).selectAll('.menu-arc').remove()
+                d3.select('#'+_this.containerId).selectAll('.menu-arc-icon').remove()
+            });
 
-            link.append("text")
-                .attr('text-anchor', 'middle')
-                .attr('dominant-baseline', 'central')
-                .text(({ index: i }) => LINKS_LABELS[i])
-                .attr('class', 'link-label')
-                .attr("fill", "#545454")
-                .attr("transform", "translate(0," + nodeRadius/1.2 + ")")
+
+        this.link = this.svg.append("g")
+            .selectAll("g")
+            .attr("stroke", this.linkStroke)
+            .attr("stroke-opacity", this.linkStrokeOpacity)
+            .attr("stroke-width", typeof this.linkStrokeWidth !== "function" ? this.linkStrokeWidth : null)
+            .attr("stroke-linecap", this.linkStrokeLinecap)
+            .data(this.links)
+            .join("g")
+            .attr("id",(e,i) =>  "link_" + this.LINKS[i])
+            .attr("class","gobject glink")
+            .attr("marker-end", "url(#end)");
+
+        if(this.LINKS!=null && this.LINKS.length >0){
+
+            this.pathPointerEvents = 'auto'
+            if(this.addLinkMenu)
+                this.pathPointerEvents = 'none'
+
+            if(this.useCurvedLinks)
+                this.link.append("path")
+                    .attr("id",(e,i) =>  "link_path_" + this.LINKS[i])
+                    .attr('class', 'link-line')
+                    .attr('fill', 'transparent')
+                    .attr("stroke-width", typeof this.linkStrokeWidth !== "function" ? this.linkStrokeWidth : null)
+                    .attr("stroke-linecap", this.linkStrokeLinecap)
+                    .attr("stroke", this.linkStroke)
+                    .attr("style","pointer-events:" + this.pathPointerEvents)
+            else
+                this.link.append("line")
+                    .attr('class', 'link-line')
+                    .attr("stroke", this.linkStroke)
+                    .attr("fill", 'none')
+                    .attr("stroke-opacity", this.linkStrokeOpacity)
+                    .attr("stroke-width", typeof this.linkStrokeWidth !== "function" ? this.linkStrokeWidth : null)
+                    .attr("stroke-linecap", this.linkStrokeLinecap)
+
+            if (this.addLinkLabel){
+                this.link.append("circle")
+                    .attr('fill', "#545454")
+                    .attr('opacity', 0.8)
+                    .attr("r", this.nodeRadius/2)
+                    .on('click', d => this.createMenu(d, true));
+
+                this.link.append('text')
+                    .attr('font-family', () => icon_font_family("bi-link-45deg"))
+                    .attr('font-size', () => alter_icon_font_size("bi-link-45deg", this.nodeIconSize/1.5) + 'em')
+                    .attr('font-weight','bold')
+                    .attr('fill', "white")
+                    .attr('text-anchor', 'middle')
+                    .attr('dominant-baseline', 'central')
+                    .attr('class', 'link-icon')
+                    .attr("style","cursor: pointer;")
+                    .text(() => icon_to_unicode("bi-link-45deg"))
+                    .on('click', d => this.createMenu(d, true));
+
+                this.link.append("text")
+                    .attr('text-anchor', 'middle')
+                    .attr('dominant-baseline', 'central')
+                    .text((e,i) => this.LINKS_LABELS[i])
+                    .attr('class', 'link-label')
+                    .attr("fill", "#545454")
+                    .attr("transform", "translate(0," + this.nodeRadius/1.2 + ")")
+            }
+
+            this.link.on("mouseover",function(){
+                d3.select(this).bringElementAsTopLayer();
+            });
+
+            if (this.LINKS_STROKE_WIDTH) this.link.attr("stroke-width", (e,i) => this.LINKS_STROKE_WIDTH[i]);
+            if (this.LINKS_TITLES) this.link.append("title").text((e,i) => this.LINKS_TITLES[i]);
         }
+        
+        this.node = this.svg.append("g")
+            .selectAll("g")
+            .attr("fill", this.nodeFill)
+            .attr("style","cursor: pointer;")
+            .attr("stroke", this.nodeStroke)
+            .attr("stroke-opacity", this.nodeStrokeOpacity)
+            .attr("stroke-width", this.nodeStrokeWidth)
+            .data(this.nodes)
+            .join("g")
+            .attr("id",(e,i) =>  "node_" + this.NODES[i])
+            .attr("class","gobject gnode");
 
-        link.on("mouseover",function(){
+        this.node.append("circle")
+            .attr("style","cursor: pointer;")
+            .attr("fill", (e,i) => color(this.NODES_GROUPS[i]))
+            .attr("r", this.nodeRadius)
+            .on('click', d => this.createMenu(d));
+
+        if (this.addNodeIcon)
+            this.node.append('text')
+                .attr('font-family', (e,i) => icon_font_family(this.NODES_ICONS[i]))
+                .attr('font-size', (e,i) => alter_icon_font_size(this.NODES_ICONS[i], this.nodeIconSize) + 'em')
+                .attr('fill', d => this.nodeIconColor)
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'central')
+                .attr('class', 'node-icon')
+                .attr("style","cursor: pointer;")
+                .text((e,i) => icon_to_unicode(this.NODES_ICONS[i]))
+                .on('click', d => this.createMenu(d));
+
+        if (this.addNodeLabel)
+            this.node.append("text")
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'hanging')
+                .text((e,i) => this.NODES_LABELS[i])
+                .attr('class', 'node-label')
+                .attr("fill", (e,i) => color(this.NODES_GROUPS[i]))
+                .attr("transform", "translate(0," + this.nodeRadius + ")")
+
+                
+        this.node.on("mouseover",function(){
             d3.select(this).bringElementAsTopLayer();
         });
 
-        if (LINKS_STROKE_WIDTH) link.attr("stroke-width", ({ index: i }) => LINKS_STROKE_WIDTH[i]);
-        if (LINKS_TITLES) link.append("title").text(({ index: i }) => LINKS_TITLES[i]);
-    }
-    
-    const node = svg.append("g")
-        .selectAll("g")
-        .attr("fill", nodeFill)
-        .attr("style","cursor: pointer;")
-        .attr("stroke", nodeStroke)
-        .attr("stroke-opacity", nodeStrokeOpacity)
-        .attr("stroke-width", nodeStrokeWidth)
-        .data(nodes)
-        .join("g")
-        .attr("id",({ index: i }) =>  "node_" + NODES[i])
-        .attr("class","gobject gnode");
+        if(true){
+            const key = this.svg.append("g")
+                .attr("class", "keysg")
+                .selectAll("g")
+                .data(this.NODES_GROUPS)
+                .join("g")
+                .attr("class", "keysg")
 
-    node.append("circle")
-        .attr("style","cursor: pointer;")
-        .attr("fill", ({ index: i }) => color(NODES_GROUPS[i]))
-        .attr("r", nodeRadius)
-        .on('click', d => createMenu(d));
+            key.append("circle")
+                .attr("fill", (i,j) => color(this.NODES_GROUPS[j]))
+                .attr("cx", (i,j) => (this.svg.attr("width")/2) -20)
+                .attr("cy", (i,j) => (-1 * (this.svg.attr("height")/2) + 20 + (j*30)))
+                .attr("r", 10)
 
-    if (addNodeIcon)
-        node.append('text')
-            .attr('font-family', ({ index: i }) => icon_font_family(NODES_ICONS[i]))
-            .attr('font-size', ({ index: i }) => alter_icon_font_size(NODES_ICONS[i], nodeIconSize) + 'em')
-            .attr('fill', d => nodeIconColor)
-            .attr('text-anchor', 'middle')
-            .attr('dominant-baseline', 'central')
-            .attr('class', 'node-icon')
-            .attr("style","cursor: pointer;")
-            .text(({ index: i }) => icon_to_unicode(NODES_ICONS[i]))
-            .on('click', d => createMenu(d));
+            key.append("text")
+                .text((i,j) => this.NODES_GROUPS[j])
+                .attr("fill", (i,j) => color(this.NODES_GROUPS[j]))
+                .attr("x", (i,j) => (this.svg.attr("width")/2) -40)
+                .attr("y", (i,j) => (-1 * (this.svg.attr("height")/2) + 25 + (j*30)))
+        }
 
-    if (addNodeLabel)
-        node.append("text")
-            .attr('text-anchor', 'middle')
-            .attr('dominant-baseline', 'hanging')
-            .text(({ index: i }) => NODES_LABELS[i])
-            .attr('class', 'node-label')
-            .attr("fill", ({ index: i }) => color(NODES_GROUPS[i]))
-            .attr("transform", "translate(0," + nodeRadius + ")")
+        this.node.call(this.drag().bind(this));
 
-    // if(addNodeMenu)
-    //     node.on('click', d => createMenu(d));
-    node.on("mouseover",function(){
-        d3.select(this).bringElementAsTopLayer();
-    });
+        if (this.NODES_GROUPS) this.node.attr("fill", (e,i) => color(this.NODES_GROUPS[i]));
+        if (this.NODES_TITLES) this.node.append("title").text((e,i) => this.NODES_TITLES[i]);
 
-    if(true){
-        const key = svg.append("g")
-            .attr("class", "keysg")
-            .selectAll("g")
-            .data(NODES_GROUPS)
-            .join("g")
-            .attr("class", "keysg")
+        // Handle invalidation.
+        if (this.invalidation != null) this.invalidation.then(() => this.simulation.stop());
 
-        key.append("circle")
-            .attr("fill", (i,j) => color(NODES_GROUPS[j]))
-            .attr("cx", (i,j) => (svg.attr("width")/2) -20)
-            .attr("cy", (i,j) => (-1 * (svg.attr("height")/2) + 20 + (j*30)))
-            .attr("r", 10)
+        
+        this.simulation = d3.forceSimulation(this.nodes)
+            .force("link", this.forceLink)
+            .force("charge", this.forceNode)
+            .force("x", d3.forceX())
+            .force("y", d3.forceY())
+            .on("tick", this.ticked.bind(this));
 
-        key.append("text")
-            .text((i,j) => NODES_GROUPS[j])
-            .attr("fill", (i,j) => color(NODES_GROUPS[j]))
-            .attr("x", (i,j) => (svg.attr("width")/2) -40)
-            .attr("y", (i,j) => (-1 * (svg.attr("height")/2) + 25 + (j*30)))
+        Object.assign(this.svg.node(), { scales: { color } });
     }
 
-    node.call(drag(simulation));
+    destroy(){
+        this.simulation.stop()
+        d3.select('#'+this.containerId).selectAll("g > *").remove();
+        $('#'+this.containerId).empty()
+    }
 
-    if (NODES_GROUPS) node.attr("fill", ({ index: i }) => color(NODES_GROUPS[i]));
-    if (NODES_TITLES) node.append("title").text(({ index: i }) => NODES_TITLES[i]);
-
-    // Handle invalidation.
-    if (invalidation != null) invalidation.then(() => simulation.stop());
-
-    function createMenu(pointer, forLink = false) {
-        if(!forLink && !addNodeMenu)
+    createMenu(pointer, forLink = false) {
+        if(!forLink && !this.addNodeMenu)
             return
 
-        if(forLink && !addLinkMenu)
+        if(forLink && !this.addLinkMenu)
             return
 
-        nodePie = d3.pie()
-            .value(nodeMenuWidth)
+        let _this = this;
+        let nodePie = d3.pie()
+            .value(_this.nodeMenuWidth)
             .padAngle(0.0349066) // 2 degrees in radian
             .sort(null)
-            .value(nodeMenuWidth)
+            .value(_this.nodeMenuWidth)
 
-        linkPie = d3.pie()
-            .value(linkMenuWidth)
+        let linkPie = d3.pie()
+            .value(_this.linkMenuWidth)
             .padAngle(0.0649066) // 2 degrees in radian
             .sort(null)
-            .value(linkMenuWidth)
+            .value(_this.linkMenuWidth)
 
-        nodeArcGenerator = d3.arc()
-            .innerRadius(nodeRadius * 1.35)
-            .outerRadius(nodeRadius * 2.5)
+        let nodeArcGenerator = d3.arc()
+            .innerRadius(_this.nodeRadius * 1.35)
+            .outerRadius(_this.nodeRadius * 2.5)
 
-        linkArcGenerator = d3.arc()
-            .innerRadius(nodeRadius/2 * 1.35)
-            .outerRadius(nodeRadius * 1.5)
+        let linkArcGenerator = d3.arc()
+            .innerRadius(_this.nodeRadius/2 * 1.35)
+            .outerRadius(_this.nodeRadius * 1.5)
 
-        if(forLink){
-            gId = "#link_" +  pointer.currentTarget.__data__['id']
-            pie = linkPie
-            arcGenerator = linkArcGenerator
-            menu = linkMenu
-            menuColor = linkMenuColor
-            menuOpacity = linkMenuOpacity
-            menuIcon = linkMenuIcon
-            menuIconColor = linkMenuIconColor
-            menuIconSize = linkMenuIconSize
-            menuTitle = linkMenuTitle
-        }else{        
+        let gId = "#link_" +  pointer.currentTarget.__data__['id']
+        let pie = linkPie
+        let arcGenerator = linkArcGenerator
+        let menu = _this.linkMenu
+        let menuColor = _this.linkMenuColor
+        let menuOpacity = _this.linkMenuOpacity
+        let menuIcon = _this.linkMenuIcon
+        let menuIconColor = _this.linkMenuIconColor
+        let menuIconSize = _this.linkMenuIconColor
+        let menuTitle = _this.linkMenuTitle
+
+        if(!forLink){      
             gId = "#node_" + pointer.currentTarget.__data__['id']
             pie = nodePie
             arcGenerator = nodeArcGenerator
-            menu = nodeMenu
-            menuColor = nodeMenuColor
-            menuOpacity = nodeMenuOpacity
-            menuIcon = nodeMenuIcon
-            menuIconColor = nodeMenuIconColor
-            menuIconSize = nodeMenuIconSize
-            menuTitle = nodeMenuTitle
+            menu = _this.nodeMenu
+            menuColor = _this.nodeMenuColor
+            menuOpacity = _this.nodeMenuOpacity
+            menuIcon = _this.nodeMenuIcon
+            menuIconColor = _this.nodeMenuIconColor
+            menuIconSize = _this.nodeMenuIconSize
+            menuTitle = _this.nodeMenuTitle
         }
 
-        d3.selectAll('.menu-arc').remove()
-        d3.selectAll('.menu-arc-icon').remove()
+        d3.select('#'+_this.containerId).selectAll('.menu-arc').remove()
+        d3.select('#'+_this.containerId).selectAll('.menu-arc-icon').remove()
 
-        nd = d3.select(gId)
-        var nd = nd.selectAll('g')
+        let nd = d3.select('#'+_this.containerId).select(gId)
+        nd = nd.selectAll('g')
             .data(pie(menu))
             .enter();
 
-        g_p = nd.append('g')
+        let g_p = nd.append('g')
             .attr("style","cursor: pointer;")
             .attr('class', 'menu-arc')
 
-        path = g_p.append('path')
-            .attr("id", ({ index: i }) => "menu-arc-path_" + i)
+        let path = g_p.append('path')
+            .attr("id", (e,i) => "menu-arc-path_" + i)
             .attr('d', arcGenerator)
             .attr("style","cursor: pointer;")
             .attr('fill', menuColor)
             .attr("opacity", menuOpacity)
             .attr("class", 'mi')
             .on('click', (event, chosenArc) => {
-                gobj = event.currentTarget.closest('.gobject')
-                d3.selectAll('.menu-arc').remove()
-                d3.selectAll('.menu-arc-icon').remove()
-                onMenuItemClick(gobj.id, chosenArc.data.id,$(gobj).hasClass('gnode'));
+                let gobj = event.currentTarget.closest('.gobject')
+                d3.select('#'+_this.containerId).selectAll('.menu-arc').remove()
+                d3.select('#'+_this.containerId).selectAll('.menu-arc-icon').remove()
+                _this.onMenuItemClick(gobj.id, chosenArc.data.id,$(gobj).hasClass('gnode'));
                 event.stopPropagation();
             })
 
-        path.append("title").text(({ index: i }) => menuTitle(menu[i]))
+        path.append("title").text((e,i) => menuTitle(menu[i]))
 
         path.on("mouseover", function (d) {
             d3.select(this).style("opacity", menuOpacity - 0.1);
@@ -401,9 +493,9 @@ function ForceGraph({
         
         g_p.append('text')
             .attr("transform", d => `translate(${arcGenerator.centroid(d)})`)
-            .attr("id", ({ index: i }) => "menu-arc-icon_" + i)
-            .attr('font-family', ({ index: i }) => icon_font_family(menuIcon(menu[i])))
-            .attr('font-size', ({ index: i }) => alter_icon_font_size(menuIcon(menu[i]), menuIconSize) + 'em')
+            .attr("id", (e,i) => "menu-arc-icon_" + i)
+            .attr('font-family', (e,i) => icon_font_family(menuIcon(menu[i])))
+            .attr('font-size', (e,i) => alter_icon_font_size(menuIcon(menu[i]), menuIconSize) + 'em')
             .attr('fill', menuIconColor)
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'central')
@@ -413,42 +505,44 @@ function ForceGraph({
                 d3.select('#' + $(event.currentTarget).siblings('.mi').attr('id')).dispatch('click')
                 event.stopPropagation()
             })
-            .text(({ index: i }) => icon_to_unicode(menuIcon(menu[i])))
-            .append("title").text(({ index: i }) => menuTitle(menu[i]));
+            .text((e,i) => icon_to_unicode(menuIcon(menu[i])))
+            .append("title").text((e,i) => menuTitle(menu[i]));
 
-            if (addLinkMenu)
-                if(useCurvedLinks)
-                    link.each(function it(d){ 
-                        d3.select("#link_" + d['id']).selectAll('.menu-arc')
-                        .attr('transform', () => 'translate(' + calcLinkPathCenterX(d) 
-                        + ', ' + calcLinkPathCenterY(d) +')')})
+            if (_this.addLinkMenu)
+                if(_this.useCurvedLinks)
+                    _this.link.each(function it(d){ 
+                        d3.select('#'+_this.containerId).select("#link_" + d['id']).selectAll('.menu-arc')
+                        .attr('transform', () => 'translate(' + _this.calcLinkPathCenterX(d) 
+                        + ', ' + _this.calcLinkPathCenterY(d) +')')})
                 else
-                    link.each(function it(d){ 
-                        d3.select("#link_" + d['id']).selectAll('.menu-arc')
-                        .attr('transform', () => 'translate(' + calcLinkCenterX(d) 
-                        + ', ' + calcLinkCenterY(d) +')')})
-
+                    _this.link.each(function it(d){ 
+                        d3.select('#'+_this.containerId).select("#link_" + d['id']).selectAll('.menu-arc')
+                        .attr('transform', () => 'translate(' + _this.calcLinkCenterX(d) 
+                        + ', ' + _this.calcLinkCenterY(d) +')')})
+        
         pointer.stopPropagation();
+        pointer.preventDefault();
     }
 
-    function handleZoom(e) {
-        d3.selectAll('.menu-arc').remove()
-        d3.selectAll('.menu-arc-icon').remove()
-        d3.selectAll('svg g')
+    handleZoom(e) {
+        d3.select('#'+this.containerId).selectAll('.menu-arc').remove()
+        d3.select('#'+this.containerId).selectAll('.menu-arc-icon').remove()
+        d3.select('#'+this.containerId).selectAll('svg g')
           .filter(function() {
             return !this.classList.contains('keysg')
            })
           .attr('transform', e.transform);
     }
 
-    function intern(value) {
+    intern(value) {
         return value !== null && typeof value === "object" ? value.valueOf() : value;
     }
 
-    function ticked() {
-        if(useCurvedLinks)
-            link.each(function it(d){ 
-                d3.selectAll(".link-line")
+    ticked() {
+        let _this = this;
+        if(_this.useCurvedLinks)
+            _this.link.each(function it(d){ 
+                d3.select('#'+_this.containerId).selectAll(".link-line")
                 .attr("d", function(d) {
                         if(d.source.id == d.target.id){
                             var x1 = d.source.x,
@@ -490,125 +584,117 @@ function ForceGraph({
                       
                             return "M" + x1 + "," + y1 + "A" + drx + "," + dry + " " + xRotation + "," + largeArc + "," + sweep + " " + x2 + "," + y2;
                         }else{
-                            var dx = calcLinkWithArrowX2(d) - calcLinkWithArrowX1(d),
-                            dy = calcLinkWithArrowY2(d) - calcLinkWithArrowY1(d),
+                            var dx = _this.calcLinkWithArrowX2(d) - _this.calcLinkWithArrowX1(d),
+                            dy = _this.calcLinkWithArrowY2(d) - _this.calcLinkWithArrowY1(d),
                             dr = Math.sqrt(dx * dx + dy * dy);
-                            repeatedLinkIndex = DATA_DIC[getContainerId(d.id)]['ORIGINAL_LINKS'].filter(x=> x.source==d.source.id && x.target==d.target.id).map(x=> x.id).indexOf(d.id)
+                            let repeatedLinkIndex = _this.links.filter(x=> x.source==d.source.id && x.target==d.target.id).map(x=> x.id).indexOf(d.id)
                             dr = dr - (repeatedLinkIndex * 120);
-                            return "M" + calcLinkWithArrowX1(d) + "," + calcLinkWithArrowY1(d) + "A" + dr + "," + dr + " 0 0,1 " + calcLinkWithArrowX2(d) + "," + calcLinkWithArrowY2(d);
+                            return "M" + _this.calcLinkWithArrowX1(d) + "," + _this.calcLinkWithArrowY1(d) + "A" + dr + "," + dr + " 0 0,1 " + _this.calcLinkWithArrowX2(d) + "," + _this.calcLinkWithArrowY2(d);
                         }
                     })
                 })
         else
-            link.select(".link-line")
-                .attr("x1", d => calcLinkWithArrowX1(d))
-                .attr("y1", d => calcLinkWithArrowY1(d))
-                .attr("x2", d => calcLinkWithArrowX2(d))
-                .attr("y2", d => calcLinkWithArrowY2(d));
+            _this.link.select(".link-line")
+                .attr("x1", d => _this.calcLinkWithArrowX1(d))
+                .attr("y1", d => _this.calcLinkWithArrowY1(d))
+                .attr("x2", d => _this.calcLinkWithArrowX2(d))
+                .attr("y2", d => _this.calcLinkWithArrowY2(d));
 
-        if (addLinkLabel){
-            if(useCurvedLinks){
-                link.select(".link-label")
-                    .attr("x", d => calcLinkPathCenterX(d))
-                    .attr("y", d => calcLinkPathCenterY(d));
+        if (_this.addLinkLabel){
+            if(_this.useCurvedLinks){
+                _this.link.select(".link-label")
+                    .attr("x", d => _this.calcLinkPathCenterX(d))
+                    .attr("y", d => _this.calcLinkPathCenterY(d));
                 
-                link.select("circle")
-                    .attr("cx", d => calcLinkPathCenterX(d))
-                    .attr("cy", d => calcLinkPathCenterY(d));
+                _this.link.select("circle")
+                    .attr("cx", d => _this.calcLinkPathCenterX(d))
+                    .attr("cy", d => _this.calcLinkPathCenterY(d));
     
-                link.select(".link-icon")
-                    .attr("x", d => calcLinkPathCenterX(d))
-                    .attr("y", d => calcLinkPathCenterY(d));
+                _this.link.select(".link-icon")
+                    .attr("x", d => _this.calcLinkPathCenterX(d))
+                    .attr("y", d => _this.calcLinkPathCenterY(d));
             }else{
-                link.select(".link-label")
-                    .attr("x", d => calcLinkCenterX(d))
-                    .attr("y", d => calcLinkCenterY(d));
+                _this.link.select(".link-label")
+                    .attr("x", d => _this.calcLinkCenterX(d))
+                    .attr("y", d => _this.calcLinkCenterY(d));
                 
-                link.select("circle")
-                    .attr("cx", d => calcLinkCenterX(d))
-                    .attr("cy", d => calcLinkCenterY(d));
+                _this.link.select("circle")
+                    .attr("cx", d => _this.calcLinkCenterX(d))
+                    .attr("cy", d => _this.calcLinkCenterY(d));
     
-                link.select(".link-icon")
-                    .attr("x", d => calcLinkCenterX(d))
-                    .attr("y", d => calcLinkCenterY(d));
+                _this.link.select(".link-icon")
+                    .attr("x", d => _this.calcLinkCenterX(d))
+                    .attr("y", d => _this.calcLinkCenterY(d));
             }
         }
             
-        if (addLinkMenu)
-            if(useCurvedLinks)
-                link.each(function it(d){ 
-                    d3.select("#link_" + d['id']).selectAll('.menu-arc')
-                    .attr('transform', () => 'translate(' + calcLinkPathCenterX(d) 
-                    + ', ' + calcLinkPathCenterY(d) +')')})
+        if (_this.addLinkMenu)
+            if(_this.useCurvedLinks)
+                _this.link.each(function it(d){ 
+                    d3.select('#'+_this.containerId).select("#link_" + d['id']).selectAll('.menu-arc')
+                    .attr('transform', () => 'translate(' + _this.calcLinkPathCenterX(d) 
+                    + ', ' + _this.calcLinkPathCenterY(d) +')')})
             else
-                link.each(function it(d){ 
-                    d3.select("#link_" + d['id']).selectAll('.menu-arc')
-                    .attr('transform', () => 'translate(' + calcLinkCenterX(d) 
-                    + ', ' + calcLinkCenterY(d) +')')})
+                _this.link.each(function it(d){ 
+                    d3.select('#'+_this.containerId).select("#link_" + d['id']).selectAll('.menu-arc')
+                    .attr('transform', () => 'translate(' + _this.calcLinkCenterX(d) 
+                    + ', ' + _this.calcLinkCenterY(d) +')')})
 
-        node.select("circle")
+        _this.node.select("circle")
             .attr("cx", d => d.x)
             .attr("cy", d => d.y);
 
-        if (addNodeMenu)
-            node.each(function it(d){ 
-                d3.select("#node_" + d['id']).selectAll('.menu-arc')
+        if (_this.addNodeMenu)
+            _this.node.each(function it(d){ 
+                d3.select('#'+_this.containerId).select("#node_" + d['id']).selectAll('.menu-arc')
                 .attr('transform', () => 'translate('+ d.x +', '+ d.y +')')
             })
 
-        if (addNodeIcon)
-            node
+        if (_this.addNodeIcon)
+            _this.node
                 .select(".node-icon")
                 .attr("x", d => d.x)
                 .attr("y", d => d.y);
 
-        if (addNodeLabel)
-            node
+        if (_this.addNodeLabel)
+            _this.node
                 .select(".node-label")
                 .attr("x", d => d.x)
                 .attr("y", d => d.y);
     }
 
-    // function getContainerId(id){
-    //     iid = id;
-    //     if(id.startsWith('edge_'))
-    //         iid = "link_"+iid;
-    //     else if (id.startsWith('node_'))
-
-    // }
-
-    function calcLinkWithArrowX1(d){
+    calcLinkWithArrowX1(d){
         return d.source.x
     }
 
-    function calcLinkWithArrowX2(d){
-        if(!addLinkArrow) return d.target.x
-        return findIntersect(new Vector(d.target.x,d.target.y),nodeRadius*1.3,new Vector(d.source.x,d.source.y)).x;
+    calcLinkWithArrowX2(d){
+        if(!this.addLinkArrow) return d.target.x
+        return this.findIntersect(new Vector(d.target.x,d.target.y),this.nodeRadius*1.3,new Vector(d.source.x,d.source.y)).x;
     }
 
-    function calcLinkWithArrowY1(d){
+    calcLinkWithArrowY1(d){
         return d.source.y
     }
 
-    function calcLinkWithArrowY2(d){
-        if(!addLinkArrow) return d.target.y
-        return findIntersect(new Vector(d.target.x,d.target.y),nodeRadius*1.3,new Vector(d.source.x,d.source.y)).y;
+    calcLinkWithArrowY2(d){
+        if(!this.addLinkArrow) return d.target.y
+        return this.findIntersect(new Vector(d.target.x,d.target.y),this.nodeRadius*1.3,new Vector(d.source.x,d.source.y)).y;
     }
 
-    function calcLinkCenterX(d){
-        x1 = calcLinkWithArrowX1(d)
-        x2 = calcLinkWithArrowX2(d)
+    calcLinkCenterX(d){
+        x1 = this.calcLinkWithArrowX1(d)
+        x2 = this.calcLinkWithArrowX2(d)
         return  Math.min(x1,x2) + ((Math.max(x1,x2) - Math.min(x1,x2)) / 2)
     }
 
-    function calcLinkCenterY(d){
-        y1 = calcLinkWithArrowY1(d)
-        y2 = calcLinkWithArrowY2(d)
+    calcLinkCenterY(d){
+        y1 = this.calcLinkWithArrowY1(d)
+        y2 = this.calcLinkWithArrowY2(d)
         return Math.min(y1,y2) + ((Math.max(y1,y2) - Math.min(y1,y2)) / 2)
     }
 
-    function calcLinkPathCenterX(d){
-        var pathEl = d3.select("#link_path_" + d['id']).node()
+    calcLinkPathCenterX(d){
+        var pathEl = d3.select('#'+this.containerId).select("#link_path_" + d['id']).node()
         try {
             return pathEl.getPointAtLength(pathEl.getTotalLength()/2).x;
         } catch (error) {
@@ -616,8 +702,8 @@ function ForceGraph({
         }
     }
 
-    function calcLinkPathCenterY(d){
-        var pathEl = d3.select("#link_path_" + d['id']).node()
+    calcLinkPathCenterY(d){
+        var pathEl = d3.select('#'+this.containerId).select("#link_path_" + d['id']).node()
         try {
             return pathEl.getPointAtLength(pathEl.getTotalLength()/2).y;
         } catch (error) {
@@ -625,9 +711,10 @@ function ForceGraph({
         }
     }
 
-    function drag(simulation) {
+    drag() {
+        let _this = this;
         function dragstarted(event) {
-            if (!event.active) simulation.alphaTarget(0.3).restart();
+            if (!event.active) _this.simulation.alphaTarget(0.3).restart();
             event.subject.fx = event.subject.x;
             event.subject.fy = event.subject.y;
         }
@@ -638,7 +725,7 @@ function ForceGraph({
         }
 
         function dragended(event) {
-            if (!event.active) simulation.alphaTarget(0);
+            if (!event.active) _this.simulation.alphaTarget(0);
             event.subject.fx = null;
             event.subject.fy = null;
         }
@@ -649,53 +736,16 @@ function ForceGraph({
             .on("end", dragended);
     }
 
-    return Object.assign(svg.node(), { scales: { color } });
+    
+    findIntersect(origin, radius, otherLineEndPoint) {
+        var v = otherLineEndPoint.subtract(origin);
+        var lineLength = v.length();    
+        if (lineLength === 0) throw new Error("Length has to be positive");
+        v = v.normalize();
+        return origin.add(v.multiplyScalar(radius)); 
+    }
+
 }
-
-function findIntersect (origin, radius, otherLineEndPoint) {
-    var v = otherLineEndPoint.subtract(origin);
-    var lineLength = v.length();    
-    if (lineLength === 0) throw new Error("Length has to be positive");
-    v = v.normalize();
-    return origin.add(v.multiplyScalar(radius)); 
-}
-
-function Vector (x, y) {
-    this.x = x || 0;
-    this.y = y || 0;
-}
-
-Vector.prototype.add = function (vector) {
-    return new Vector(this.x + vector.x, this.y + vector.y);
-};
-
-Vector.prototype.subtract = function (vector) {
-    return new Vector(this.x - vector.x, this.y - vector.y);
-};
-
-Vector.prototype.multiply = function (vector) {
-    return new Vector(this.x * vector.x, this.y * vector.y);
-};
-
-Vector.prototype.multiplyScalar = function (scalar) {
-    return new Vector(this.x * scalar, this.y * scalar);
-};
-
-Vector.prototype.divide = function (vector) {
-    return new Vector(this.x / vector.x, this.y / vector.y);
-};
-
-Vector.prototype.divideScalar = function (scalar) {
-    return new Vector(this.x / scalar, this.y / scalar);
-};
-
-Vector.prototype.length = function () {
-    return Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2));
-};
-
-Vector.prototype.normalize = function () {
-    return this.divideScalar(this.length());
-};
 
 var fa_unicode_map = {
     "0": "\\u30",

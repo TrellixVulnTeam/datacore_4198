@@ -109,6 +109,7 @@
   data = JSON.parse('{{data}}'.replace(/&quot;/g, '"'));
   dataInList = {};
   dataInGraph = {}
+  graphs = {}
 
   $(document).ready(function () {
     DevExpress.localization.locale('ar');
@@ -180,31 +181,29 @@
   }
 
   function drawGraph(){
-    graph = {nodes:[], links:[]}
+    graph = {nodesParam:[], linksParam:[]}
     Object.entries(dataInGraph).forEach(([k, v]) => {
         if(k.startsWith('edge_')){
           from_node = data[v.from]
           to_node = data[v.to]
-          if(!graph.nodes.some(x=> x.id == v.from)){
-              graph.nodes.push(from_node)
+          if(!graph.nodesParam.some(x=> x.id == v.from)){
+              graph.nodesParam.push(from_node)
           }
-          if(!graph.nodes.some(x=> x.id == v.to)){
-              graph.nodes.push(to_node)
+          if(!graph.nodesParam.some(x=> x.id == v.to)){
+              graph.nodesParam.push(to_node)
           }
-          if(!graph.links.some(x=> x.id == v.id)){
+          if(!graph.linksParam.some(x=> x.id == v.id)){
               v['source'] = v.from
               v['target'] = v.to
-              graph.links.push(v)
+              graph.linksParam.push(v)
           }
         }else{
-          if(!graph.nodes.some(x=> x.id == v.id)){
-              graph.nodes.push(v)
+          if(!graph.nodesParam.some(x=> x.id == v.id)){
+              graph.nodesParam.push(v)
           }
         }
         
     })
-
-    //$('#filter_canvas').empty()
 
     var node_menu = [
       {
@@ -247,37 +246,39 @@
         },
     ];
 
-    chart = ForceGraph(graph, {
-        nodeId: d => d.id,
-        nodeGroup: d => d.english_name,
-        addNodeLabel : true,
-        nodeTitle: d => `${d.arabic_name}`,
-        nodeLabel: d => `${d.arabic_name}`,
-        addNodeIcon: true,
-        nodeIcon: d => `${d.icon}`,
-        addNodeMenu: true,
-        nodeMenu: node_menu,
-        nodeMenuWidth: d => d.width,
-        nodeMenuIcon: d => d.icon,
-        nodeMenuIconSize: 1.5,
-        nodeMenuTitle: d => d.title,
-        addLinkLabel : true,
-        linkTitle: d => `${d.arabic_name}`,
-        linkLabel: d => `${d.arabic_name}`,
-        addLinkMenu: true,
-        linkMenu: link_menu,
-        linkMenuWidth: d => d.width,
-        linkMenuIcon: d => d.icon,
-        linkMenuIconSize: 1.2,
-        linkMenuTitle: d => d.title,
-        linkMenuOpacity: 0.5,
-        linkId: d => d.id,
-        linkStrength: 1,
-        linkLineLength: 350,
+    if(graphs['query_builder_graph']!==undefined)
+      graphs['query_builder_graph'].destroy();
 
-        onMenuItemClick: onQBuilderChartMenuClick,
-        containerId: 'filter_canvas',
-        invalidation: null // a promise to stop the simulation when the cell is re-run
+    graphs['query_builder_graph'] = new ForceGraph(graph, {
+        nodeIdFunc: d => d.id,
+        nodeGroupFunc: d => d.arabic_name,
+        addNodeLabelParam : true,
+        nodeTitleFunc: d => `${d.arabic_name}`,
+        nodeLabelFunc: d => `${d.arabic_name}`,
+        addNodeIconParam: true,
+        nodeIconFunc: d => `${d.icon}`,
+        addNodeMenuParam: true,
+        nodeMenuParam: node_menu,
+        nodeMenuWidthFunc: d => d.width,
+        nodeMenuIconFunc: d => d.icon,
+        nodeMenuIconSizeParam: 1.5,
+        nodeMenuTitleFunc: d => d.title,
+        addLinkLabelParam: true,
+        linkTitleFunc: d => `${d.arabic_name}`,
+        linkLabelFunc: d => `${d.arabic_name}`,
+        addLinkMenuParam: true,
+        linkMenuParam: link_menu,
+        linkMenuWidthFunc: d => d.width,
+        linkMenuIconFunc: d => d.icon,
+        linkMenuIconSizeParam: 1.2,
+        linkMenuTitleFunc: d => d.title,
+        linkMenuOpacityParam: 0.5,
+        linkIdFunc: d => d.id,
+        linkStrengthParam: 1,
+        linkLineLengthParam: 350,
+        onMenuItemClickFunc: onQBuilderChartMenuClick,
+        containerIdParam: 'filter_canvas',
+        invalidationParam: null // a promise to stop the simulation when the cell is re-run
     })
   }
 
