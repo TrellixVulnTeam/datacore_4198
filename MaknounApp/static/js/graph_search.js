@@ -1,4 +1,4 @@
-function Vector (x, y) {
+function Vector(x, y) {
     this.x = x || 0;
     this.y = y || 0;
 }
@@ -35,21 +35,22 @@ Vector.prototype.normalize = function () {
     return this.divideScalar(this.length());
 };
 
-d3.selection.prototype.bringElementAsTopLayer = function() {
-    return this.each(function(){
+d3.selection.prototype.bringElementAsTopLayer = function () {
+    return this.each(function () {
         this.parentNode.appendChild(this);
     });
 };
 
-d3.selection.prototype.pushElementAsBackLayer = function() { 
-    return this.each(function() { 
-        var firstChild = this.parentNode.firstChild; 
-        if (firstChild) { 
-            this.parentNode.insertBefore(this, firstChild); 
-    } 
-})};
+d3.selection.prototype.pushElementAsBackLayer = function () {
+    return this.each(function () {
+        var firstChild = this.parentNode.firstChild;
+        if (firstChild) {
+            this.parentNode.insertBefore(this, firstChild);
+        }
+    })
+};
 
-class ForceGraph{
+class ForceGraph {
 
     constructor({
         nodesParam, // an iterable of node objects (typically [{id}, …])
@@ -108,8 +109,12 @@ class ForceGraph{
         heightParam, // outer height, in pixels
         invalidationParam, // when this promise resolves, stop the simulation
         containerIdParam,
-        onMenuItemClickFunc = ()=>{}
-    } = {}){
+        shortSimulationParam,
+        addGraphGroupsKeysParam = true,
+        allowZoomParam = true,
+        allowDragParam = true,
+        onMenuItemClickFunc = () => { }
+    } = {}) {
         this.nodes = nodesParam;
         this.links = linksParam;
         this.nodeId = nodeIdFunc;
@@ -166,20 +171,24 @@ class ForceGraph{
         this.invalidation = invalidationParam;
         this.containerId = containerIdParam;
         this.onMenuItemClick = onMenuItemClickFunc;
+        this.shortSimulation = shortSimulationParam;
+        this.addGraphGroupsKeys = addGraphGroupsKeysParam;
+        this.allowDrag = allowDragParam;
+        this.allowZoom = allowZoomParam;
 
         if (this.width === undefined)
-            this.width = $('#'+this.containerId).width()
+            this.width = $('#' + this.containerId).width()
         if (this.height === undefined)
-            this.height = $('#'+this.containerId).height()
+            this.height = $('#' + this.containerId).height()
 
         // Compute values.
         this.NODES = d3.map(this.nodes, this.nodeId).map(this.intern);
         if (this.nodeTitle === undefined) this.nodeTitle = (_, i) => this.NODES[i];
-            this.NODES_TITLES = this.nodeTitle == null ? null : d3.map(this.nodes, this.nodeTitle);
+        this.NODES_TITLES = this.nodeTitle == null ? null : d3.map(this.nodes, this.nodeTitle);
         if (this.nodeLabel === undefined) this.nodeLabel = (_, i) => this.NODES[i];
-            this.NODES_LABELS = this.nodeLabel == null ? null : d3.map(this.nodes, this.nodeLabel);
+        this.NODES_LABELS = this.nodeLabel == null ? null : d3.map(this.nodes, this.nodeLabel);
         if (this.nodeIcon === undefined) this.nodeIcon = (_, i) => "";
-            this.NODES_ICONS = this.nodeIcon == null ? null : d3.map(this.nodes, this.nodeIcon);
+        this.NODES_ICONS = this.nodeIcon == null ? null : d3.map(this.nodes, this.nodeIcon);
         this.NODES_GROUPS = this.nodeGroup == null ? null : d3.map(this.nodes, this.nodeGroup).map(this.intern);
 
         this.LINKS = d3.map(this.links, this.linkId).map(this.intern);
@@ -187,9 +196,9 @@ class ForceGraph{
         this.LINKS_TARGETS = d3.map(this.links, this.linkTarget).map(this.intern);
         this.LINKS_STROKE_WIDTH = typeof this.linkStrokeWidth !== "function" ? null : d3.map(this.links, this.linkStrokeWidth);
         if (this.linkTitle === undefined) this.linkTitle = (_, i) => this.LINKS[i];
-            this.LINKS_TITLES = this.linkTitle == null ? null : d3.map(this.links, this.linkTitle);
+        this.LINKS_TITLES = this.linkTitle == null ? null : d3.map(this.links, this.linkTitle);
         if (this.linkLabel === undefined) this.linkLabel = (_, i) => this.LINKS[i];
-            this.LINKS_LABELS = this.linkLabel == null ? null : d3.map(this.links, this.linkLabel);
+        this.LINKS_LABELS = this.linkLabel == null ? null : d3.map(this.links, this.linkLabel);
 
         // Replace the input nodes and links with mutable objects for the simulation.
         this.nodes = d3.map(this.nodes, (_, i) => ({ id: this.NODES[i] }));
@@ -203,7 +212,7 @@ class ForceGraph{
 
         // Construct the forces.
         this.forceNode = d3.forceManyBody();
-        this.forceLink = d3.forceLink(this.links).distance(d => this.linkLineLength).id((e,i) => this.NODES[i]);
+        this.forceLink = d3.forceLink(this.links).distance(d => this.linkLineLength).id((e, i) => this.NODES[i]);
         if (this.nodeStrength !== undefined) this.forceNode.strength(this.nodeStrength);
         if (this.linkStrength !== undefined) this.forceLink.strength(this.linkStrength);
 
@@ -215,14 +224,12 @@ class ForceGraph{
             .attr("height", this.height)
             .attr("viewBox", [-this.width / 2, -this.height / 2, this.width, this.height])
             .attr("style", "max-width: 100%; height: auto; height: intrinsic;");
-        
-        let zoom = d3.zoom().on('zoom', this.handleZoom);
-        d3.select('#'+_this.containerId).select('svg').call(zoom);
 
-        if(this.addLinkArrow)
+        
+        if (this.addLinkArrow)
             this.svg.append("svg:defs").selectAll("marker")
                 .data(["end"])      // Different link/path types can be defined here
-            .enter().append("svg:marker")    // This section adds in the arrows
+                .enter().append("svg:marker")    // This section adds in the arrows
                 .attr("id", String)
                 .attr("viewBox", "0 -5 10 10")
                 .attr("refX", 0)
@@ -232,13 +239,13 @@ class ForceGraph{
                 .attr("orient", "auto")
                 .attr('fill', "#545454")
                 .attr('opacity', 0.8)
-            .append("svg:path")
+                .append("svg:path")
                 .attr("d", "M0,-5L10,0L0,5");
 
-        if(this.addNodeMenu || this.addLinkMenu)
-            this.svg.on('click', (e)=>{
-                d3.select('#'+_this.containerId).selectAll('.menu-arc').remove()
-                d3.select('#'+_this.containerId).selectAll('.menu-arc-icon').remove()
+        if (this.addNodeMenu || this.addLinkMenu)
+            this.svg.on('click', (e) => {
+                d3.select('#' + _this.containerId).selectAll('.menu-arc').remove()
+                d3.select('#' + _this.containerId).selectAll('.menu-arc-icon').remove()
             });
 
 
@@ -250,25 +257,25 @@ class ForceGraph{
             .attr("stroke-linecap", this.linkStrokeLinecap)
             .data(this.links)
             .join("g")
-            .attr("id",(e,i) =>  "link_" + this.LINKS[i])
-            .attr("class","gobject glink")
+            .attr("id", (e, i) => "link_" + this.LINKS[i])
+            .attr("class", "gobject glink")
             .attr("marker-end", "url(#end)");
 
-        if(this.LINKS!=null && this.LINKS.length >0){
+        if (this.LINKS != null && this.LINKS.length > 0) {
 
             this.pathPointerEvents = 'auto'
-            if(this.addLinkMenu)
+            if (this.addLinkMenu)
                 this.pathPointerEvents = 'none'
 
-            if(this.useCurvedLinks)
+            if (this.useCurvedLinks)
                 this.link.append("path")
-                    .attr("id",(e,i) =>  "link_path_" + this.LINKS[i])
+                    .attr("id", (e, i) => "link_path_" + this.LINKS[i])
                     .attr('class', 'link-line')
                     .attr('fill', 'transparent')
                     .attr("stroke-width", typeof this.linkStrokeWidth !== "function" ? this.linkStrokeWidth : null)
                     .attr("stroke-linecap", this.linkStrokeLinecap)
                     .attr("stroke", this.linkStroke)
-                    .attr("style","pointer-events:" + this.pathPointerEvents)
+                    .attr("style", "pointer-events:" + this.pathPointerEvents)
             else
                 this.link.append("line")
                     .attr('class', 'link-line')
@@ -278,116 +285,198 @@ class ForceGraph{
                     .attr("stroke-width", typeof this.linkStrokeWidth !== "function" ? this.linkStrokeWidth : null)
                     .attr("stroke-linecap", this.linkStrokeLinecap)
 
-            if (this.addLinkLabel){
+            if (this.addLinkLabel) {
                 this.link.append("circle")
                     .attr('fill', "#545454")
                     .attr('opacity', 0.8)
-                    .attr("r", this.nodeRadius/2)
+                    .attr("r", this.nodeRadius / 2)
                     .on('click', d => this.createMenu(d, true));
 
                 this.link.append('text')
                     .attr('font-family', () => icon_font_family("bi-link-45deg"))
-                    .attr('font-size', () => alter_icon_font_size("bi-link-45deg", this.nodeIconSize/1.5) + 'em')
-                    .attr('font-weight','bold')
+                    .attr('font-size', () => alter_icon_font_size("bi-link-45deg", this.nodeIconSize / 1.5) + 'em')
+                    .attr('font-weight', 'bold')
                     .attr('fill', "white")
                     .attr('text-anchor', 'middle')
                     .attr('dominant-baseline', 'central')
                     .attr('class', 'link-icon')
-                    .attr("style","cursor: pointer;")
+                    .attr("style", "cursor: pointer;")
                     .text(() => icon_to_unicode("bi-link-45deg"))
                     .on('click', d => this.createMenu(d, true));
 
                 this.link.append("text")
                     .attr('text-anchor', 'middle')
                     .attr('dominant-baseline', 'central')
-                    .text((e,i) => this.LINKS_LABELS[i])
+                    .text((e, i) => this.LINKS_LABELS[i])
                     .attr('class', 'link-label')
                     .attr("fill", "#545454")
-                    .attr("transform", "translate(0," + this.nodeRadius/1.2 + ")")
+                    .attr("transform", "translate(0," + this.nodeRadius / 1.2 + ")")
             }
 
-            this.link.on("mouseover",function(){
+            this.link.on("mouseover", function () {
                 d3.select(this).bringElementAsTopLayer();
             });
 
-            if (this.LINKS_STROKE_WIDTH) this.link.attr("stroke-width", (e,i) => this.LINKS_STROKE_WIDTH[i]);
-            if (this.LINKS_TITLES) this.link.append("title").text((e,i) => this.LINKS_TITLES[i]);
+            if (this.LINKS_STROKE_WIDTH) this.link.attr("stroke-width", (e, i) => this.LINKS_STROKE_WIDTH[i]);
+            if (this.LINKS_TITLES) this.link.append("title").text((e, i) => this.LINKS_TITLES[i]);
         }
-        
+
         this.node = this.svg.append("g")
             .selectAll("g")
             .attr("fill", this.nodeFill)
-            .attr("style","cursor: pointer;")
+            .attr("style", "cursor: pointer;")
             .attr("stroke", this.nodeStroke)
             .attr("stroke-opacity", this.nodeStrokeOpacity)
             .attr("stroke-width", this.nodeStrokeWidth)
             .data(this.nodes)
             .join("g")
-            .attr("id",(e,i) =>  "node_" + this.NODES[i])
-            .attr("class","gobject gnode");
+            .attr("id", (e, i) => "node_" + this.NODES[i])
+            .attr("class", "gobject gnode");
 
         this.node.append("circle")
-            .attr("style","cursor: pointer;")
-            .attr("fill", (e,i) => color(this.NODES_GROUPS[i]))
+            .attr("style", "cursor: pointer;")
+            .attr("fill", (e, i) => color(this.NODES_GROUPS[i]))
             .attr("r", this.nodeRadius)
             .on('click', d => this.createMenu(d));
 
         if (this.addNodeIcon)
             this.node.append('text')
-                .attr('font-family', (e,i) => icon_font_family(this.NODES_ICONS[i]))
-                .attr('font-size', (e,i) => alter_icon_font_size(this.NODES_ICONS[i], this.nodeIconSize) + 'em')
+                .attr('font-family', (e, i) => icon_font_family(this.NODES_ICONS[i]))
+                .attr('font-size', (e, i) => alter_icon_font_size(this.NODES_ICONS[i], this.nodeIconSize) + 'em')
                 .attr('fill', d => this.nodeIconColor)
                 .attr('text-anchor', 'middle')
                 .attr('dominant-baseline', 'central')
                 .attr('class', 'node-icon')
-                .attr("style","cursor: pointer;")
-                .text((e,i) => icon_to_unicode(this.NODES_ICONS[i]))
+                .attr("style", "cursor: pointer;")
+                .text((e, i) => icon_to_unicode(this.NODES_ICONS[i]))
                 .on('click', d => this.createMenu(d));
 
         if (this.addNodeLabel)
             this.node.append("text")
                 .attr('text-anchor', 'middle')
                 .attr('dominant-baseline', 'hanging')
-                .text((e,i) => this.NODES_LABELS[i])
+                .text((e, i) => this.NODES_LABELS[i])
                 .attr('class', 'node-label')
-                .attr("fill", (e,i) => color(this.NODES_GROUPS[i]))
+                .attr("fill", (e, i) => color(this.NODES_GROUPS[i]))
                 .attr("transform", "translate(0," + this.nodeRadius + ")")
 
-                
-        this.node.on("mouseover",function(){
+
+        this.node.on("mouseover", function () {
             d3.select(this).bringElementAsTopLayer();
         });
 
-        if(true){
-            const key = this.svg.append("g")
-                .attr("class", "keysg")
-                .selectAll("g")
-                .data(this.NODES_GROUPS)
-                .join("g")
-                .attr("class", "keysg")
+        if (this.allowDrag)
+            this.node.call(this.drag().bind(this));
 
-            key.append("circle")
-                .attr("fill", (i,j) => color(this.NODES_GROUPS[j]))
-                .attr("cx", (i,j) => (this.svg.attr("width")/2) -20)
-                .attr("cy", (i,j) => (-1 * (this.svg.attr("height")/2) + 20 + (j*30)))
-                .attr("r", 10)
-
-            key.append("text")
-                .text((i,j) => this.NODES_GROUPS[j])
-                .attr("fill", (i,j) => color(this.NODES_GROUPS[j]))
-                .attr("x", (i,j) => (this.svg.attr("width")/2) -40)
-                .attr("y", (i,j) => (-1 * (this.svg.attr("height")/2) + 25 + (j*30)))
-        }
-
-        this.node.call(this.drag().bind(this));
-
-        if (this.NODES_GROUPS) this.node.attr("fill", (e,i) => color(this.NODES_GROUPS[i]));
-        if (this.NODES_TITLES) this.node.append("title").text((e,i) => this.NODES_TITLES[i]);
+        if (this.NODES_GROUPS) this.node.attr("fill", (e, i) => color(this.NODES_GROUPS[i]));
+        if (this.NODES_TITLES) this.node.append("title").text((e, i) => this.NODES_TITLES[i]);
 
         // Handle invalidation.
         if (this.invalidation != null) this.invalidation.then(() => this.simulation.stop());
 
-        
+        if (this.addGraphGroupsKeys) {
+            const key = this.svg.append("g")
+                .attr("class", "no-zoom")
+                .selectAll("g")
+                .data(this.NODES_GROUPS)
+                .join("g")
+                .attr("class", "no-zoom")
+
+            key.append("circle")
+                .attr("fill", (i, j) => color(this.NODES_GROUPS[j]))
+                .attr("cx", (i, j) => (this.svg.attr("width") / 2) - 20)
+                .attr("cy", (i, j) => (-1 * (this.svg.attr("height") / 2) + 20 + (j * 30)))
+                .attr("r", 10)
+
+            key.append("text")
+                .text((i, j) => this.NODES_GROUPS[j])
+                .attr("fill", (i, j) => color(this.NODES_GROUPS[j]))
+                .attr("x", (i, j) => (this.svg.attr("width") / 2) - 40)
+                .attr("y", (i, j) => (-1 * (this.svg.attr("height") / 2) + 25 + (j * 30)))
+        }
+
+        if (this.allowZoom) {
+            this.zoom = d3.zoom().on('zoom', this.handleZoom.bind(this));
+            this.zoom_elemt = d3.select('#' + _this.containerId).select('svg').call(this.zoom);
+
+            let zoomControls = this.svg.append('g')
+                                       .attr('class','no-zoom')
+
+            zoomControls.append("rect")
+                        .attr('class','no-zoom')
+                        .attr("width", 20)
+                        .attr("height", 20)
+                        .attr("rx", 4)
+                        .attr("x", (i, j) => (this.svg.attr("width") / 2) - 30)
+                        .attr("y", (i, j) => ((this.svg.attr("height") / 2) - 100))
+                        .style("fill", 'white')
+                        .style("stroke", 'gray')
+                        .on('click', this.zoomIn.bind(this));
+
+            zoomControls.append("rect")
+                        .attr('class','no-zoom')
+                        .attr("width", 20)
+                        .attr("height", 20)
+                        .attr("rx", 4)
+                        .attr("x", (i, j) => (this.svg.attr("width") / 2) - 30)
+                        .attr("y", (i, j) => ((this.svg.attr("height") / 2) - 70))
+                        .style("fill", 'white')
+                        .style("stroke", 'gray')
+                        .on('click', this.zoomOut.bind(this));
+
+            zoomControls.append("rect")
+                        .attr('class','no-zoom')
+                        .attr("width", 20)
+                        .attr("height", 20)
+                        .attr("rx", 4)
+                        .attr("x", (i, j) => (this.svg.attr("width") / 2) - 30)
+                        .attr("y", (i, j) => ((this.svg.attr("height") / 2) - 40))
+                        .style("fill", 'white')
+                        .style("stroke", 'gray')
+                        .on('click', this.resetZoom.bind(this));
+
+            zoomControls.append('text')
+                        .text('+')
+                        .attr('class','no-zoom')
+                        .attr('font-family','FontAwesome')
+                        .attr('font-size', '1em')
+                        .attr('text-anchor', 'middle')
+                        .attr("x", (i, j) => (this.svg.attr("width") / 2) - 20)
+                        .attr("y", (i, j) => ((this.svg.attr("height") / 2) - 90))
+                        .attr('dominant-baseline', 'central')
+                        .attr('fill','gray')
+                        .attr("style", "cursor: pointer;")
+                        .on('click', this.zoomIn.bind(this));
+
+            zoomControls.append('text')
+                        .text('_')
+                        .attr('class','no-zoom')
+                        .attr('font-family','FontAwesome')
+                        .attr('font-size', '1em')
+                        .attr('font-weight', 'bold')
+                        .attr('stroke','gray')
+                        .attr('text-anchor', 'middle')
+                        .attr("x", (i, j) => (this.svg.attr("width") / 2) - 20)
+                        .attr("y", (i, j) => ((this.svg.attr("height") / 2) - 67))
+                        .attr('dominant-baseline', 'central')
+                        .attr('fill','gray')
+                        .attr("style", "cursor: pointer;")
+                        .on('click', this.zoomOut.bind(this));
+
+            zoomControls.append('text')
+                        .text('⊙')
+                        .attr('class','no-zoom')
+                        .attr('font-family','FontAwesome')
+                        .attr('font-size', '1em')
+                        .attr('text-anchor', 'middle')
+                        .attr("x", (i, j) => (this.svg.attr("width") / 2) - 20)
+                        .attr("y", (i, j) => ((this.svg.attr("height") / 2) - 31))
+                        .attr('dominant-baseline', 'central')
+                        .attr('fill','gray')
+                        .attr("style", "cursor: pointer;")
+                        .on('click', this.resetZoom.bind(this));
+        }
+
         this.simulation = d3.forceSimulation(this.nodes)
             .force("link", this.forceLink)
             .force("charge", this.forceNode)
@@ -398,17 +487,46 @@ class ForceGraph{
         Object.assign(this.svg.node(), { scales: { color } });
     }
 
-    destroy(){
+    // x: x-coordinate
+    // y: y-coordinate
+    // w: width
+    // h: height
+    // r: corner radius
+    // tl: top_left rounded?
+    // tr: top_right rounded?
+    // bl: bottom_left rounded?
+    // br: bottom_right rounded?
+
+    rounded_rect_d(x, y, w, h, r, tl, tr, bl, br) {
+        var retval;
+        retval  = "M" + (x + r) + "," + y;
+        retval += "h" + (w - 2*r);
+        if (tr) { retval += "a" + r + "," + r + " 0 0 1 " + r + "," + r; }
+        else { retval += "h" + r; retval += "v" + r; }
+        retval += "v" + (h - 2*r);
+        if (br) { retval += "a" + r + "," + r + " 0 0 1 " + -r + "," + r; }
+        else { retval += "v" + r; retval += "h" + -r; }
+        retval += "h" + (2*r - w);
+        if (bl) { retval += "a" + r + "," + r + " 0 0 1 " + -r + "," + -r; }
+        else { retval += "h" + -r; retval += "v" + -r; }
+        retval += "v" + (2*r - h);
+        if (tl) { retval += "a" + r + "," + r + " 0 0 1 " + r + "," + -r; }
+        else { retval += "v" + -r; retval += "h" + r; }
+        retval += "z";
+        return retval;
+    }
+
+    destroy() {
         this.simulation.stop()
-        d3.select('#'+this.containerId).selectAll("g > *").remove();
-        $('#'+this.containerId).empty()
+        d3.select('#' + this.containerId).selectAll("g > *").remove();
+        $('#' + this.containerId).empty()
     }
 
     createMenu(pointer, forLink = false) {
-        if(!forLink && !this.addNodeMenu)
+        if (!forLink && !this.addNodeMenu)
             return
 
-        if(forLink && !this.addLinkMenu)
+        if (forLink && !this.addLinkMenu)
             return
 
         let _this = this;
@@ -429,10 +547,10 @@ class ForceGraph{
             .outerRadius(_this.nodeRadius * 2.5)
 
         let linkArcGenerator = d3.arc()
-            .innerRadius(_this.nodeRadius/2 * 1.35)
+            .innerRadius(_this.nodeRadius / 2 * 1.35)
             .outerRadius(_this.nodeRadius * 1.5)
 
-        let gId = "#link_" +  pointer.currentTarget.__data__['id']
+        let gId = "#link_" + pointer.currentTarget.__data__['id']
         let pie = linkPie
         let arcGenerator = linkArcGenerator
         let menu = _this.linkMenu
@@ -443,7 +561,7 @@ class ForceGraph{
         let menuIconSize = _this.linkMenuIconColor
         let menuTitle = _this.linkMenuTitle
 
-        if(!forLink){      
+        if (!forLink) {
             gId = "#node_" + pointer.currentTarget.__data__['id']
             pie = nodePie
             arcGenerator = nodeArcGenerator
@@ -456,82 +574,96 @@ class ForceGraph{
             menuTitle = _this.nodeMenuTitle
         }
 
-        d3.select('#'+_this.containerId).selectAll('.menu-arc').remove()
-        d3.select('#'+_this.containerId).selectAll('.menu-arc-icon').remove()
+        d3.select('#' + _this.containerId).selectAll('.menu-arc').remove()
+        d3.select('#' + _this.containerId).selectAll('.menu-arc-icon').remove()
 
-        let nd = d3.select('#'+_this.containerId).select(gId)
+        let nd = d3.select('#' + _this.containerId).select(gId)
         nd = nd.selectAll('g')
             .data(pie(menu))
             .enter();
 
         let g_p = nd.append('g')
-            .attr("style","cursor: pointer;")
+            .attr("style", "cursor: pointer;")
             .attr('class', 'menu-arc')
 
         let path = g_p.append('path')
-            .attr("id", (e,i) => "menu-arc-path_" + i)
+            .attr("id", (e, i) => "menu-arc-path_" + i)
             .attr('d', arcGenerator)
-            .attr("style","cursor: pointer;")
+            .attr("style", "cursor: pointer;")
             .attr('fill', menuColor)
             .attr("opacity", menuOpacity)
             .attr("class", 'mi')
             .on('click', (event, chosenArc) => {
                 let gobj = event.currentTarget.closest('.gobject')
-                d3.select('#'+_this.containerId).selectAll('.menu-arc').remove()
-                d3.select('#'+_this.containerId).selectAll('.menu-arc-icon').remove()
-                _this.onMenuItemClick(gobj.id, chosenArc.data.id,$(gobj).hasClass('gnode'));
+                d3.select('#' + _this.containerId).selectAll('.menu-arc').remove()
+                d3.select('#' + _this.containerId).selectAll('.menu-arc-icon').remove()
+                _this.onMenuItemClick(gobj.id, chosenArc.data.id, $(gobj).hasClass('gnode'));
                 event.stopPropagation();
             })
 
-        path.append("title").text((e,i) => menuTitle(menu[i]))
+        path.append("title").text((e, i) => menuTitle(menu[i]))
 
         path.on("mouseover", function (d) {
             d3.select(this).style("opacity", menuOpacity - 0.1);
         }).on("mouseout", function (d) {
             d3.select(this).style("opacity", menuOpacity);
         })
-        
+
         g_p.append('text')
             .attr("transform", d => `translate(${arcGenerator.centroid(d)})`)
-            .attr("id", (e,i) => "menu-arc-icon_" + i)
-            .attr('font-family', (e,i) => icon_font_family(menuIcon(menu[i])))
-            .attr('font-size', (e,i) => alter_icon_font_size(menuIcon(menu[i]), menuIconSize) + 'em')
+            .attr("id", (e, i) => "menu-arc-icon_" + i)
+            .attr('font-family', (e, i) => icon_font_family(menuIcon(menu[i])))
+            .attr('font-size', (e, i) => alter_icon_font_size(menuIcon(menu[i]), menuIconSize) + 'em')
             .attr('fill', menuIconColor)
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'central')
             .attr('class', 'menu-arc-icon')
-            .attr("style","cursor: pointer;")
-            .on('click', (event)=> {
+            .attr("style", "cursor: pointer;")
+            .on('click', (event) => {
                 d3.select('#' + $(event.currentTarget).siblings('.mi').attr('id')).dispatch('click')
                 event.stopPropagation()
             })
-            .text((e,i) => icon_to_unicode(menuIcon(menu[i])))
-            .append("title").text((e,i) => menuTitle(menu[i]));
+            .text((e, i) => icon_to_unicode(menuIcon(menu[i])))
+            .append("title").text((e, i) => menuTitle(menu[i]));
 
-            if (_this.addLinkMenu)
-                if(_this.useCurvedLinks)
-                    _this.link.each(function it(d){ 
-                        d3.select('#'+_this.containerId).select("#link_" + d['id']).selectAll('.menu-arc')
-                        .attr('transform', () => 'translate(' + _this.calcLinkPathCenterX(d) 
-                        + ', ' + _this.calcLinkPathCenterY(d) +')')})
-                else
-                    _this.link.each(function it(d){ 
-                        d3.select('#'+_this.containerId).select("#link_" + d['id']).selectAll('.menu-arc')
-                        .attr('transform', () => 'translate(' + _this.calcLinkCenterX(d) 
-                        + ', ' + _this.calcLinkCenterY(d) +')')})
-        
+        if (_this.addLinkMenu)
+            if (_this.useCurvedLinks)
+                _this.link.each(function it(d) {
+                    d3.select('#' + _this.containerId).select("#link_" + d['id']).selectAll('.menu-arc')
+                        .attr('transform', () => 'translate(' + _this.calcLinkPathCenterX(d)
+                            + ', ' + _this.calcLinkPathCenterY(d) + ')')
+                })
+            else
+                _this.link.each(function it(d) {
+                    d3.select('#' + _this.containerId).select("#link_" + d['id']).selectAll('.menu-arc')
+                        .attr('transform', () => 'translate(' + _this.calcLinkCenterX(d)
+                            + ', ' + _this.calcLinkCenterY(d) + ')')
+                })
+
         pointer.stopPropagation();
         pointer.preventDefault();
     }
 
     handleZoom(e) {
-        d3.select('#'+this.containerId).selectAll('.menu-arc').remove()
-        d3.select('#'+this.containerId).selectAll('.menu-arc-icon').remove()
-        d3.select('#'+this.containerId).selectAll('svg g')
-          .filter(function() {
-            return !this.classList.contains('keysg')
-           })
-          .attr('transform', e.transform);
+        d3.select('#' + this.containerId).selectAll('.menu-arc').remove()
+        d3.select('#' + this.containerId).selectAll('.menu-arc-icon').remove()
+        d3.select('#' + this.containerId).selectAll('svg g')
+            .filter(function () {
+                return !this.classList.contains('no-zoom')
+            })
+            .attr('transform', e.transform);
+    }
+
+    zoomIn(){
+        this.zoom.scaleBy(this.svg.transition().duration(750), 1.2);
+    }
+
+    zoomOut(){
+        this.zoom.scaleBy(this.svg.transition().duration(750), 0.8);
+    }
+
+    resetZoom(){
+        this.zoom_elemt.transition().duration(750).call(this.zoom.transform, d3.zoomIdentity);
     }
 
     intern(value) {
@@ -540,59 +672,60 @@ class ForceGraph{
 
     ticked() {
         let _this = this;
-        if(_this.useCurvedLinks)
-            _this.link.each(function it(d){ 
-                d3.select('#'+_this.containerId).selectAll(".link-line")
-                .attr("d", function(d) {
-                        if(d.source.id == d.target.id){
+        if (_this.useCurvedLinks)
+            _this.link.each(function it(d) {
+                d3.select('#' + _this.containerId).selectAll(".link-line")
+                    .attr("d", function (d) {
+                        if (d.source.id == d.target.id) {
                             var x1 = d.source.x,
-                            y1 = d.source.y,
-                            x2 = d.target.x,
-                            y2 = d.target.y,
-                            dx = x2 - x1,
-                            dy = y2 - y1,
-                            dr = Math.sqrt(dx * dx + dy * dy),
-                      
-                            // Defaults for normal edge.
-                            drx = dr,
-                            dry = dr,
-                            xRotation = 0, // degrees
-                            largeArc = 0, // 1 or 0
-                            sweep = 1; // 1 or 0
-                      
+                                y1 = d.source.y,
+                                x2 = d.target.x,
+                                y2 = d.target.y,
+                                dx = x2 - x1,
+                                dy = y2 - y1,
+                                dr = Math.sqrt(dx * dx + dy * dy),
+
+                                // Defaults for normal edge.
+                                drx = dr,
+                                dry = dr,
+                                xRotation = 0, // degrees
+                                largeArc = 0, // 1 or 0
+                                sweep = 1; // 1 or 0
+
                             // Self edge.
-                            if ( x1 === x2 && y1 === y2 ) {
-                              // Fiddle with this angle to get loop oriented.
-                              xRotation = -45;
-                      
-                              // Needs to be 1.
-                              largeArc = 1;
-                      
-                              // Change sweep to change orientation of loop. 
-                              //sweep = 0;
-                      
-                              // Make drx and dry different to get an ellipse
-                              // instead of a circle.
-                              drx = 30;
-                              dry = 20;
-                      
-                              // For whatever reason the arc collapses to a point if the beginning
-                              // and ending points of the arc are the same, so kludge it.
-                              x2 = x2 + 1;
-                              y2 = y2 + 1;
-                            } 
-                      
+                            if (x1 === x2 && y1 === y2) {
+                                // Fiddle with this angle to get loop oriented.
+                                xRotation = -45;
+
+                                // Needs to be 1.
+                                largeArc = 1;
+
+                                // Change sweep to change orientation of loop. 
+                                //sweep = 0;
+
+                                // Make drx and dry different to get an ellipse
+                                // instead of a circle.
+                                drx = 30;
+                                dry = 20;
+
+                                // For whatever reason the arc collapses to a point if the beginning
+                                // and ending points of the arc are the same, so kludge it.
+                                x2 = x2 + 1;
+                                y2 = y2 + 1;
+                            }
+
                             return "M" + x1 + "," + y1 + "A" + drx + "," + dry + " " + xRotation + "," + largeArc + "," + sweep + " " + x2 + "," + y2;
-                        }else{
+                        } else {
                             var dx = _this.calcLinkWithArrowX2(d) - _this.calcLinkWithArrowX1(d),
-                            dy = _this.calcLinkWithArrowY2(d) - _this.calcLinkWithArrowY1(d),
-                            dr = Math.sqrt(dx * dx + dy * dy);
-                            let repeatedLinkIndex = _this.links.filter(x=> x.source==d.source.id && x.target==d.target.id).map(x=> x.id).indexOf(d.id)
-                            dr = dr - (repeatedLinkIndex * 120);
-                            return "M" + _this.calcLinkWithArrowX1(d) + "," + _this.calcLinkWithArrowY1(d) + "A" + dr + "," + dr + " 0 0,1 " + _this.calcLinkWithArrowX2(d) + "," + _this.calcLinkWithArrowY2(d);
+                                dy = _this.calcLinkWithArrowY2(d) - _this.calcLinkWithArrowY1(d),
+                                dr = Math.sqrt(dx * dx + dy * dy);
+                            let repeatedLinkIndex = _this.links.filter(x => (x.source.id == d.source.id && x.target.id == d.target.id) || (x.source.id == d.target.id && x.target.id == d.source.id)).map(x => x.id).indexOf(d.id)
+                            let side = (Math.abs(repeatedLinkIndex) % 2 == 0) ? 0 : 1;
+                            dr = dr - (repeatedLinkIndex * 50);
+                            return "M" + _this.calcLinkWithArrowX1(d) + "," + _this.calcLinkWithArrowY1(d) + "A" + dr + "," + dr + " 0 0," + side + " " + _this.calcLinkWithArrowX2(d) + "," + _this.calcLinkWithArrowY2(d);
                         }
                     })
-                })
+            })
         else
             _this.link.select(".link-line")
                 .attr("x1", d => _this.calcLinkWithArrowX1(d))
@@ -600,54 +733,56 @@ class ForceGraph{
                 .attr("x2", d => _this.calcLinkWithArrowX2(d))
                 .attr("y2", d => _this.calcLinkWithArrowY2(d));
 
-        if (_this.addLinkLabel){
-            if(_this.useCurvedLinks){
+        if (_this.addLinkLabel) {
+            if (_this.useCurvedLinks) {
                 _this.link.select(".link-label")
                     .attr("x", d => _this.calcLinkPathCenterX(d))
                     .attr("y", d => _this.calcLinkPathCenterY(d));
-                
+
                 _this.link.select("circle")
                     .attr("cx", d => _this.calcLinkPathCenterX(d))
                     .attr("cy", d => _this.calcLinkPathCenterY(d));
-    
+
                 _this.link.select(".link-icon")
                     .attr("x", d => _this.calcLinkPathCenterX(d))
                     .attr("y", d => _this.calcLinkPathCenterY(d));
-            }else{
+            } else {
                 _this.link.select(".link-label")
                     .attr("x", d => _this.calcLinkCenterX(d))
                     .attr("y", d => _this.calcLinkCenterY(d));
-                
+
                 _this.link.select("circle")
                     .attr("cx", d => _this.calcLinkCenterX(d))
                     .attr("cy", d => _this.calcLinkCenterY(d));
-    
+
                 _this.link.select(".link-icon")
                     .attr("x", d => _this.calcLinkCenterX(d))
                     .attr("y", d => _this.calcLinkCenterY(d));
             }
         }
-            
+
         if (_this.addLinkMenu)
-            if(_this.useCurvedLinks)
-                _this.link.each(function it(d){ 
-                    d3.select('#'+_this.containerId).select("#link_" + d['id']).selectAll('.menu-arc')
-                    .attr('transform', () => 'translate(' + _this.calcLinkPathCenterX(d) 
-                    + ', ' + _this.calcLinkPathCenterY(d) +')')})
+            if (_this.useCurvedLinks)
+                _this.link.each(function it(d) {
+                    d3.select('#' + _this.containerId).select("#link_" + d['id']).selectAll('.menu-arc')
+                        .attr('transform', () => 'translate(' + _this.calcLinkPathCenterX(d)
+                            + ', ' + _this.calcLinkPathCenterY(d) + ')')
+                })
             else
-                _this.link.each(function it(d){ 
-                    d3.select('#'+_this.containerId).select("#link_" + d['id']).selectAll('.menu-arc')
-                    .attr('transform', () => 'translate(' + _this.calcLinkCenterX(d) 
-                    + ', ' + _this.calcLinkCenterY(d) +')')})
+                _this.link.each(function it(d) {
+                    d3.select('#' + _this.containerId).select("#link_" + d['id']).selectAll('.menu-arc')
+                        .attr('transform', () => 'translate(' + _this.calcLinkCenterX(d)
+                            + ', ' + _this.calcLinkCenterY(d) + ')')
+                })
 
         _this.node.select("circle")
             .attr("cx", d => d.x)
             .attr("cy", d => d.y);
 
         if (_this.addNodeMenu)
-            _this.node.each(function it(d){ 
-                d3.select('#'+_this.containerId).select("#node_" + d['id']).selectAll('.menu-arc')
-                .attr('transform', () => 'translate('+ d.x +', '+ d.y +')')
+            _this.node.each(function it(d) {
+                d3.select('#' + _this.containerId).select("#node_" + d['id']).selectAll('.menu-arc')
+                    .attr('transform', () => 'translate(' + d.x + ', ' + d.y + ')')
             })
 
         if (_this.addNodeIcon)
@@ -661,53 +796,61 @@ class ForceGraph{
                 .select(".node-label")
                 .attr("x", d => d.x)
                 .attr("y", d => d.y);
+
+        if (_this.shortSimulation) _this.simulation.alphaTarget(0);
     }
 
-    calcLinkWithArrowX1(d){
+    calcLinkWithArrowX1(d) {
         return d.source.x
     }
 
-    calcLinkWithArrowX2(d){
-        if(!this.addLinkArrow) return d.target.x
-        return this.findIntersect(new Vector(d.target.x,d.target.y),this.nodeRadius*1.3,new Vector(d.source.x,d.source.y)).x;
+    calcLinkWithArrowX2(d) {
+        if (!this.addLinkArrow) return d.target.x
+        let ip =  this.findIntersectionPoint(new Vector(d.target.x, d.target.y), this.nodeRadius * 1.3, new Vector(d.source.x, d.source.y));
+        let tp = this.findTangentPoint(new Vector(d.target.x, d.target.y), this.nodeRadius * 1.3, new Vector(d.source.x, d.source.y));
+        let mp = new Vector((ip.x + tp.x)/2, (ip.y + tp.y)/2)
+        return mp.x;
     }
 
-    calcLinkWithArrowY1(d){
+    calcLinkWithArrowY1(d) {
         return d.source.y
     }
 
-    calcLinkWithArrowY2(d){
-        if(!this.addLinkArrow) return d.target.y
-        return this.findIntersect(new Vector(d.target.x,d.target.y),this.nodeRadius*1.3,new Vector(d.source.x,d.source.y)).y;
+    calcLinkWithArrowY2(d) {
+        if (!this.addLinkArrow) return d.target.y
+        let ip =  this.findIntersectionPoint(new Vector(d.target.x, d.target.y), this.nodeRadius * 1.3, new Vector(d.source.x, d.source.y));
+        let tp = this.findTangentPoint(new Vector(d.target.x, d.target.y), this.nodeRadius * 1.3, new Vector(d.source.x, d.source.y));
+        let mp = new Vector((ip.x + tp.x)/2, (ip.y + tp.y)/2)
+        return mp.y;
     }
 
-    calcLinkCenterX(d){
+    calcLinkCenterX(d) {
         x1 = this.calcLinkWithArrowX1(d)
         x2 = this.calcLinkWithArrowX2(d)
-        return  Math.min(x1,x2) + ((Math.max(x1,x2) - Math.min(x1,x2)) / 2)
+        return Math.min(x1, x2) + ((Math.max(x1, x2) - Math.min(x1, x2)) / 2)
     }
 
-    calcLinkCenterY(d){
+    calcLinkCenterY(d) {
         y1 = this.calcLinkWithArrowY1(d)
         y2 = this.calcLinkWithArrowY2(d)
-        return Math.min(y1,y2) + ((Math.max(y1,y2) - Math.min(y1,y2)) / 2)
+        return Math.min(y1, y2) + ((Math.max(y1, y2) - Math.min(y1, y2)) / 2)
     }
 
-    calcLinkPathCenterX(d){
-        var pathEl = d3.select('#'+this.containerId).select("#link_path_" + d['id']).node()
+    calcLinkPathCenterX(d) {
+        var pathEl = d3.select('#' + this.containerId).select("#link_path_" + d['id']).node()
         try {
-            return pathEl.getPointAtLength(pathEl.getTotalLength()/2).x;
+            return pathEl.getPointAtLength(pathEl.getTotalLength() / 2).x;
         } catch (error) {
-            return pathEl.getTotalLength()/2;
+            return pathEl.getTotalLength() / 2;
         }
     }
 
-    calcLinkPathCenterY(d){
-        var pathEl = d3.select('#'+this.containerId).select("#link_path_" + d['id']).node()
+    calcLinkPathCenterY(d) {
+        var pathEl = d3.select('#' + this.containerId).select("#link_path_" + d['id']).node()
         try {
-            return pathEl.getPointAtLength(pathEl.getTotalLength()/2).y;
+            return pathEl.getPointAtLength(pathEl.getTotalLength() / 2).y;
         } catch (error) {
-            return pathEl.getTotalLength()/2;
+            return pathEl.getTotalLength() / 2;
         }
     }
 
@@ -736,15 +879,30 @@ class ForceGraph{
             .on("end", dragended);
     }
 
-    
-    findIntersect(origin, radius, otherLineEndPoint) {
-        var v = otherLineEndPoint.subtract(origin);
-        var lineLength = v.length();    
+
+    findIntersectionPoint(origin, radius, otherLineEndPoint) {
+        let v = otherLineEndPoint.subtract(origin);
+        let lineLength = v.length();
         if (lineLength === 0) throw new Error("Length has to be positive");
         v = v.normalize();
-        return origin.add(v.multiplyScalar(radius)); 
+        return origin.add(v.multiplyScalar(radius));
     }
 
+    findTangentPoint(origin, radius, otherLineEndPoint) {
+        let dx = origin.x - otherLineEndPoint.x;
+        let dy = origin.y - otherLineEndPoint.y;
+        let dd = Math.sqrt(dx * dx + dy * dy);
+        let a = Math.asin(radius / dd);
+        let b = Math.atan2(dy, dx);
+
+        let t1 = b - a
+        let ta = new Vector(origin.x + (radius * Math.sin(t1)), origin.y + (radius * -Math.cos(t1)));
+
+        let t2 = b + a
+        let tb = new Vector(origin.x + (radius * -Math.sin(t2)), origin.y + (radius * Math.cos(t2)));
+
+        return tb;
+    }
 }
 
 var fa_unicode_map = {
