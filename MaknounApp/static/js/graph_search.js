@@ -719,10 +719,12 @@ class ForceGraph {
                             var dx = _this.calcLinkWithArrowX2(d) - _this.calcLinkWithArrowX1(d),
                                 dy = _this.calcLinkWithArrowY2(d) - _this.calcLinkWithArrowY1(d),
                                 dr = Math.sqrt(dx * dx + dy * dy);
+                            
+                            let repeatedLinkIndexOneWay = _this.links.filter(x => x.source.id == d.source.id && x.target.id == d.target.id).map(x => x.id).indexOf(d.id)
                             let repeatedLinkIndex = _this.links.filter(x => (x.source.id == d.source.id && x.target.id == d.target.id) || (x.source.id == d.target.id && x.target.id == d.source.id)).map(x => x.id).indexOf(d.id)
                             let side = (Math.abs(repeatedLinkIndex) % 2 == 0) ? 0 : 1;
                             dr = dr - (repeatedLinkIndex * 50);
-                            return "M" + _this.calcLinkWithArrowX1(d) + "," + _this.calcLinkWithArrowY1(d) + "A" + dr + "," + dr + " 0 0," + side + " " + _this.calcLinkWithArrowX2(d) + "," + _this.calcLinkWithArrowY2(d);
+                            return "M" + _this.calcLinkWithArrowX1(d) + "," + _this.calcLinkWithArrowY1(d) + "A" + dr + "," + dr + " 0 0," + side + " " + _this.calcLinkWithArrowX2(d,repeatedLinkIndexOneWay) + "," + _this.calcLinkWithArrowY2(d,repeatedLinkIndexOneWay);
                         }
                     })
             })
@@ -804,10 +806,10 @@ class ForceGraph {
         return d.source.x
     }
 
-    calcLinkWithArrowX2(d) {
+    calcLinkWithArrowX2(d,repeatedLinkIndexOneWay) {
         if (!this.addLinkArrow) return d.target.x
-        let ip =  this.findIntersectionPoint(new Vector(d.target.x, d.target.y), this.nodeRadius * 1.3, new Vector(d.source.x, d.source.y));
-        let tp = this.findTangentPoint(new Vector(d.target.x, d.target.y), this.nodeRadius * 1.3, new Vector(d.source.x, d.source.y));
+        let ip =  this.findIntersectionPoint(new Vector(d.target.x, d.target.y), this.nodeRadius * 1.7, new Vector(d.source.x, d.source.y));
+        let tp = this.findTangentPoints(new Vector(d.target.x, d.target.y), this.nodeRadius * 1.7, new Vector(d.source.x, d.source.y))[repeatedLinkIndexOneWay%2==0?1:0];
         let mp = new Vector((ip.x + tp.x)/2, (ip.y + tp.y)/2)
         return mp.x;
     }
@@ -816,10 +818,10 @@ class ForceGraph {
         return d.source.y
     }
 
-    calcLinkWithArrowY2(d) {
+    calcLinkWithArrowY2(d,repeatedLinkIndexOneWay) {
         if (!this.addLinkArrow) return d.target.y
-        let ip =  this.findIntersectionPoint(new Vector(d.target.x, d.target.y), this.nodeRadius * 1.3, new Vector(d.source.x, d.source.y));
-        let tp = this.findTangentPoint(new Vector(d.target.x, d.target.y), this.nodeRadius * 1.3, new Vector(d.source.x, d.source.y));
+        let ip =  this.findIntersectionPoint(new Vector(d.target.x, d.target.y), this.nodeRadius * 1.7, new Vector(d.source.x, d.source.y));
+        let tp = this.findTangentPoints(new Vector(d.target.x, d.target.y), this.nodeRadius * 1.7, new Vector(d.source.x, d.source.y))[repeatedLinkIndexOneWay%2==0?1:0];
         let mp = new Vector((ip.x + tp.x)/2, (ip.y + tp.y)/2)
         return mp.y;
     }
@@ -888,7 +890,7 @@ class ForceGraph {
         return origin.add(v.multiplyScalar(radius));
     }
 
-    findTangentPoint(origin, radius, otherLineEndPoint) {
+    findTangentPoints(origin, radius, otherLineEndPoint) {
         let dx = origin.x - otherLineEndPoint.x;
         let dy = origin.y - otherLineEndPoint.y;
         let dd = Math.sqrt(dx * dx + dy * dy);
@@ -901,7 +903,7 @@ class ForceGraph {
         let t2 = b + a
         let tb = new Vector(origin.x + (radius * -Math.sin(t2)), origin.y + (radius * Math.cos(t2)));
 
-        return tb;
+        return [ta,tb];
     }
 }
 
