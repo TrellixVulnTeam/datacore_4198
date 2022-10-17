@@ -64,7 +64,6 @@ class ForceGraph {
         nodeLabelFunc, // given d in nodes, a label string
         addNodeIconParam = false,
         nodeIconFunc, // given d in nodes, a icon string
-        nodeIconSizeParam = 2, // given d in nodes, a size int
         nodeIconColorParam = "white", // given d in nodes, a color string
         nodeFillParam = "currentColor", // node stroke fill (if not using a group color encoding)
         nodeStrokeParam = "#fff", // node stroke color
@@ -79,7 +78,7 @@ class ForceGraph {
         nodeMenuWidthFunc = d => d.width,
         nodeMenuIconFunc = d => d.icon,
         nodeMenuIconColorParam = 'white',
-        nodeMenuIconSizeParam = 2, // given d in nodes, a size int
+        nodeMenuIconSizeParam = 15, // given d in nodes, a size int
         nodeMenuTitleFunc = () => "",
         linkIdFunc = d => d.id, // given d in links, returns a unique identifier (string)
         linkSourceFunc = ({ source }) => source, // given d in links, returns a node identifier string
@@ -87,22 +86,22 @@ class ForceGraph {
         addLinkLabelParam = false,
         linkLabelFunc, // given d in links, a label string
         linkTitleFunc, // given d in links, a title string
-        linkLineLengthParam = 250, // link line length
+        linkLineLengthParam = 350, // link line length
         linkStrokeParam = "#999", // link stroke color
         linkStrokeOpacityParam = 0.6, // link stroke opacity
         linkStrokeWidthParam = 5, // given d in links, returns a stroke width in pixels
         linkStrokeLinecapParam = "round", // link stroke linecap
-        linkStrengthParam,
+        linkStrengthParam = 1,
         addLinkMenuParam = false,
         addLinkArrowParam = true,
         useCurvedLinksParam = true,
         linkMenuParam,
         linkMenuColorFunc = d => d.color,
-        linkMenuOpacityParam = 0.8,
+        linkMenuOpacityParam = 0.5,
         linkMenuWidthFunc = d => d.width,
         linkMenuIconFunc = d => d.icon,
         linkMenuIconColorParam = 'white',
-        linkMenuIconSizeParam = 2, // given d in nodes, a size int
+        linkMenuIconSizeParam = 10, // given d in nodes, a size int
         linkMenuTitleFunc = () => "",
         linkRadiusParam = 15, // link radius, in pixels
         colorsParam = d3.schemeTableau10, // an array of color strings, for the node groups
@@ -126,7 +125,6 @@ class ForceGraph {
         this.nodeLabel = nodeLabelFunc;
         this.addNodeIcon = addNodeIconParam;
         this.nodeIcon = nodeIconFunc;
-        this.nodeIconSize = nodeIconSizeParam;
         this.nodeIconColor = nodeIconColorParam;
         this.nodeFill = nodeFillParam;
         this.nodeStroke = nodeStrokeParam;
@@ -235,7 +233,7 @@ class ForceGraph {
             .attr("style", "max-width: 100%; height: auto; height: intrinsic;");
 
         
-        if (this.addLinkArrow)
+        if (this.addLinkArrow){
             this.svg.append("svg:defs").selectAll("marker")
                 .data(["end"])      // Different link/path types can be defined here
                 .enter().append("svg:marker")    // This section adds in the arrows
@@ -246,10 +244,26 @@ class ForceGraph {
                 .attr("markerWidth", 2)
                 .attr("markerHeight", 2)
                 .attr("orient", "auto")
-                .attr('fill', "#545454")
-                .attr('opacity', 0.8)
+                .attr('fill', "#777777")
+                .attr('opacity', 1)
                 .append("svg:path")
                 .attr("d", "M0,-5L10,0L0,5");
+
+            this.svg.append("svg:defs").selectAll("marker")
+                .data(["end-blue"])      // Different link/path types can be defined here
+                .enter().append("svg:marker")    // This section adds in the arrows
+                .attr("id", String)
+                .attr("viewBox", "0 -5 10 10")
+                .attr("refX", 0)
+                .attr("refY", 0)
+                .attr("markerWidth", 2)
+                .attr("markerHeight", 2)
+                .attr("orient", "auto")
+                .attr('fill', "#60c5fb")
+                .attr('opacity', 1)
+                .append("svg:path")
+                .attr("d", "M0,-5L10,0L0,5");
+        }
 
         if (this.addNodeMenu || this.addLinkMenu)
             this.svg.on('click', (e) => {
@@ -268,7 +282,6 @@ class ForceGraph {
             .join("g")
             .attr("id", (e, i) => "link_" + this.LINKS[i])
             .attr("class", "gobject glink")
-            .attr("marker-end", "url(#end)");
 
         if (this.LINKS != null && this.LINKS.length > 0) {
             if (this.useCurvedLinks){
@@ -280,6 +293,7 @@ class ForceGraph {
                     .attr("stroke-linecap", this.linkStrokeLinecap)
                     .attr("stroke", this.linkStroke)
                     .attr("style", "pointer-events:visiblestroke")
+                    .attr("marker-end", "url(#end)");
             }else{
                 this.link.append("line")
                     .attr('class', 'link-line')
@@ -289,6 +303,7 @@ class ForceGraph {
                     .attr("stroke-width", typeof this.linkStrokeWidth !== "function" ? this.linkStrokeWidth : null)
                     .attr("stroke-linecap", this.linkStrokeLinecap)
                     .attr("style", "pointer-events:visiblestroke")
+                    .attr("marker-end", "url(#end)");
             }
 
             if (this.addLinkLabel) {
@@ -301,7 +316,7 @@ class ForceGraph {
 
                 this.link.append('text')
                     .attr('font-family', () => icon_font_family("bi-link-45deg"))
-                    .attr('font-size', () => alter_icon_font_size("bi-link-45deg", this.nodeIconSize / 1.5) + 'em')
+                    .attr('font-size', this.linkRadius + 'px')
                     .attr('font-weight', 'bold')
                     .attr('fill', "white")
                     .attr('text-anchor', 'middle')
@@ -349,7 +364,7 @@ class ForceGraph {
         if (this.addNodeIcon)
             this.node.append('text')
                 .attr('font-family', (e, i) => icon_font_family(this.NODES_ICONS[i]))
-                .attr('font-size', (e, i) => alter_icon_font_size(this.NODES_ICONS[i], this.nodeIconSize) + 'em')
+                .attr('font-size', this.nodeRadius + 'px')
                 .attr('fill', d => this.nodeIconColor)
                 .attr('text-anchor', 'middle')
                 .attr('dominant-baseline', 'central')
@@ -487,11 +502,13 @@ class ForceGraph {
         d3.select("#" + this.containerId)
           .selectAll(".link-line,.link-circle,.link-icon")
           .on("mouseover", function (d) {
-            d3.select($(this.parentElement).children('.link-line')[0]).attr("stroke", "#60c5fb");
+            d3.select($(this.parentElement).children('.link-line')[0]).attr("stroke", "#60c5fb").attr("marker-end", "url(#end-blue)");
             d3.select($(this.parentElement).children('.link-circle')[0]).attr("fill", "#60c5fb");
+            d3.select($(this.parentElement).children('.link-label')[0]).attr("fill", "#60c5fb");
           }).on("mouseout", function (d) {
-            d3.select($(this.parentElement).children('.link-line')[0]).attr("stroke", _this.linkStroke);
+            d3.select($(this.parentElement).children('.link-line')[0]).attr("stroke", _this.linkStroke).attr("marker-end", "url(#end)");
             d3.select($(this.parentElement).children('.link-circle')[0]).attr("fill", "#545454");
+            d3.select($(this.parentElement).children('.link-label')[0]).attr("fill", "#545454");
           })
 
         this.simulation = d3.forceSimulation(this.nodes)
@@ -575,7 +592,7 @@ class ForceGraph {
         let menuOpacity = _this.linkMenuOpacity
         let menuIcon = _this.linkMenuIcon
         let menuIconColor = _this.linkMenuIconColor
-        let menuIconSize = _this.linkMenuIconColor
+        let menuIconSize = _this.linkMenuIconSize
         let menuTitle = _this.linkMenuTitle
 
         if (!forLink) {
@@ -614,7 +631,7 @@ class ForceGraph {
                 let gobj = event.currentTarget.closest('.gobject')
                 d3.select('#' + _this.containerId).selectAll('.menu-arc').remove()
                 d3.select('#' + _this.containerId).selectAll('.menu-arc-icon').remove()
-                _this.onMenuItemClick(gobj.id, chosenArc.data.id, $(gobj).hasClass('gnode'));
+                _this.onMenuItemClick.bind(_this, gobj.id, chosenArc.data.id, $(gobj).hasClass('gnode')).apply();
                 event.stopPropagation();
             })
 
@@ -641,7 +658,7 @@ class ForceGraph {
             .attr("transform", d => `translate(${arcGenerator.centroid(d)})`)
             .attr("id", (e, i) => "menu-arc-icon_" + i)
             .attr('font-family', (e, i) => icon_font_family(menuIcon(menu[i])))
-            .attr('font-size', (e, i) => alter_icon_font_size(menuIcon(menu[i]), menuIconSize) + 'em')
+            .attr('font-size', menuIconSize + 'px')
             .attr('fill', menuIconColor)
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'central')
@@ -683,14 +700,41 @@ class ForceGraph {
         pointer.preventDefault();
     }
 
+    addNodeBadge(nodeid, badgeIconClass){
+        let nd = d3.select('#' + this.containerId).select('#' + nodeid)
+        let br = nd.node().getBoundingClientRect();
+
+        nd.selectAll('.node-badge,.node-badge-icon').remove()
+        
+        let nodeColor = nd.select('circle').attr("fill")
+        
+        let badge_g = nd.append('g')
+                        .attr("class","node-badge")
+
+        badge_g.append("circle")
+               .attr("class","node-badge-circle")
+               .attr("fill", nodeColor)
+               .attr("stroke","white")
+               .attr("r", this.nodeRadius/3)
+
+        badge_g.append('text')
+               .attr('font-family', icon_font_family(badgeIconClass))
+               .attr('font-size', (this.nodeRadius/3) + 'px')
+               .attr('fill', this.nodeIconColor)
+               .attr('text-anchor', 'middle')
+               .attr('dominant-baseline', 'central')
+               .attr('class', 'node-badge-icon')
+               .text(icon_to_unicode(badgeIconClass))
+    }
+
     handleZoom(e) {
-        d3.select('#' + this.containerId).selectAll('.menu-arc').remove()
-        d3.select('#' + this.containerId).selectAll('.menu-arc-icon').remove()
         d3.select('#' + this.containerId).selectAll('svg g')
             .filter(function () {
                 return !this.classList.contains('no-zoom')
             })
             .attr('transform', e.transform);
+        
+        this.ticked.bind(this).apply();
     }
 
     zoomIn(){
@@ -791,6 +835,15 @@ class ForceGraph {
         _this.node.select("circle")
             .attr("cx", d => d.x)
             .attr("cy", d => d.y);
+            
+        // _this.node.each(function it(i) {
+        //     d3.select('#' + _this.containerId).select("#node_" + i['id']).selectAll('.node-badge')
+        //     .attr('transform', d => 'translate(' + (i.x + _this.nodeRadius * 0.6) + ', ' + (i.y - _this.nodeRadius * 0.7) + ')')
+        // })
+            
+        _this.node.select(".node-badge")
+                    .attr('transform', d => 'translate(' + (d.x + _this.nodeRadius * 0.6) + ', ' + (d.y - _this.nodeRadius * 0.7) + ')')
+            
 
         if (_this.addNodeMenu)
             _this.node.each(function it(d) {
@@ -972,17 +1025,6 @@ function icon_font_family(icon_class) {
     return ""
 }
 
-function alter_icon_font_size(icon_class, size) {
-    if (icon_class == null || icon_class === undefined || icon_class.trim().length == 0)
-        return size
-
-    if (icon_class.trim().startsWith("bi"))
-        return size
-    else if (icon_class.trim().startsWith("fa"))
-        return size * 8 / 10
-
-    return size
-}
 
 function try_get(object, key, default_value) {
     var result = object[key.trim()];

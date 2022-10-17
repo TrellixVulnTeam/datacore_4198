@@ -261,7 +261,6 @@
         nodeMenuParam: node_menu,
         nodeMenuWidthFunc: d => d.width,
         nodeMenuIconFunc: d => d.icon,
-        nodeMenuIconSizeParam: 1.5,
         nodeMenuTitleFunc: d => d.title,
         addLinkLabelParam: true,
         linkTitleFunc: d => `${d.arabic_name}`,
@@ -270,12 +269,8 @@
         linkMenuParam: link_menu,
         linkMenuWidthFunc: d => d.width,
         linkMenuIconFunc: d => d.icon,
-        linkMenuIconSizeParam: 1.2,
         linkMenuTitleFunc: d => d.title,
-        linkMenuOpacityParam: 0.5,
         linkIdFunc: d => d.id,
-        linkStrengthParam: 1,
-        linkLineLengthParam: 350,
         onMenuItemClickFunc: onQBuilderChartMenuClick,
         containerIdParam: 'filter_canvas',
         shortSimulationParam: true,
@@ -303,7 +298,7 @@
       update_items_list();
       drawGraph();
     }else if(itemId=='node_flag_mi'){
-
+      this.addNodeBadge(objecId,"bi-flag")
     }else if(itemId=='link_remove_mi'){
       objecId = objecId.replace('link_','')
       delete dataInGraph[objecId]
