@@ -700,7 +700,7 @@ class ForceGraph {
         pointer.preventDefault();
     }
 
-    addNodeBadge(nodeid, badgeIconClass){
+    setNodeBadge(nodeid, badgeIconClass){
         let nd = d3.select('#' + this.containerId).select('#' + nodeid)
         let br = nd.node().getBoundingClientRect();
 
@@ -725,6 +725,15 @@ class ForceGraph {
                .attr('dominant-baseline', 'central')
                .attr('class', 'node-badge-icon')
                .text(icon_to_unicode(badgeIconClass))
+    }
+
+    removeNodeBadge(nodeid){
+        let nd = d3.select('#' + this.containerId).select('#' + nodeid)
+        nd.selectAll('.node-badge,.node-badge-icon').remove()
+    }
+
+    removeAllNodeBadges(){
+        let nd = d3.select('#' + this.containerId).selectAll('.node-badge,.node-badge-icon').remove()
     }
 
     handleZoom(e) {

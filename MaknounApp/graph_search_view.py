@@ -39,14 +39,15 @@ class GraphSearchView(master_page_view.MasterPageView):
         data[source_name]['english_name'] = source.english_name
         data[source_name]['arabic_name'] = source.arabic_name
         data[source_name]['rules'] = None
-        data[source_name]['data'] = {}
-        data[source_name]['data']['filters'] = []
-        data[source_name]['data']['filters'].append({'id':'_id','label':'المعرّف','type':'string','input':'text','operators':self.get_operators("String", False),'multiple':False})
-        data[source_name]['data']['filters'].append({'id':'_active','label':'مفعّل','type':'boolean','input':'select','operators':self.get_operators("Bool", False),'multiple':False, 'values':{True:'نعم',False:'كلا'}})
-        data[source_name]['data']['filters'].append({'id':'_creation','label':'تاريخ_الإنشاء','type':'datetime','input':'text','operators':self.get_operators("Date", False),'multiple':True})
+        data[source_name]['is_start_node'] = False
+        data[source_name]['qb_config'] = {}
+        data[source_name]['qb_config']['filters'] = []
+        data[source_name]['qb_config']['filters'].append({'id':'_id','label':'المعرّف','type':'string','input':'text','operators':self.get_operators("String", False),'multiple':False})
+        data[source_name]['qb_config']['filters'].append({'id':'_active','label':'مفعّل','type':'boolean','input':'select','operators':self.get_operators("Bool", False),'multiple':False, 'values':{True:'نعم',False:'كلا'}})
+        data[source_name]['qb_config']['filters'].append({'id':'_creation','label':'تاريخ_الإنشاء','type':'datetime','input':'text','operators':self.get_operators("Date", False),'multiple':True})
         if type(source) is models.Relation:
-            data[source_name]['data']['filters'].append({'id':'_from','label':'من (معرّف)','type':'string','input':'text','operators':self.get_operators("String", False),'multiple':False})
-            data[source_name]['data']['filters'].append({'id':'_to','label':'إلى (معرّف)','type':'string','input':'text','operators':self.get_operators("String", False),'multiple':False})
+            data[source_name]['qb_config']['filters'].append({'id':'_from','label':'من (معرّف)','type':'string','input':'text','operators':self.get_operators("String", False),'multiple':False})
+            data[source_name]['qb_config']['filters'].append({'id':'_to','label':'إلى (معرّف)','type':'string','input':'text','operators':self.get_operators("String", False),'multiple':False})
             data[source_name]['from'] = 'col_' + source.from_bank.english_name
             data[source_name]['to'] = 'col_' + source.to_bank.english_name
             data[source_name]['icon'] = 'bi-diagram-3-fill'
@@ -66,7 +67,7 @@ class GraphSearchView(master_page_view.MasterPageView):
             field_data['multiple'] = self.is_multiple(f.data_type)
             if field_data['type'] == 'boolean':
                 field_data['values'] = {True:'نعم',False:'كلا'}
-            data[source_name]['data']['filters'].append(field_data)
+            data[source_name]['qb_config']['filters'].append(field_data)
 
     def get_input(self, t):
         if t.endswith('String'):

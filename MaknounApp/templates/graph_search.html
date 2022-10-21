@@ -116,8 +116,8 @@
 
     Object.assign(dataInList, data);
     Object.entries(data).forEach(([k, v]) => {
-      Object.entries(v.data).forEach(([k1, v1]) => {
-        v.data.filters.forEach((f) => {
+      Object.entries(v.qb_config).forEach(([k1, v1]) => {
+        v1.forEach((f) => {
           if (f.input == 'getdtpuifunc') {
             f.input = getdtpuifunc;
           }
@@ -298,7 +298,8 @@
       update_items_list();
       drawGraph();
     }else if(itemId=='node_flag_mi'){
-      this.addNodeBadge(objecId,"bi-flag")
+      this.removeAllNodeBadges()
+      this.setNodeBadge(objecId,"bi-flag")
     }else if(itemId=='link_remove_mi'){
       objecId = objecId.replace('link_','')
       delete dataInGraph[objecId]
@@ -329,7 +330,7 @@
   }
 
   function showQBDialog(item){
-      qdata = item.data;
+      qdata = item.qb_config;
       $('#filterModal').attr('data-object-id',item.id);
       $('#filterModalTitleIcon').attr('class', item.icon);
       $('#filterModalTitleText').text(item.arabic_name);
